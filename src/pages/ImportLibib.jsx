@@ -6,8 +6,10 @@ import {
   mapLibibRowToBook,
   parseLibibCsv,
 } from '../lib/libibImport'
+import { useAuth } from '../context/AuthContext'
 
 export default function ImportLibib() {
+  const { user } = useAuth()
   const [step, setStep] = useState('idle') // idle | ready | importing | done
   const [error, setError] = useState(null)
   const [fileName, setFileName] = useState('')
@@ -31,7 +33,9 @@ export default function ImportLibib() {
       const rows = parseLibibCsv(text)
       const existingBooks = await listBooks()
       const existingByIsbn = new Map(
-        existingBooks.filter((b) => b.isbn).map((b) => [b.isbn, b]),
+        existingBooks
+          .filter((b) => b.isbn && b.user_id === user.id)
+          .map((b) => [b.isbn, b]),
       )
 
       const nextToImport = []
