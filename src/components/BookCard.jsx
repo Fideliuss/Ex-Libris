@@ -1,10 +1,5 @@
 import { Link } from 'react-router-dom'
-
-const statusLabel = {
-  wishlist: 'Souhaité',
-  'to-read': 'À lire',
-  reading: 'En cours',
-}
+import { STATUS_LABELS } from '../lib/statusLabels'
 
 export default function BookCard({ book, selectable, selected, onToggleSelect }) {
   const content = (
@@ -77,7 +72,7 @@ export default function BookCard({ book, selectable, selected, onToggleSelect })
         <div className="flex items-center justify-between mt-2 min-h-[1.25rem]">
           {book.status !== 'read' && (
             <span className="font-mono text-xs text-ink/50 uppercase">
-              {statusLabel[book.status]}
+              {STATUS_LABELS[book.status]}
             </span>
           )}
           {book.rating > 0 && (

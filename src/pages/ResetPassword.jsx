@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-
-const inputClass =
-  'w-full rounded-sm border border-ink/20 bg-white px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-library'
+import { inputClass } from '../lib/ui'
 
 export default function ResetPassword() {
   const { session, loading, updatePassword } = useAuth()

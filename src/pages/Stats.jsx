@@ -1,41 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { listBooks } from '../lib/books'
-import { useAuth } from '../context/AuthContext'
-import { getPartner } from '../lib/household'
+import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
+import HouseholdTabs from '../components/HouseholdTabs'
 import MonthlyFinishedChart from '../components/MonthlyFinishedChart'
 
 export default function Stats() {
-  const { user } = useAuth()
-  const partner = getPartner(user?.id)
-  const [view, setView] = useState('mine') // 'mine' | 'partner'
-  const [allBooks, setAllBooks] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
-
-  useEffect(() => {
-    let active = true
-    listBooks()
-      .then((data) => {
-        if (active) setAllBooks(data)
-      })
-      .catch((err) => {
-        if (active) setError(err.message)
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-    return () => {
-      active = false
-    }
-  }, [])
-
-  const isMine = view === 'mine'
-  const ownerId = isMine ? user?.id : partner?.id
-  const books = useMemo(
-    () => allBooks.filter((b) => b.user_id === ownerId),
-    [allBooks, ownerId],
-  )
+  const { partner, isMine, books, loading, error, setView } = useHouseholdBooks()
 
   const readCount = books.filter((b) => b.status === 'read').length
   const readingCount = books.filter((b) => b.status === 'reading').length
@@ -135,34 +105,14 @@ export default function Stats() {
         </h1>
 
         {partner && (
-          <div className="flex gap-2 mb-6" role="tablist" aria-label="Statistiques à afficher">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={isMine}
-              onClick={() => setView('mine')}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
-                isMine
-                  ? 'bg-library text-white'
-                  : 'border border-ink/20 text-ink/70 hover:border-library hover:text-library'
-              }`}
-            >
-              Mes statistiques
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={!isMine}
-              onClick={() => setView('partner')}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
-                !isMine
-                  ? 'bg-library text-white'
-                  : 'border border-ink/20 text-ink/70 hover:border-library hover:text-library'
-              }`}
-            >
-              Statistiques de {partner.label}
-            </button>
-          </div>
+          <HouseholdTabs
+            isMine={isMine}
+            onSelectMine={() => setView('mine')}
+            onSelectPartner={() => setView('partner')}
+            mineLabel="Mes statistiques"
+            partnerLabel={`Statistiques de ${partner.label}`}
+            ariaLabel="Statistiques à afficher"
+          />
         )}
 
         {loading ? (

@@ -4,6 +4,7 @@ import { createBook, deleteBook, getBook, listAllTags, updateBook } from '../lib
 import { lookupIsbn } from '../lib/isbnLookup'
 import { uploadCover } from '../lib/storage'
 import TagInput from '../components/TagInput'
+import { inputClass } from '../lib/ui'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 
@@ -26,9 +27,6 @@ const emptyBook = {
   price: '',
   purchase_date: '',
 }
-
-const inputClass =
-  'w-full rounded-sm border border-ink/20 bg-white px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-library'
 
 export default function BookForm() {
   const { id } = useParams()
