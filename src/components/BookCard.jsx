@@ -6,15 +6,25 @@ const statusLabel = {
   reading: 'En cours',
 }
 
-export default function BookCard({ book }) {
-  return (
-    <Link
-      to={`/books/${book.id}`}
-      className="group relative block bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm hover:shadow-md transition-shadow overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-    >
+export default function BookCard({ book, selectable, selected, onToggleSelect }) {
+  const content = (
+    <>
       {book.status === 'read' && (
         <span className="absolute top-3 right-3 -rotate-6 border-2 border-stamp text-stamp font-mono text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm bg-card/90 pointer-events-none">
           Lu
+        </span>
+      )}
+
+      {selectable && (
+        <span
+          aria-hidden="true"
+          className={`absolute top-2 left-2 z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold ${
+            selected
+              ? 'bg-library border-library text-white'
+              : 'bg-card/90 border-ink/30 text-transparent'
+          }`}
+        >
+          ✓
         </span>
       )}
 
@@ -78,6 +88,33 @@ export default function BookCard({ book }) {
           )}
         </div>
       </div>
+    </>
+  )
+
+  const baseClass =
+    'group relative block w-full text-left bg-card border-t-4 border-dashed rounded-sm shadow-sm overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-library'
+
+  if (selectable) {
+    return (
+      <button
+        type="button"
+        onClick={() => onToggleSelect(book.id)}
+        aria-pressed={selected}
+        className={`${baseClass} hover:shadow-md transition-shadow ${
+          selected ? 'border-library' : 'border-brass'
+        }`}
+      >
+        {content}
+      </button>
+    )
+  }
+
+  return (
+    <Link
+      to={`/books/${book.id}`}
+      className={`${baseClass} border-brass hover:shadow-md transition-shadow`}
+    >
+      {content}
     </Link>
   )
 }
