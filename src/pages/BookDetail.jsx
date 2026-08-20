@@ -15,6 +15,16 @@ export default function BookDetail() {
   const [book, setBook] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [coverExpanded, setCoverExpanded] = useState(false)
+
+  useEffect(() => {
+    if (!coverExpanded) return
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') setCoverExpanded(false)
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [coverExpanded])
 
   useEffect(() => {
     let active = true
@@ -87,11 +97,18 @@ export default function BookDetail() {
                 </span>
               )}
               {book.cover_url ? (
-                <img
-                  src={book.cover_url}
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
+                <button
+                  type="button"
+                  onClick={() => setCoverExpanded(true)}
+                  aria-label="Agrandir la couverture"
+                  className="w-full h-full block focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                >
+                  <img
+                    src={book.cover_url}
+                    alt=""
+                    className="w-full h-full object-cover cursor-zoom-in"
+                  />
+                </button>
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <span className="font-serif text-ink/30 text-sm px-4 text-center">
@@ -171,6 +188,30 @@ export default function BookDetail() {
           )}
         </div>
       </div>
+
+      {coverExpanded && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Couverture en grand"
+          onClick={() => setCoverExpanded(false)}
+          className="fixed inset-0 z-50 bg-ink/90 flex items-center justify-center p-6"
+        >
+          <button
+            type="button"
+            onClick={() => setCoverExpanded(false)}
+            aria-label="Fermer"
+            className="absolute top-4 right-4 text-white/80 hover:text-white text-3xl leading-none px-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded-sm"
+          >
+            ×
+          </button>
+          <img
+            src={book.cover_url}
+            alt={book.title}
+            className="max-w-full max-h-full rounded-sm shadow-lg cursor-zoom-out"
+          />
+        </div>
+      )}
     </div>
   )
 }
