@@ -6,6 +6,30 @@ import { getPartner } from '../lib/household'
 import BookCard from '../components/BookCard'
 import CollectionFilters from '../components/CollectionFilters'
 
+const SORT_OPTIONS = {
+  recent: {
+    label: 'Récemment ajoutés',
+    compare: (a, b) => new Date(b.created_at) - new Date(a.created_at),
+  },
+  title: {
+    label: 'Titre (A→Z)',
+    compare: (a, b) => a.title.localeCompare(b.title, 'fr'),
+  },
+  author: {
+    label: 'Auteur (A→Z)',
+    compare: (a, b) => (a.author ?? '').localeCompare(b.author ?? '', 'fr'),
+  },
+  rating: {
+    label: 'Note (meilleure d’abord)',
+    compare: (a, b) => (b.rating ?? 0) - (a.rating ?? 0),
+  },
+  finished: {
+    label: 'Date de fin de lecture',
+    compare: (a, b) =>
+      new Date(b.date_finished ?? 0) - new Date(a.date_finished ?? 0),
+  },
+}
+
 export default function Collection() {
   const { user, signOut } = useAuth()
   const partner = getPartner(user?.id)
@@ -19,6 +43,7 @@ export default function Collection() {
   const [publisher, setPublisher] = useState('')
   const [series, setSeries] = useState('')
   const [status, setStatus] = useState('')
+  const [sort, setSort] = useState('recent')
 
   useEffect(() => {
     let active = true
@@ -82,6 +107,11 @@ export default function Collection() {
       return true
     })
   }, [books, search, tag, publisher, series, status])
+
+  const sortedBooks = useMemo(
+    () => [...filteredBooks].sort(SORT_OPTIONS[sort].compare),
+    [filteredBooks, sort],
+  )
 
   const hasActiveFilters = Boolean(search || tag || publisher || series || status)
 
@@ -236,12 +266,26 @@ export default function Collection() {
           </div>
         ) : (
           <>
-            <p className="font-mono text-xs text-ink/50 mb-3">
-              {filteredBooks.length} livre{filteredBooks.length > 1 ? 's' : ''}
-              {hasActiveFilters ? ` sur ${books.length}` : ''}
-            </p>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <p className="font-mono text-xs text-ink/50">
+                {filteredBooks.length} livre{filteredBooks.length > 1 ? 's' : ''}
+                {hasActiveFilters ? ` sur ${books.length}` : ''}
+              </p>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+                aria-label="Trier par"
+                className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+              >
+                {Object.entries(SORT_OPTIONS).map(([key, { label }]) => (
+                  <option key={key} value={key}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {filteredBooks.map((book) => (
+              {sortedBooks.map((book) => (
                 <BookCard key={book.id} book={book} />
               ))}
             </div>
