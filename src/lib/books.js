@@ -69,6 +69,11 @@ export async function bulkUpdateBooks(updates) {
   }
 }
 
+export async function bulkDeleteBooks(ids) {
+  const { error } = await supabase.from('books').delete().in('id', ids)
+  if (error) throw error
+}
+
 export async function listAllTags() {
   const {
     data: { user },
