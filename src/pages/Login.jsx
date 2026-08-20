@@ -27,7 +27,7 @@ export default function Login() {
     setSubmitting(true)
     const { error } = await signIn(email, password)
     setSubmitting(false)
-    if (error) setError('Email ou mot de passe incorrect.')
+    if (error) setError(describeSignInError(error))
   }
 
   async function handleForgot(e) {
@@ -173,4 +173,17 @@ export default function Login() {
       </div>
     </div>
   )
+}
+
+function describeSignInError(error) {
+  const code = error.code ?? ''
+  const message = error.message ?? ''
+
+  if (code === 'email_not_confirmed' || /email.*not.*confirm/i.test(message)) {
+    return "Ce compte n'est pas confirmé. Dans Supabase, va sur Authentication → Users, ouvre le compte et confirme l'email (ou recrée-le avec « Auto Confirm User » coché)."
+  }
+  if (code === 'invalid_credentials' || /invalid login credentials/i.test(message)) {
+    return 'Email ou mot de passe incorrect.'
+  }
+  return `Connexion impossible : ${message || 'erreur inconnue'}.`
 }
