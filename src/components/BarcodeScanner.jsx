@@ -13,24 +13,52 @@ export default function BarcodeScanner({ onDetected, onClose }) {
       formatsToSupport: [Html5QrcodeSupportedFormats.EAN_13],
       verbose: false,
     })
-    let stopped = false
+    // html5-qrcode throws (synchronously, not a rejected promise) if stop()
+    // is called while the camera isn't actively running — so we track that
+    // state ourselves instead of calling stop()/clear() unconditionally.
+    let isRunning = false
+    let cancelled = false
+
+    async function stopAndClear() {
+      if (isRunning) {
+        isRunning = false
+        try {
+          await scanner.stop()
+        } catch {
+          // déjà arrêtée, rien à faire
+        }
+      }
+      try {
+        scanner.clear()
+      } catch {
+        // rien à nettoyer
+      }
+    }
 
     scanner
       .start(
         { facingMode: 'environment' },
         { fps: 10, qrbox: { width: 260, height: 140 } },
         (decodedText) => {
-          if (stopped) return
-          stopped = true
-          scanner
-            .stop()
-            .catch(() => {})
-            .finally(() => onDetected(decodedText))
+          if (cancelled) return
+          cancelled = true
+          stopAndClear().finally(() => onDetected(decodedText))
         },
         undefined,
       )
-      .then(() => setStarting(false))
+      .then(() => {
+        if (cancelled) {
+          // Le composant a été démonté pendant le démarrage de la caméra :
+          // elle vient tout juste de démarrer, on l'arrête immédiatement.
+          isRunning = true
+          stopAndClear()
+          return
+        }
+        isRunning = true
+        setStarting(false)
+      })
       .catch(() => {
+        if (cancelled) return
         setError(
           "Impossible d'accéder à la caméra. Vérifie que tu as autorisé l'accès, ou utilise la saisie manuelle de l'ISBN ci-dessous.",
         )
@@ -38,11 +66,8 @@ export default function BarcodeScanner({ onDetected, onClose }) {
       })
 
     return () => {
-      stopped = true
-      scanner
-        .stop()
-        .catch(() => {})
-        .finally(() => scanner.clear())
+      cancelled = true
+      stopAndClear()
     }
   }, [onDetected])
 
