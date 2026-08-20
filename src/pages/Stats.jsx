@@ -1,10 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listBooks } from '../lib/books'
+import { useAuth } from '../context/AuthContext'
+import { getPartner } from '../lib/household'
 import MonthlyFinishedChart from '../components/MonthlyFinishedChart'
 
 export default function Stats() {
-  const [books, setBooks] = useState([])
+  const { user } = useAuth()
+  const partner = getPartner(user?.id)
+  const [view, setView] = useState('mine') // 'mine' | 'partner'
+  const [allBooks, setAllBooks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -12,7 +17,7 @@ export default function Stats() {
     let active = true
     listBooks()
       .then((data) => {
-        if (active) setBooks(data)
+        if (active) setAllBooks(data)
       })
       .catch((err) => {
         if (active) setError(err.message)
@@ -24,6 +29,13 @@ export default function Stats() {
       active = false
     }
   }, [])
+
+  const isMine = view === 'mine'
+  const ownerId = isMine ? user?.id : partner?.id
+  const books = useMemo(
+    () => allBooks.filter((b) => b.user_id === ownerId),
+    [allBooks, ownerId],
+  )
 
   const readCount = books.filter((b) => b.status === 'read').length
   const readingCount = books.filter((b) => b.status === 'reading').length
@@ -122,6 +134,37 @@ export default function Stats() {
           Statistiques
         </h1>
 
+        {partner && (
+          <div className="flex gap-2 mb-6" role="tablist" aria-label="Statistiques à afficher">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={isMine}
+              onClick={() => setView('mine')}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
+                isMine
+                  ? 'bg-library text-white'
+                  : 'border border-ink/20 text-ink/70 hover:border-library hover:text-library'
+              }`}
+            >
+              Mes statistiques
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={!isMine}
+              onClick={() => setView('partner')}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
+                !isMine
+                  ? 'bg-library text-white'
+                  : 'border border-ink/20 text-ink/70 hover:border-library hover:text-library'
+              }`}
+            >
+              Statistiques de {partner.label}
+            </button>
+          </div>
+        )}
+
         {loading ? (
           <p className="font-mono text-sm text-ink/60 text-center py-16">
             Chargement…
@@ -132,8 +175,9 @@ export default function Stats() {
           </p>
         ) : books.length === 0 ? (
           <p className="text-sm text-ink/60 text-center py-16">
-            Ajoute des livres à ta collection pour voir apparaître tes
-            statistiques.
+            {isMine
+              ? "Ajoute des livres à ta collection pour voir apparaître tes statistiques."
+              : `${partner?.label} n'a pas encore de livres.`}
           </p>
         ) : (
           <div className="space-y-6">
