@@ -1,14 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { listBooks } from '../lib/books'
 import BookCard from '../components/BookCard'
+import CollectionFilters from '../components/CollectionFilters'
 
 export default function Collection() {
   const { user, signOut } = useAuth()
   const [books, setBooks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  const [search, setSearch] = useState('')
+  const [tag, setTag] = useState('')
+  const [publisher, setPublisher] = useState('')
+  const [status, setStatus] = useState('')
 
   useEffect(() => {
     let active = true
@@ -26,6 +32,45 @@ export default function Collection() {
       active = false
     }
   }, [])
+
+  const tags = useMemo(() => {
+    const set = new Set()
+    for (const book of books) {
+      for (const t of book.tags ?? []) set.add(t)
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [books])
+
+  const publishers = useMemo(() => {
+    const set = new Set()
+    for (const book of books) {
+      if (book.publisher) set.add(book.publisher)
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [books])
+
+  const filteredBooks = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    return books.filter((book) => {
+      if (query) {
+        const haystack = `${book.title} ${book.author ?? ''}`.toLowerCase()
+        if (!haystack.includes(query)) return false
+      }
+      if (tag && !book.tags?.includes(tag)) return false
+      if (publisher && book.publisher !== publisher) return false
+      if (status && book.status !== status) return false
+      return true
+    })
+  }, [books, search, tag, publisher, status])
+
+  const hasActiveFilters = Boolean(search || tag || publisher || status)
+
+  function resetFilters() {
+    setSearch('')
+    setTag('')
+    setPublisher('')
+    setStatus('')
+  }
 
   return (
     <div className="min-h-svh pb-24">
@@ -48,6 +93,23 @@ export default function Collection() {
       </header>
 
       <main className="max-w-5xl mx-auto px-6">
+        {!loading && !error && books.length > 0 && (
+          <CollectionFilters
+            search={search}
+            onSearchChange={setSearch}
+            tag={tag}
+            onTagChange={setTag}
+            tags={tags}
+            publisher={publisher}
+            onPublisherChange={setPublisher}
+            publishers={publishers}
+            status={status}
+            onStatusChange={setStatus}
+            hasActiveFilters={hasActiveFilters}
+            onReset={resetFilters}
+          />
+        )}
+
         {loading ? (
           <p className="font-mono text-sm text-ink/60 text-center py-16">
             Chargement…
@@ -71,12 +133,34 @@ export default function Collection() {
               Ajouter un livre
             </Link>
           </div>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-            {books.map((book) => (
-              <BookCard key={book.id} book={book} />
-            ))}
+        ) : filteredBooks.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="font-serif text-xl mb-2">
+              Aucun livre ne correspond
+            </p>
+            <p className="text-sm text-ink/60 mb-6">
+              Essaie d'autres critères de recherche ou de filtres.
+            </p>
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="rounded-sm border border-ink/20 px-4 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+            >
+              Réinitialiser les filtres
+            </button>
           </div>
+        ) : (
+          <>
+            <p className="font-mono text-xs text-ink/50 mb-3">
+              {filteredBooks.length} livre{filteredBooks.length > 1 ? 's' : ''}
+              {hasActiveFilters ? ` sur ${books.length}` : ''}
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {filteredBooks.map((book) => (
+                <BookCard key={book.id} book={book} />
+              ))}
+            </div>
+          </>
         )}
       </main>
 
