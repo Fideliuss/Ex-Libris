@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 
 const statusLabel = {
+  wishlist: 'Souhaité',
   'to-read': 'À lire',
   reading: 'En cours',
 }

@@ -25,11 +25,14 @@ export default function Stats() {
     }
   }, [])
 
-  const totalCount = books.length
   const readCount = books.filter((b) => b.status === 'read').length
   const readingCount = books.filter((b) => b.status === 'reading').length
   const toReadCount = books.filter((b) => b.status === 'to-read').length
-  const totalSpent = books.reduce((sum, b) => sum + (Number(b.price) || 0), 0)
+  const wishlistCount = books.filter((b) => b.status === 'wishlist').length
+  const totalCount = readCount + readingCount + toReadCount
+  const totalSpent = books
+    .filter((b) => b.status !== 'wishlist')
+    .reduce((sum, b) => sum + (Number(b.price) || 0), 0)
 
   const tagStats = useMemo(() => {
     const map = new Map()
@@ -115,18 +118,19 @@ export default function Stats() {
           <p role="alert" className="text-sm text-stamp text-center py-16">
             Erreur : {error}
           </p>
-        ) : totalCount === 0 ? (
+        ) : books.length === 0 ? (
           <p className="text-sm text-ink/60 text-center py-16">
             Ajoute des livres à ta collection pour voir apparaître tes
             statistiques.
           </p>
         ) : (
           <div className="space-y-6">
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <StatTile label="Total" value={totalCount} />
               <StatTile label="Lus" value={readCount} accent="text-stamp" />
               <StatTile label="En cours" value={readingCount} />
               <StatTile label="À lire" value={toReadCount} />
+              <StatTile label="Souhaités" value={wishlistCount} accent="text-brass" />
               <StatTile
                 label="Dépensé"
                 value={`${totalSpent.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}

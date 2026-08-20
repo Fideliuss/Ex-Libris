@@ -62,6 +62,7 @@ export default function CollectionFilters({
           className={selectClass}
         >
           <option value="">Tous les statuts</option>
+          <option value="wishlist">Souhaité</option>
           <option value="to-read">À lire</option>
           <option value="reading">En cours</option>
           <option value="read">Lu</option>
