@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { createBook, deleteBook, getBook, listAllTags, updateBook } from '../lib/books'
 import { lookupIsbn } from '../lib/isbnLookup'
 import { uploadCover } from '../lib/storage'
 import TagInput from '../components/TagInput'
+
+const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 
 const emptyBook = {
   title: '',
@@ -38,6 +40,7 @@ export default function BookForm() {
   const [lookupMessage, setLookupMessage] = useState(null)
   const [coverUploading, setCoverUploading] = useState(false)
   const [coverError, setCoverError] = useState(null)
+  const [scannerOpen, setScannerOpen] = useState(false)
 
   useEffect(() => {
     listAllTags().then(setExistingTags).catch(() => {})
@@ -64,15 +67,16 @@ export default function BookForm() {
     setBook((b) => ({ ...b, [field]: value }))
   }
 
-  async function handleLookup() {
-    if (!book.isbn?.trim()) {
+  async function handleLookup(isbnOverride) {
+    const isbnToSearch = isbnOverride ?? book.isbn
+    if (!isbnToSearch?.trim()) {
       setLookupMessage({ type: 'error', text: 'Saisis un ISBN avant de chercher.' })
       return
     }
     setLookupLoading(true)
     setLookupMessage(null)
     try {
-      const result = await lookupIsbn(book.isbn)
+      const result = await lookupIsbn(isbnToSearch)
       if (!result) {
         setLookupMessage({
           type: 'info',
@@ -97,6 +101,12 @@ export default function BookForm() {
     } finally {
       setLookupLoading(false)
     }
+  }
+
+  function handleBarcodeDetected(code) {
+    setScannerOpen(false)
+    set('isbn', code)
+    handleLookup(code)
   }
 
   async function handleCoverUpload(e) {
@@ -213,25 +223,32 @@ export default function BookForm() {
           </Field>
 
           <Field label="ISBN">
-            <div className="flex gap-2">
-              <input
-                value={book.isbn ?? ''}
-                onChange={(e) => set('isbn', e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault()
-                    handleLookup()
-                  }
-                }}
-                inputMode="numeric"
-                placeholder="978..."
-                className={`${inputClass} font-mono`}
-              />
+            <input
+              value={book.isbn ?? ''}
+              onChange={(e) => set('isbn', e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  handleLookup()
+                }
+              }}
+              inputMode="numeric"
+              placeholder="978..."
+              className={`${inputClass} font-mono`}
+            />
+            <div className="flex gap-2 mt-2">
               <button
                 type="button"
-                onClick={handleLookup}
+                onClick={() => setScannerOpen(true)}
+                className="flex-1 rounded-sm border border-ink/20 text-ink/70 px-3 py-2 text-sm font-medium hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+              >
+                Scanner
+              </button>
+              <button
+                type="button"
+                onClick={() => handleLookup()}
                 disabled={lookupLoading}
-                className="shrink-0 rounded-sm border border-library text-library px-3 py-2 text-sm font-medium hover:bg-library hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60"
+                className="flex-1 rounded-sm border border-library text-library px-3 py-2 text-sm font-medium hover:bg-library hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60"
               >
                 {lookupLoading ? 'Recherche…' : 'Chercher'}
               </button>
@@ -424,6 +441,23 @@ export default function BookForm() {
           )}
         </form>
       </div>
+
+      {scannerOpen && (
+        <Suspense
+          fallback={
+            <div className="fixed inset-0 z-50 bg-ink/90 flex items-center justify-center p-4">
+              <p className="font-mono text-sm text-white/80">
+                Chargement du scanner…
+              </p>
+            </div>
+          }
+        >
+          <BarcodeScanner
+            onDetected={handleBarcodeDetected}
+            onClose={() => setScannerOpen(false)}
+          />
+        </Suspense>
+      )}
     </div>
   )
 }
