@@ -51,3 +51,4 @@ crédits) en dehors d'un vrai merge sur `main` :
   changelog et le bump de version (patch/minor/major selon les commits
   conventionnels). Merger cette PR crée le tag Git correspondant.
 - Netlify ne surveille que `main` (branch deploys et previews désactivés).
+- Protection des branches via [Repository Rulesets](https://github.com/Fideliuss/ma-bibliotheque/rules) (pas l'ancienne "branch protection" classique, qui ne bloque pas vraiment les push directs quand 0 review est requise).
