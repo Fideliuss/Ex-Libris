@@ -70,7 +70,13 @@ export async function bulkUpdateBooks(updates) {
 }
 
 export async function listAllTags() {
-  const { data, error } = await supabase.from('books').select('tags')
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data, error } = await supabase
+    .from('books')
+    .select('tags')
+    .eq('user_id', user.id)
   if (error) throw error
   const tags = new Set()
   for (const row of data) {

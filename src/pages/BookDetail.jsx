@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { getBook } from '../lib/books'
+import { useAuth } from '../context/AuthContext'
+import { getMemberLabel } from '../lib/household'
 
 const statusLabel = {
   wishlist: 'Souhaité',
@@ -12,6 +14,7 @@ const statusLabel = {
 export default function BookDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [book, setBook] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -79,13 +82,19 @@ export default function BookDetail() {
           >
             ← Retour à la collection
           </Link>
-          <button
-            type="button"
-            onClick={() => navigate(`/books/${id}/edit`)}
-            className="shrink-0 rounded-sm bg-library text-white font-medium px-4 py-2 text-sm hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
-          >
-            Modifier
-          </button>
+          {book.user_id === user?.id ? (
+            <button
+              type="button"
+              onClick={() => navigate(`/books/${id}/edit`)}
+              className="shrink-0 rounded-sm bg-library text-white font-medium px-4 py-2 text-sm hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+            >
+              Modifier
+            </button>
+          ) : (
+            <span className="shrink-0 font-mono text-xs uppercase tracking-widest text-brass">
+              Livre de {getMemberLabel(book.user_id) ?? 'l’autre bibliothèque'}
+            </span>
+          )}
         </div>
 
         <div className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
