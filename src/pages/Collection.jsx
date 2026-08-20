@@ -83,7 +83,13 @@ export default function Collection() {
             Ma Bibliothèque
           </h1>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
+          <Link
+            to="/import"
+            className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+          >
+            Importer
+          </Link>
           <Link
             to="/stats"
             className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"

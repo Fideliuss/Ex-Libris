@@ -48,6 +48,29 @@ export async function getBook(id) {
   return data
 }
 
+export async function listIsbns() {
+  const { data, error } = await supabase
+    .from('books')
+    .select('isbn')
+    .not('isbn', 'is', null)
+  if (error) throw error
+  return new Set(data.map((row) => row.isbn).filter(Boolean))
+}
+
+export async function bulkCreateBooks(books) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  const rows = books.map((book) => ({ ...book, user_id: user.id }))
+  const chunkSize = 100
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    const chunk = rows.slice(i, i + chunkSize)
+    const { error } = await supabase.from('books').insert(chunk)
+    if (error) throw error
+  }
+}
+
 export async function listAllTags() {
   const { data, error } = await supabase.from('books').select('tags')
   if (error) throw error
