@@ -6,7 +6,11 @@ name: release-please-check
 # block the release PR. workflow_run isn't subject to that restriction (it's
 # fired by the platform on run completion, not by the token that ran it), so
 # we chain off release-please's own run and post the "build" status
-# ourselves on its exact commit.
+# ourselves.
+#
+# Note: github.event.workflow_run.head_sha is the commit that triggered
+# release-please (on main), NOT release-please's own generated branch/PR —
+# we have to look that PR up separately to get its real head SHA.
 
 on:
   workflow_run:
@@ -15,6 +19,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
   statuses: write
 
 jobs:
@@ -22,26 +27,39 @@ jobs:
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
+      - name: Find the release-please PR's head SHA
+        id: find_pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          sha=$(gh pr list --repo "${{ github.repository }}" --base main --json headRefName,headRefOid \
+            --jq '[.[] | select(.headRefName | startswith("release-please--"))][0].headRefOid // empty')
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v4
+        if: steps.find_pr.outputs.sha != ''
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: ${{ steps.find_pr.outputs.sha }}
 
       - uses: actions/setup-node@v4
+        if: steps.find_pr.outputs.sha != ''
         with:
           node-version: 22
           cache: npm
 
       - run: npm ci
+        if: steps.find_pr.outputs.sha != ''
       - run: npm run build
+        if: steps.find_pr.outputs.sha != ''
 
       - name: Report build status
-        if: always()
+        if: always() && steps.find_pr.outputs.sha != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           state="failure"
           if [ "${{ job.status }}" = "success" ]; then state="success"; fi
-          gh api "repos/${{ github.repository }}/statuses/${{ github.event.workflow_run.head_sha }}" \
+          gh api "repos/${{ github.repository }}/statuses/${{ steps.find_pr.outputs.sha }}" \
             -f state="$state" \
             -f context="build" \
             -f description="Build check (via release-please-check)"
