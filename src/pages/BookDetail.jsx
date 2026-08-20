@@ -3,13 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { getBook } from '../lib/books'
 import { useAuth } from '../context/AuthContext'
 import { getMemberLabel } from '../lib/household'
-
-const statusLabel = {
-  wishlist: 'Souhaité',
-  'to-read': 'À lire',
-  reading: 'En cours',
-  read: 'Lu',
-}
+import { STATUS_LABELS } from '../lib/statusLabels'
 
 export default function BookDetail() {
   const { id } = useParams()
@@ -146,7 +140,7 @@ export default function BookDetail() {
 
               <div className="flex flex-wrap items-center gap-2 mt-3">
                 <span className="font-mono text-xs uppercase text-ink/50 border border-ink/20 rounded-full px-2 py-0.5">
-                  {statusLabel[book.status] ?? book.status}
+                  {STATUS_LABELS[book.status] ?? book.status}
                 </span>
                 {book.rating > 0 && (
                   <span className="text-brass text-sm" aria-hidden="true">

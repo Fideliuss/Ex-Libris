@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { bulkDeleteBooks, bulkUpdateBooks, listBooks } from '../lib/books'
-import { getPartner } from '../lib/household'
+import { bulkDeleteBooks, bulkUpdateBooks } from '../lib/books'
+import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import BookCard from '../components/BookCard'
 import CollectionFilters from '../components/CollectionFilters'
 import BulkActionBar from '../components/BulkActionBar'
+import HouseholdTabs from '../components/HouseholdTabs'
 
 const SORT_OPTIONS = {
   recent: {
@@ -33,11 +34,8 @@ const SORT_OPTIONS = {
 
 export default function Collection() {
   const { user, signOut } = useAuth()
-  const partner = getPartner(user?.id)
-  const [view, setView] = useState('mine') // 'mine' | 'partner'
-  const [allBooks, setAllBooks] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const { partner, isMine, books, loading, error, refresh, setView } =
+    useHouseholdBooks()
 
   const [search, setSearch] = useState('')
   const [tag, setTag] = useState('')
@@ -49,30 +47,6 @@ export default function Collection() {
   const [selectedIds, setSelectedIds] = useState(() => new Set())
   const [bulkWorking, setBulkWorking] = useState(false)
   const [bulkError, setBulkError] = useState(null)
-
-  useEffect(() => {
-    let active = true
-    listBooks()
-      .then((data) => {
-        if (active) setAllBooks(data)
-      })
-      .catch((err) => {
-        if (active) setError(err.message)
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-    return () => {
-      active = false
-    }
-  }, [])
-
-  const isMine = view === 'mine'
-  const ownerId = isMine ? user?.id : partner?.id
-  const books = useMemo(
-    () => allBooks.filter((b) => b.user_id === ownerId),
-    [allBooks, ownerId],
-  )
 
   const tags = useMemo(() => {
     const set = new Set()
@@ -157,17 +131,12 @@ export default function Collection() {
     setBulkError(null)
   }
 
-  async function refreshBooks() {
-    const data = await listBooks()
-    setAllBooks(data)
-  }
-
   async function runBulkAction(fn) {
     setBulkWorking(true)
     setBulkError(null)
     try {
       await fn()
-      await refreshBooks()
+      await refresh()
       exitSelectionMode()
     } catch (err) {
       setBulkError(err.message)
@@ -194,7 +163,7 @@ export default function Collection() {
     return runBulkAction(() =>
       bulkUpdateBooks(
         [...selectedIds].map((id) => {
-          const book = allBooks.find((b) => b.id === id)
+          const book = books.find((b) => b.id === id)
           return {
             id,
             patch: { tags: [...new Set([...(book?.tags ?? []), clean])] },
@@ -240,34 +209,14 @@ export default function Collection() {
 
       <main className="max-w-5xl mx-auto px-6">
         {partner && (
-          <div className="flex gap-2 mb-6" role="tablist" aria-label="Bibliothèque à afficher">
-            <button
-              type="button"
-              role="tab"
-              aria-selected={isMine}
-              onClick={() => switchView('mine')}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
-                isMine
-                  ? 'bg-library text-white'
-                  : 'border border-ink/20 text-ink/70 hover:border-library hover:text-library'
-              }`}
-            >
-              Ma bibliothèque
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={!isMine}
-              onClick={() => switchView('partner')}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
-                !isMine
-                  ? 'bg-library text-white'
-                  : 'border border-ink/20 text-ink/70 hover:border-library hover:text-library'
-              }`}
-            >
-              Bibliothèque de {partner.label}
-            </button>
-          </div>
+          <HouseholdTabs
+            isMine={isMine}
+            onSelectMine={() => switchView('mine')}
+            onSelectPartner={() => switchView('partner')}
+            mineLabel="Ma bibliothèque"
+            partnerLabel={`Bibliothèque de ${partner.label}`}
+            ariaLabel="Bibliothèque à afficher"
+          />
         )}
 
         {!loading && !error && books.length > 0 && (
