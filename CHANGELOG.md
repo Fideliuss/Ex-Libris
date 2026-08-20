@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.0](https://github.com/Fideliuss/ma-bibliotheque/compare/ma-bibliotheque-v1.0.0...ma-bibliotheque-v1.1.0) (2026-08-20)
+
+
+### Features
+
+* run build check on release-please PRs via workflow_run ([54073fe](https://github.com/Fideliuss/ma-bibliotheque/commit/54073fe260a830873f19751a1a76e2c15775e44b))
+* run the build check on release-please PRs via workflow_run ([#13](https://github.com/Fideliuss/ma-bibliotheque/issues/13)) ([1cf1bdb](https://github.com/Fideliuss/ma-bibliotheque/commit/1cf1bdb3e93aa87d8cabb283898531ef65424608))
+
 ## 1.0.0 (2026-08-20)
 
 
