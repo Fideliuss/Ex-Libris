@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import ResetPassword from './pages/ResetPassword'
 import Collection from './pages/Collection'
 import BookForm from './pages/BookForm'
+import Stats from './pages/Stats'
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <Route path="/" element={<Collection />} />
           <Route path="/books/new" element={<BookForm />} />
           <Route path="/books/:id/edit" element={<BookForm />} />
+          <Route path="/stats" element={<Stats />} />
         </Route>
       </Routes>
     </AuthProvider>

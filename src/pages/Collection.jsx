@@ -83,13 +83,21 @@ export default function Collection() {
             Ma Bibliothèque
           </h1>
         </div>
-        <button
-          type="button"
-          onClick={() => signOut()}
-          className="shrink-0 rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:text-stamp hover:border-stamp focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-        >
-          Se déconnecter
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            to="/stats"
+            className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+          >
+            Statistiques
+          </Link>
+          <button
+            type="button"
+            onClick={() => signOut()}
+            className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:text-stamp hover:border-stamp focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+          >
+            Se déconnecter
+          </button>
+        </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-6">
