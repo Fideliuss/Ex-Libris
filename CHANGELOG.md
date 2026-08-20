@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/Fideliuss/ma-bibliotheque/compare/ma-bibliotheque-v1.1.0...ma-bibliotheque-v1.1.1) (2026-08-20)
+
+
+### Bug Fixes
+
+* look up the actual release-please PR head SHA instead of the workflow_run's own commit ([#16](https://github.com/Fideliuss/ma-bibliotheque/issues/16)) ([1c0d494](https://github.com/Fideliuss/ma-bibliotheque/commit/1c0d4948cc489ebe239d98046f285000977c3707))
+
 ## [1.1.0](https://github.com/Fideliuss/ma-bibliotheque/compare/ma-bibliotheque-v1.0.0...ma-bibliotheque-v1.1.0) (2026-08-20)
 
 
