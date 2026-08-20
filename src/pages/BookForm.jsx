@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { createBook, deleteBook, getBook, listAllTags, updateBook } from '../lib/books'
+import { lookupIsbn } from '../lib/isbnLookup'
 import TagInput from '../components/TagInput'
 
 const emptyBook = {
@@ -32,6 +33,8 @@ export default function BookForm() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [lookupLoading, setLookupLoading] = useState(false)
+  const [lookupMessage, setLookupMessage] = useState(null)
 
   useEffect(() => {
     listAllTags().then(setExistingTags).catch(() => {})
@@ -56,6 +59,41 @@ export default function BookForm() {
 
   function set(field, value) {
     setBook((b) => ({ ...b, [field]: value }))
+  }
+
+  async function handleLookup() {
+    if (!book.isbn?.trim()) {
+      setLookupMessage({ type: 'error', text: 'Saisis un ISBN avant de chercher.' })
+      return
+    }
+    setLookupLoading(true)
+    setLookupMessage(null)
+    try {
+      const result = await lookupIsbn(book.isbn)
+      if (!result) {
+        setLookupMessage({
+          type: 'info',
+          text: 'Aucun résultat trouvé pour cet ISBN. Remplis les champs manuellement.',
+        })
+      } else {
+        setBook((b) => ({
+          ...b,
+          title: result.title || b.title,
+          author: result.author || b.author,
+          publisher: result.publisher || b.publisher,
+          page_count: result.page_count ?? b.page_count,
+          cover_url: result.cover_url || b.cover_url,
+        }))
+        setLookupMessage({ type: 'success', text: 'Livre trouvé, champs pré-remplis ci-dessous.' })
+      }
+    } catch {
+      setLookupMessage({
+        type: 'error',
+        text: 'Erreur lors de la recherche. Réessaie ou remplis manuellement.',
+      })
+    } finally {
+      setLookupLoading(false)
+    }
   }
 
   async function handleSubmit(e) {
@@ -146,11 +184,43 @@ export default function BookForm() {
           </Field>
 
           <Field label="ISBN">
-            <input
-              value={book.isbn ?? ''}
-              onChange={(e) => set('isbn', e.target.value)}
-              className={`${inputClass} font-mono`}
-            />
+            <div className="flex gap-2">
+              <input
+                value={book.isbn ?? ''}
+                onChange={(e) => set('isbn', e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    handleLookup()
+                  }
+                }}
+                inputMode="numeric"
+                placeholder="978..."
+                className={`${inputClass} font-mono`}
+              />
+              <button
+                type="button"
+                onClick={handleLookup}
+                disabled={lookupLoading}
+                className="shrink-0 rounded-sm border border-library text-library px-3 py-2 text-sm font-medium hover:bg-library hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60"
+              >
+                {lookupLoading ? 'Recherche…' : 'Chercher'}
+              </button>
+            </div>
+            {lookupMessage && (
+              <p
+                role="status"
+                className={`text-sm mt-1.5 ${
+                  lookupMessage.type === 'error'
+                    ? 'text-stamp'
+                    : lookupMessage.type === 'success'
+                      ? 'text-library'
+                      : 'text-ink/60'
+                }`}
+              >
+                {lookupMessage.text}
+              </p>
+            )}
           </Field>
 
           <Field label="Couverture (URL)">
