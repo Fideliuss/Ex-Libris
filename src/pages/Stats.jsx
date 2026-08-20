@@ -29,6 +29,7 @@ export default function Stats() {
   const readCount = books.filter((b) => b.status === 'read').length
   const readingCount = books.filter((b) => b.status === 'reading').length
   const toReadCount = books.filter((b) => b.status === 'to-read').length
+  const totalSpent = books.reduce((sum, b) => sum + (Number(b.price) || 0), 0)
 
   const tagStats = useMemo(() => {
     const map = new Map()
@@ -121,11 +122,15 @@ export default function Stats() {
           </p>
         ) : (
           <div className="space-y-6">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
               <StatTile label="Total" value={totalCount} />
               <StatTile label="Lus" value={readCount} accent="text-stamp" />
               <StatTile label="En cours" value={readingCount} />
               <StatTile label="À lire" value={toReadCount} />
+              <StatTile
+                label="Dépensé"
+                value={`${totalSpent.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}
+              />
             </div>
 
             <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">

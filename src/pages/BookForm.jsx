@@ -20,6 +20,8 @@ const emptyBook = {
   rating: 0,
   page_count: '',
   notes: '',
+  price: '',
+  purchase_date: '',
 }
 
 const inputClass =
@@ -57,6 +59,8 @@ export default function BookForm() {
           date_finished: data.date_finished ?? '',
           rating: data.rating ?? 0,
           page_count: data.page_count ?? '',
+          price: data.price ?? '',
+          purchase_date: data.purchase_date ?? '',
         }),
       )
       .catch((err) => setError(err.message))
@@ -145,6 +149,8 @@ export default function BookForm() {
       date_finished: book.date_finished || null,
       page_count: book.page_count === '' ? null : Number(book.page_count),
       rating: book.rating || null,
+      price: book.price === '' ? null : Number(book.price),
+      purchase_date: book.purchase_date || null,
     }
     try {
       if (isEdit) {
@@ -366,6 +372,27 @@ export default function BookForm() {
                 value={book.date_finished ?? ''}
                 onChange={(e) => set('date_finished', e.target.value)}
                 className={inputClass}
+              />
+            </Field>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Date d'achat">
+              <input
+                type="date"
+                value={book.purchase_date ?? ''}
+                onChange={(e) => set('purchase_date', e.target.value)}
+                className={inputClass}
+              />
+            </Field>
+            <Field label="Prix d'achat (€)">
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={book.price ?? ''}
+                onChange={(e) => set('price', e.target.value)}
+                className={`${inputClass} font-mono`}
               />
             </Field>
           </div>
