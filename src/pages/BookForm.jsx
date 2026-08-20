@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { createBook, deleteBook, getBook, listAllTags, updateBook } from '../lib/books'
 import { lookupIsbn } from '../lib/isbnLookup'
+import { uploadCover } from '../lib/storage'
 import TagInput from '../components/TagInput'
 
 const emptyBook = {
@@ -35,6 +36,8 @@ export default function BookForm() {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [lookupLoading, setLookupLoading] = useState(false)
   const [lookupMessage, setLookupMessage] = useState(null)
+  const [coverUploading, setCoverUploading] = useState(false)
+  const [coverError, setCoverError] = useState(null)
 
   useEffect(() => {
     listAllTags().then(setExistingTags).catch(() => {})
@@ -93,6 +96,32 @@ export default function BookForm() {
       })
     } finally {
       setLookupLoading(false)
+    }
+  }
+
+  async function handleCoverUpload(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setCoverError('Le fichier doit être une image.')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setCoverError('Image trop lourde (5 Mo maximum).')
+      return
+    }
+
+    setCoverUploading(true)
+    setCoverError(null)
+    try {
+      const url = await uploadCover(file)
+      set('cover_url', url)
+    } catch {
+      setCoverError("Échec de l'import de l'image. Réessaie.")
+    } finally {
+      setCoverUploading(false)
     }
   }
 
@@ -223,14 +252,58 @@ export default function BookForm() {
             )}
           </Field>
 
-          <Field label="Couverture (URL)">
-            <input
-              type="url"
-              value={book.cover_url ?? ''}
-              onChange={(e) => set('cover_url', e.target.value)}
-              placeholder="https://..."
-              className={inputClass}
-            />
+          <Field label="Couverture">
+            <div className="flex gap-4 items-start">
+              <div className="w-24 aspect-[2/3] shrink-0 rounded-sm border border-ink/10 bg-paper overflow-hidden flex items-center justify-center">
+                {book.cover_url ? (
+                  <img
+                    src={book.cover_url}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-ink/30 text-xs text-center px-1">
+                    Aucune couverture
+                  </span>
+                )}
+              </div>
+
+              <div className="flex-1 space-y-2">
+                <input
+                  type="url"
+                  value={book.cover_url ?? ''}
+                  onChange={(e) => set('cover_url', e.target.value)}
+                  placeholder="https://..."
+                  className={inputClass}
+                />
+                <div className="flex items-center gap-3">
+                  <label className="cursor-pointer rounded-sm border border-ink/20 px-3 py-1.5 text-sm text-ink/70 hover:border-library hover:text-library focus-within:outline-none focus-within:ring-2 focus-within:ring-library">
+                    {coverUploading ? 'Import…' : 'Importer une image'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="sr-only"
+                      onChange={handleCoverUpload}
+                      disabled={coverUploading}
+                    />
+                  </label>
+                  {book.cover_url && (
+                    <button
+                      type="button"
+                      onClick={() => set('cover_url', '')}
+                      className="text-sm text-ink/50 hover:text-stamp underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                    >
+                      Retirer
+                    </button>
+                  )}
+                </div>
+                {coverError && (
+                  <p role="alert" className="text-sm text-stamp">
+                    {coverError}
+                  </p>
+                )}
+              </div>
+            </div>
           </Field>
 
           <Field label="Tags">
