@@ -29,3 +29,25 @@ Voir `.env.example`. Ne jamais commiter `.env`.
 npm run build
 npm run preview
 ```
+
+## Workflow de contribution
+
+GitFlow simplifié, pour ne jamais déclencher un build Netlify (payant en
+crédits) en dehors d'un vrai merge sur `main` :
+
+- `develop` est la branche de travail. Chaque fonctionnalité part d'une
+  branche `feature/xxx` créée depuis `develop`.
+- Commits au format [conventionnel](https://www.conventionalcommits.org/) :
+  `feat:`, `fix:`, `chore:`, `docs:`, `refactor:` — indispensable pour que
+  le versionnage automatique fonctionne.
+- Chaque `feature/xxx` termine par une pull request vers `develop`. La CI
+  (`.github/workflows/build-check.yml`) lance `npm ci && npm run build` sur
+  chaque PR et doit passer avant merge.
+- `main` et `develop` sont protégées : push direct interdit, merge
+  uniquement via PR avec la CI au vert.
+- Quand `develop` est stable, ouvrir une PR de `develop` vers `main`.
+- `release-please` (`.github/workflows/release-please.yml`) tourne à chaque
+  push sur `main` : il maintient une PR de release à jour avec le
+  changelog et le bump de version (patch/minor/major selon les commits
+  conventionnels). Merger cette PR crée le tag Git correspondant.
+- Netlify ne surveille que `main` (branch deploys et previews désactivés).
