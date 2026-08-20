@@ -37,3 +37,23 @@ export async function deleteBook(id) {
   const { error } = await supabase.from('books').delete().eq('id', id)
   if (error) throw error
 }
+
+export async function getBook(id) {
+  const { data, error } = await supabase
+    .from('books')
+    .select('*')
+    .eq('id', id)
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function listAllTags() {
+  const { data, error } = await supabase.from('books').select('tags')
+  if (error) throw error
+  const tags = new Set()
+  for (const row of data) {
+    for (const tag of row.tags ?? []) tags.add(tag)
+  }
+  return [...tags].sort((a, b) => a.localeCompare(b, 'fr'))
+}
