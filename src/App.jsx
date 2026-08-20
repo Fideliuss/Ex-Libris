@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import ResetPassword from './pages/ResetPassword'
 import Collection from './pages/Collection'
 import BookForm from './pages/BookForm'
+import BookDetail from './pages/BookDetail'
 import Stats from './pages/Stats'
 
 function App() {
@@ -16,6 +17,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Collection />} />
           <Route path="/books/new" element={<BookForm />} />
+          <Route path="/books/:id" element={<BookDetail />} />
           <Route path="/books/:id/edit" element={<BookForm />} />
           <Route path="/stats" element={<Stats />} />
         </Route>

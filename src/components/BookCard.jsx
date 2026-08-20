@@ -9,7 +9,7 @@ const statusLabel = {
 export default function BookCard({ book }) {
   return (
     <Link
-      to={`/books/${book.id}/edit`}
+      to={`/books/${book.id}`}
       className="group relative block bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm hover:shadow-md transition-shadow overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
     >
       {book.status === 'read' && (

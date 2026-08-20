@@ -16,6 +16,7 @@ async function lookupGoogleBooks(isbn) {
     publisher: info.publisher ?? '',
     page_count: info.pageCount ?? null,
     cover_url: info.imageLinks?.thumbnail?.replace('http://', 'https://') ?? '',
+    description: info.description ?? '',
   }
 }
 

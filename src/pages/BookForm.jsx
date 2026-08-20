@@ -13,6 +13,7 @@ const emptyBook = {
   publisher: '',
   isbn: '',
   cover_url: '',
+  description: '',
   tags: [],
   status: 'to-read',
   date_started: '',
@@ -92,6 +93,7 @@ export default function BookForm() {
           title: result.title || b.title,
           author: result.author || b.author,
           publisher: result.publisher || b.publisher,
+          description: result.description || b.description,
           page_count: result.page_count ?? b.page_count,
           cover_url: result.cover_url || b.cover_url,
         }))
@@ -155,10 +157,11 @@ export default function BookForm() {
     try {
       if (isEdit) {
         await updateBook(id, payload)
+        navigate(`/books/${id}`)
       } else {
         await createBook(payload)
+        navigate('/')
       }
-      navigate('/')
     } catch (err) {
       setError(err.message)
       setSaving(false)
@@ -189,10 +192,10 @@ export default function BookForm() {
     <div className="min-h-svh p-6">
       <div className="max-w-xl mx-auto">
         <Link
-          to="/"
+          to={isEdit ? `/books/${id}` : '/'}
           className="text-sm text-ink/60 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
         >
-          ← Retour à la collection
+          {isEdit ? '← Retour à la fiche' : '← Retour à la collection'}
         </Link>
 
         <h1 className="font-serif text-2xl font-semibold mt-4 mb-6">
@@ -224,6 +227,16 @@ export default function BookForm() {
             <input
               value={book.publisher ?? ''}
               onChange={(e) => set('publisher', e.target.value)}
+              className={inputClass}
+            />
+          </Field>
+
+          <Field label="Résumé">
+            <textarea
+              rows={4}
+              value={book.description ?? ''}
+              onChange={(e) => set('description', e.target.value)}
+              placeholder="Rempli automatiquement par le lookup ISBN si disponible."
               className={inputClass}
             />
           </Field>
