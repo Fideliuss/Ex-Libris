@@ -14,6 +14,8 @@ const emptyBook = {
   isbn: '',
   cover_url: '',
   description: '',
+  series: '',
+  series_index: '',
   tags: [],
   status: 'to-read',
   date_started: '',
@@ -62,6 +64,7 @@ export default function BookForm() {
           page_count: data.page_count ?? '',
           price: data.price ?? '',
           purchase_date: data.purchase_date ?? '',
+          series_index: data.series_index ?? '',
         }),
       )
       .catch((err) => setError(err.message))
@@ -153,6 +156,8 @@ export default function BookForm() {
       rating: book.rating || null,
       price: book.price === '' ? null : Number(book.price),
       purchase_date: book.purchase_date || null,
+      series: book.series?.trim() || null,
+      series_index: book.series_index === '' ? null : Number(book.series_index),
     }
     try {
       if (isEdit) {
@@ -230,6 +235,28 @@ export default function BookForm() {
               className={inputClass}
             />
           </Field>
+
+          <div className="grid grid-cols-3 gap-4">
+            <div className="col-span-2">
+              <Field label="Série">
+                <input
+                  value={book.series ?? ''}
+                  onChange={(e) => set('series', e.target.value)}
+                  className={inputClass}
+                />
+              </Field>
+            </div>
+            <Field label="Tome">
+              <input
+                type="number"
+                min="0"
+                step="0.5"
+                value={book.series_index ?? ''}
+                onChange={(e) => set('series_index', e.target.value)}
+                className={`${inputClass} font-mono`}
+              />
+            </Field>
+          </div>
 
           <Field label="Résumé">
             <textarea

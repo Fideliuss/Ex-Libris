@@ -1,16 +1,22 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { bulkCreateBooks, listIsbns } from '../lib/books'
-import { mapLibibRowToBook, parseLibibCsv } from '../lib/libibImport'
+import { bulkCreateBooks, bulkUpdateBooks, listBooks } from '../lib/books'
+import {
+  computeSeriesRepair,
+  mapLibibRowToBook,
+  parseLibibCsv,
+} from '../lib/libibImport'
 
 export default function ImportLibib() {
   const [step, setStep] = useState('idle') // idle | ready | importing | done
   const [error, setError] = useState(null)
   const [fileName, setFileName] = useState('')
   const [toImport, setToImport] = useState([])
+  const [toEnrich, setToEnrich] = useState([])
   const [duplicateCount, setDuplicateCount] = useState(0)
   const [skippedCount, setSkippedCount] = useState(0)
   const [importedCount, setImportedCount] = useState(0)
+  const [enrichedCount, setEnrichedCount] = useState(0)
 
   async function handleFileChange(e) {
     const file = e.target.files?.[0]
@@ -23,25 +29,48 @@ export default function ImportLibib() {
     try {
       const text = await file.text()
       const rows = parseLibibCsv(text)
-      const books = rows.map(mapLibibRowToBook).filter((b) => b.title)
-      const skipped = rows.length - books.length
+      const existingBooks = await listBooks()
+      const existingByIsbn = new Map(
+        existingBooks.filter((b) => b.isbn).map((b) => [b.isbn, b]),
+      )
 
-      const existingIsbns = await listIsbns()
+      const nextToImport = []
+      const nextToEnrich = []
       const seenInFile = new Set()
-      const unique = []
-      let duplicates = 0
-      for (const book of books) {
-        const key = book.isbn || null
-        if (key && (existingIsbns.has(key) || seenInFile.has(key))) {
-          duplicates += 1
+      let skipped = 0
+      let untouchedDuplicates = 0
+
+      for (const row of rows) {
+        const mapped = mapLibibRowToBook(row)
+        if (!mapped.title) {
+          skipped += 1
+          continue
+        }
+
+        const key = mapped.isbn || null
+        const existing = key ? existingByIsbn.get(key) : null
+
+        if (existing) {
+          const patch = computeSeriesRepair(existing, row)
+          if (patch) {
+            nextToEnrich.push({ id: existing.id, patch, title: existing.title })
+          } else {
+            untouchedDuplicates += 1
+          }
+          continue
+        }
+
+        if (key && seenInFile.has(key)) {
+          untouchedDuplicates += 1
           continue
         }
         if (key) seenInFile.add(key)
-        unique.push(book)
+        nextToImport.push(mapped)
       }
 
-      setToImport(unique)
-      setDuplicateCount(duplicates)
+      setToImport(nextToImport)
+      setToEnrich(nextToEnrich)
+      setDuplicateCount(untouchedDuplicates)
       setSkippedCount(skipped)
       setStep('ready')
     } catch (err) {
@@ -53,14 +82,22 @@ export default function ImportLibib() {
     setStep('importing')
     setError(null)
     try {
-      await bulkCreateBooks(toImport)
+      if (toImport.length > 0) await bulkCreateBooks(toImport)
+      if (toEnrich.length > 0) {
+        await bulkUpdateBooks(
+          toEnrich.map(({ id, patch }) => ({ id, patch })),
+        )
+      }
       setImportedCount(toImport.length)
+      setEnrichedCount(toEnrich.length)
       setStep('done')
     } catch (err) {
       setError(err.message)
       setStep('ready')
     }
   }
+
+  const hasWork = toImport.length > 0 || toEnrich.length > 0
 
   return (
     <div className="min-h-svh p-6">
@@ -83,7 +120,9 @@ export default function ImportLibib() {
                 Exporte ta bibliothèque depuis Libib au format CSV, puis
                 sélectionne le fichier ici. Rien n'est envoyé ailleurs que
                 vers ta base : le fichier est lu directement dans ton
-                navigateur.
+                navigateur. Tu peux réutiliser le même fichier plusieurs fois
+                sans risque : les livres déjà présents ne sont jamais
+                dupliqués.
               </p>
               <label className="inline-block cursor-pointer rounded-sm bg-library text-white font-medium px-4 py-2 text-sm hover:bg-library/90 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-library">
                 Choisir un fichier CSV
@@ -103,15 +142,25 @@ export default function ImportLibib() {
                 Fichier <span className="font-mono">{fileName}</span> lu.
               </p>
               <ul className="text-sm text-ink/70 space-y-1">
-                <li>
-                  <span className="font-mono">{toImport.length}</span> livre
-                  {toImport.length > 1 ? 's' : ''} à importer
-                </li>
+                {toImport.length > 0 && (
+                  <li>
+                    <span className="font-mono">{toImport.length}</span>{' '}
+                    nouveau{toImport.length > 1 ? 'x' : ''} livre
+                    {toImport.length > 1 ? 's' : ''} à importer
+                  </li>
+                )}
+                {toEnrich.length > 0 && (
+                  <li>
+                    <span className="font-mono">{toEnrich.length}</span> livre
+                    {toEnrich.length > 1 ? 's' : ''} déjà présent
+                    {toEnrich.length > 1 ? 's' : ''} — série/tome complété
+                    {toEnrich.length > 1 ? 's' : ''}
+                  </li>
+                )}
                 {duplicateCount > 0 && (
                   <li>
                     <span className="font-mono">{duplicateCount}</span> déjà
-                    présent{duplicateCount > 1 ? 's' : ''} dans ta collection
-                    (ISBN identique) — ignoré
+                    présent{duplicateCount > 1 ? 's' : ''} et à jour — ignoré
                     {duplicateCount > 1 ? 's' : ''}
                   </li>
                 )}
@@ -124,10 +173,10 @@ export default function ImportLibib() {
                 )}
               </ul>
 
-              {toImport.length === 0 ? (
+              {!hasWork ? (
                 <p className="text-sm text-ink/60">
-                  Rien à importer — tous les livres de ce fichier sont déjà
-                  dans ta collection.
+                  Rien à faire — ta collection est déjà à jour avec ce
+                  fichier.
                 </p>
               ) : (
                 <button
@@ -135,8 +184,7 @@ export default function ImportLibib() {
                   onClick={handleImport}
                   className="rounded-sm bg-library text-white font-medium px-4 py-2 text-sm hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
                 >
-                  Importer {toImport.length} livre
-                  {toImport.length > 1 ? 's' : ''}
+                  Continuer
                 </button>
               )}
               <button
@@ -157,11 +205,21 @@ export default function ImportLibib() {
 
           {step === 'done' && (
             <>
-              <p className="text-sm text-library">
-                <span className="font-mono">{importedCount}</span> livre
-                {importedCount > 1 ? 's' : ''} importé
-                {importedCount > 1 ? 's' : ''} avec succès.
-              </p>
+              <div className="text-sm text-library space-y-1">
+                {importedCount > 0 && (
+                  <p>
+                    <span className="font-mono">{importedCount}</span> livre
+                    {importedCount > 1 ? 's' : ''} importé
+                    {importedCount > 1 ? 's' : ''}.
+                  </p>
+                )}
+                {enrichedCount > 0 && (
+                  <p>
+                    <span className="font-mono">{enrichedCount}</span> livre
+                    {enrichedCount > 1 ? 's' : ''} mis à jour (série/tome).
+                  </p>
+                )}
+              </div>
               <Link
                 to="/"
                 className="inline-block rounded-sm bg-library text-white font-medium px-4 py-2 text-sm hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"

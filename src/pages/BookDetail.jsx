@@ -122,6 +122,12 @@ export default function BookDetail() {
               <h1 className="font-serif text-2xl font-semibold">
                 {book.title}
               </h1>
+              {book.series && (
+                <p className="text-sm text-brass mt-0.5">
+                  {book.series}
+                  {book.series_index != null && ` · Tome ${book.series_index}`}
+                </p>
+              )}
               {book.author && (
                 <p className="text-ink/70 mt-1">{book.author}</p>
               )}

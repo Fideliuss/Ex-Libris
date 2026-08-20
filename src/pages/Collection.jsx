@@ -14,6 +14,7 @@ export default function Collection() {
   const [search, setSearch] = useState('')
   const [tag, setTag] = useState('')
   const [publisher, setPublisher] = useState('')
+  const [series, setSeries] = useState('')
   const [status, setStatus] = useState('')
 
   useEffect(() => {
@@ -49,6 +50,14 @@ export default function Collection() {
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
   }, [books])
 
+  const seriesList = useMemo(() => {
+    const set = new Set()
+    for (const book of books) {
+      if (book.series) set.add(book.series)
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [books])
+
   const filteredBooks = useMemo(() => {
     const query = search.trim().toLowerCase()
     return books.filter((book) => {
@@ -58,17 +67,19 @@ export default function Collection() {
       }
       if (tag && !book.tags?.includes(tag)) return false
       if (publisher && book.publisher !== publisher) return false
+      if (series && book.series !== series) return false
       if (status && book.status !== status) return false
       return true
     })
-  }, [books, search, tag, publisher, status])
+  }, [books, search, tag, publisher, series, status])
 
-  const hasActiveFilters = Boolean(search || tag || publisher || status)
+  const hasActiveFilters = Boolean(search || tag || publisher || series || status)
 
   function resetFilters() {
     setSearch('')
     setTag('')
     setPublisher('')
+    setSeries('')
     setStatus('')
   }
 
@@ -117,6 +128,9 @@ export default function Collection() {
             publisher={publisher}
             onPublisherChange={setPublisher}
             publishers={publishers}
+            series={series}
+            onSeriesChange={setSeries}
+            seriesList={seriesList}
             status={status}
             onStatusChange={setStatus}
             hasActiveFilters={hasActiveFilters}

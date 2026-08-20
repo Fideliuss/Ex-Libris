@@ -48,15 +48,6 @@ export async function getBook(id) {
   return data
 }
 
-export async function listIsbns() {
-  const { data, error } = await supabase
-    .from('books')
-    .select('isbn')
-    .not('isbn', 'is', null)
-  if (error) throw error
-  return new Set(data.map((row) => row.isbn).filter(Boolean))
-}
-
 export async function bulkCreateBooks(books) {
   const {
     data: { user },
@@ -67,6 +58,13 @@ export async function bulkCreateBooks(books) {
   for (let i = 0; i < rows.length; i += chunkSize) {
     const chunk = rows.slice(i, i + chunkSize)
     const { error } = await supabase.from('books').insert(chunk)
+    if (error) throw error
+  }
+}
+
+export async function bulkUpdateBooks(updates) {
+  for (const { id, patch } of updates) {
+    const { error } = await supabase.from('books').update(patch).eq('id', id)
     if (error) throw error
   }
 }

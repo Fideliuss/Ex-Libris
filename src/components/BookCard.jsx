@@ -36,6 +36,12 @@ export default function BookCard({ book }) {
         <p className="font-serif text-base leading-snug line-clamp-2">
           {book.title}
         </p>
+        {book.series && (
+          <p className="text-xs text-brass mt-0.5 truncate">
+            {book.series}
+            {book.series_index != null && ` · Tome ${book.series_index}`}
+          </p>
+        )}
         {book.author && (
           <p className="text-sm text-ink/60 mt-0.5 truncate">{book.author}</p>
         )}
