@@ -140,7 +140,7 @@ export default function BookDetail() {
                   <img
                     src={book.cover_url}
                     alt=""
-                    className="w-full h-full object-cover cursor-zoom-in"
+                    className="w-full h-full object-contain cursor-zoom-in"
                   />
                 </button>
               ) : (

@@ -63,7 +63,7 @@ export default function BookCard({
           <img
             src={book.cover_url}
             alt=""
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
           />
         ) : (
           <span className="font-serif text-ink/30 text-sm px-4 text-center">
