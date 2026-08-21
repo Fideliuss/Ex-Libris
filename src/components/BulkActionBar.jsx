@@ -5,16 +5,19 @@ export default function BulkActionBar({
   count,
   working,
   error,
+  tags,
   onDelete,
   onChangeStatus,
   onChangeType,
   onAddTag,
+  onRemoveTag,
   onCancel,
 }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [statusToApply, setStatusToApply] = useState('to-read')
   const [typeToApply, setTypeToApply] = useState('book')
   const [tagDraft, setTagDraft] = useState('')
+  const [tagToRemove, setTagToRemove] = useState('')
 
   const disabled = working || count === 0
 
@@ -112,6 +115,35 @@ export default function BulkActionBar({
             >
               Ajouter le tag
             </button>
+
+            {tags?.length > 0 && (
+              <>
+                <select
+                  value={tagToRemove}
+                  onChange={(e) => setTagToRemove(e.target.value)}
+                  aria-label="Tag à retirer"
+                  className="rounded-sm border border-ink/20 bg-white px-2 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                >
+                  <option value="">Retirer un tag…</option>
+                  {tags.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onRemoveTag(tagToRemove)
+                    setTagToRemove('')
+                  }}
+                  disabled={disabled || !tagToRemove}
+                  className="text-sm px-3 py-1.5 rounded-sm border border-stamp/40 text-stamp hover:bg-stamp hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp disabled:opacity-60"
+                >
+                  Retirer le tag
+                </button>
+              </>
+            )}
 
             <button
               type="button"
