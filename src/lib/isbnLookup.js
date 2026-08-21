@@ -37,8 +37,75 @@ async function lookupOpenLibrary(isbn) {
   }
 }
 
-// Cherche un livre par ISBN : Google Books en priorité, Open Library en repli.
-// Retourne null si aucune des deux sources n'a de résultat.
+function bnfSubfield(datafield, code) {
+  const subfields = datafield.getElementsByTagNameNS('*', 'subfield')
+  for (const sf of subfields) {
+    if (sf.getAttribute('code') === code) return sf.textContent?.trim() ?? ''
+  }
+  return ''
+}
+
+function bnfFields(record, tag) {
+  const datafields = record.getElementsByTagNameNS('*', 'datafield')
+  return [...datafields].filter((df) => df.getAttribute('tag') === tag)
+}
+
+// Le catalogue SRU de la BNF ne fournit ni couverture ni résumé, mais couvre
+// bien mieux les éditions françaises (petites maisons, collections type
+// Folio) que Google Books/Open Library, qui ratent souvent ces ISBN.
+function parseBnfRecord(record) {
+  const titleField = bnfFields(record, '200')[0]
+  const title = titleField ? bnfSubfield(titleField, 'a') : ''
+  if (!title) return null
+
+  let author = titleField ? bnfSubfield(titleField, 'f') : ''
+  if (!author) {
+    const authorFields = [
+      ...bnfFields(record, '700'),
+      ...bnfFields(record, '701'),
+      ...bnfFields(record, '702'),
+    ]
+    author = authorFields
+      .map((df) =>
+        [bnfSubfield(df, 'b'), bnfSubfield(df, 'a')].filter(Boolean).join(' '),
+      )
+      .filter(Boolean)
+      .join(', ')
+  }
+
+  const publisherField = bnfFields(record, '210')[0] ?? bnfFields(record, '214')[0]
+  const publisher = publisherField ? bnfSubfield(publisherField, 'c') : ''
+
+  const collationField = bnfFields(record, '215')[0]
+  const collationText = collationField ? bnfSubfield(collationField, 'a') : ''
+  const pageMatch = collationText.match(/(\d+)\s*p\b/i)
+
+  return {
+    title,
+    author,
+    publisher,
+    page_count: pageMatch ? Number(pageMatch[1]) : null,
+    cover_url: '',
+    description: '',
+  }
+}
+
+async function lookupBnf(isbn) {
+  const query = encodeURIComponent(`bib.isbn all "${isbn}"`)
+  const res = await fetch(
+    `https://catalogue.bnf.fr/api/SRU?version=1.2&operation=searchRetrieve&query=${query}&recordSchema=unimarcXchange&maximumRecords=1`,
+  )
+  if (!res.ok) throw new Error('BNF indisponible')
+  const xml = await res.text()
+  const doc = new DOMParser().parseFromString(xml, 'text/xml')
+  const record = doc.getElementsByTagNameNS('*', 'record')[0]
+  if (!record) return null
+  return parseBnfRecord(record)
+}
+
+// Cherche un livre par ISBN : Google Books puis Open Library, avec la BNF en
+// dernier recours pour les éditions françaises que les deux premiers ratent.
+// Retourne null si aucune des trois sources n'a de résultat.
 export async function lookupIsbn(rawIsbn) {
   const isbn = cleanIsbn(rawIsbn || '')
   if (!isbn) return null
@@ -47,11 +114,18 @@ export async function lookupIsbn(rawIsbn) {
     const result = await lookupGoogleBooks(isbn)
     if (result) return result
   } catch {
-    // on tente le fallback ci-dessous
+    // on tente le fallback suivant
   }
 
   try {
-    return await lookupOpenLibrary(isbn)
+    const result = await lookupOpenLibrary(isbn)
+    if (result) return result
+  } catch {
+    // on tente le fallback suivant
+  }
+
+  try {
+    return await lookupBnf(isbn)
   } catch {
     return null
   }
