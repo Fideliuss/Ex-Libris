@@ -3,7 +3,11 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { getBook } from '../lib/books'
 import { useAuth } from '../context/AuthContext'
 import { getMemberLabel } from '../lib/household'
-import { STATUS_LABELS } from '../lib/statusLabels'
+import {
+  STATUS_BADGE_CLASS,
+  STATUS_BORDER_CLASS,
+  STATUS_LABELS,
+} from '../lib/statusLabels'
 import { describeError } from '../lib/errors'
 import { BOOK_TYPES } from '../lib/bookTypes'
 
@@ -93,13 +97,23 @@ export default function BookDetail() {
           )}
         </div>
 
-        <div className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+        <div
+          className={`bg-card border-t-4 border-dashed rounded-sm shadow-sm p-6 ${STATUS_BORDER_CLASS[book.status]}`}
+        >
           <div className="flex gap-6 flex-col sm:flex-row">
             <div className="relative w-40 aspect-[2/3] shrink-0 rounded-sm border border-ink/10 bg-paper overflow-hidden mx-auto sm:mx-0">
               {book.status === 'read' && (
-                <span className="absolute top-2 right-2 -rotate-6 border-2 border-stamp text-stamp font-mono text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm bg-card/90">
+                <span className="absolute top-2 right-2 -rotate-6 border-2 border-library text-library font-mono text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm bg-card/90 z-10">
                   Lu
                 </span>
+              )}
+              {book.status === 'wishlist' && (
+                <div
+                  aria-hidden="true"
+                  className="absolute -left-9 top-3 -rotate-45 w-32 text-center bg-wishlist text-white font-mono text-[10px] font-bold uppercase tracking-widest py-0.5 shadow"
+                >
+                  Souhaité
+                </div>
               )}
               {book.cover_url ? (
                 <button
@@ -161,7 +175,9 @@ export default function BookDetail() {
               )}
 
               <div className="flex flex-wrap items-center gap-2 mt-3">
-                <span className="font-mono text-xs uppercase text-ink/50 border border-ink/20 rounded-full px-2 py-0.5">
+                <span
+                  className={`font-mono text-xs uppercase border border-ink/20 rounded-full px-2 py-0.5 ${STATUS_BADGE_CLASS[book.status] ?? 'text-ink/50'}`}
+                >
                   {STATUS_LABELS[book.status] ?? book.status}
                 </span>
                 {book.type !== 'book' && (

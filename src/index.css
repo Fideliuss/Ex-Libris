@@ -11,6 +11,11 @@
   --color-library: #2f4a3c;
   --color-brass: #ad8a54;
   --color-stamp: #a2372e;
+
+  /* Signal de statut : wishlist=bleu, à lire=neutre (brass), en cours=jaune,
+     lu=vert (library). */
+  --color-wishlist: #3b6e91;
+  --color-reading: #b8860b;
 }
 
 body {
