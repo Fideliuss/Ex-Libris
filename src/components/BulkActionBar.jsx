@@ -63,7 +63,7 @@ export default function BulkActionBar({
               aria-label="Nouveau statut"
               className="rounded-sm border border-ink/20 bg-white px-2 py-1.5 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
             >
-              <option value="wishlist">Souhaité</option>
+              <option value="wishlist">Wishlist</option>
               <option value="to-read">À lire</option>
               <option value="reading">En cours</option>
               <option value="read">Lu</option>

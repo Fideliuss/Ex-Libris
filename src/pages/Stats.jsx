@@ -154,7 +154,7 @@ export default function Stats() {
               <StatTile label="Lus" value={readCount} accent="text-stamp" />
               <StatTile label="En cours" value={readingCount} />
               <StatTile label="À lire" value={toReadCount} />
-              <StatTile label="Souhaités" value={wishlistCount} accent="text-brass" />
+              <StatTile label="Wishlist" value={wishlistCount} accent="text-brass" />
               <StatTile
                 label="Dépensé"
                 value={`${totalSpent.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}

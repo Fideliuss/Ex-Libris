@@ -20,15 +20,6 @@ export default function BookCard({ book, selectable, selected, onToggleSelect })
         </span>
       )}
 
-      {book.status === 'wishlist' && (
-        <div
-          aria-hidden="true"
-          className="absolute -left-9 top-3 -rotate-45 w-32 text-center bg-wishlist text-white font-mono text-[10px] font-bold uppercase tracking-widest py-0.5 shadow pointer-events-none"
-        >
-          Souhaité
-        </div>
-      )}
-
       {selectable && (
         <span
           aria-hidden="true"
@@ -110,7 +101,7 @@ export default function BookCard({ book, selectable, selected, onToggleSelect })
         )}
 
         <div className="flex items-center justify-between mt-2 min-h-[1.25rem]">
-          {book.status !== 'read' && book.status !== 'wishlist' && (
+          {book.status !== 'read' && (
             <span
               className={`font-mono text-xs uppercase ${STATUS_BADGE_CLASS[book.status]}`}
             >

@@ -456,7 +456,7 @@ export default function BookForm() {
                 onChange={(e) => set('status', e.target.value)}
                 className={inputClass}
               >
-                <option value="wishlist">Souhaité</option>
+                <option value="wishlist">Wishlist</option>
                 <option value="to-read">À lire</option>
                 <option value="reading">En cours</option>
                 <option value="read">Lu</option>
