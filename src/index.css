@@ -28,7 +28,7 @@ body {
 @media (prefers-reduced-motion: no-preference) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
-    animation-duration: 0.22s;
+    animation-duration: 0.4s;
     animation-timing-function: ease-in-out;
   }
   ::view-transition-old(root) {
