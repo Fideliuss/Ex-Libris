@@ -30,6 +30,28 @@ npm run build
 npm run preview
 ```
 
+## Tester en local avant de livrer
+
+Netlify (plan gratuit) a un quota de crédits limité — chaque déploiement
+(chaque push sur `main`) en consomme. Pour ne pas le griller :
+
+- Développement courant : `npm run dev` (rechargement à chaud, mais pas de
+  service worker/PWA — normal en mode dev).
+- **Avant d'ouvrir une PR `develop → main`** : valider la vraie build de
+  prod en local, PWA comprise :
+  ```bash
+  npm run build
+  npm run preview   # sert dist/ sur http://localhost:4173, avec service worker
+  ```
+  Vérifier qu'il n'y a pas d'erreur console et que l'écran de connexion (au
+  minimum) s'affiche correctement.
+- Grouper plusieurs fonctionnalités sur `develop` avant de livrer, plutôt
+  que d'ouvrir une PR vers `main` à chaque petit changement — chaque
+  promotion vers `main` = un déploiement Netlify.
+- Le seul cas qui échappe au test local : le scan caméra sur téléphone
+  (a besoin d'HTTPS + d'un vrai appareil). Voir la section suivante si
+  besoin de le tester avant de livrer.
+
 ## Workflow de contribution
 
 GitFlow simplifié, pour ne jamais déclencher un build Netlify (payant en
