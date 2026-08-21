@@ -130,3 +130,28 @@ export async function convertTagToCollection(tag) {
   }
   return matching.length
 }
+
+// Renomme une collection ou une série sur tous les livres qui la portent.
+async function renameFieldValue(field, oldValue, newValue) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { error } = await supabase
+    .from('books')
+    .update({ [field]: newValue })
+    .eq('user_id', user.id)
+    .eq(field, oldValue)
+  if (error) throw error
+}
+
+export function renamePublisher(oldName, newName) {
+  return renameFieldValue('publisher', oldName, newName)
+}
+
+export function renameCollection(oldName, newName) {
+  return renameFieldValue('collection', oldName, newName)
+}
+
+export function renameSeries(oldName, newName) {
+  return renameFieldValue('series', oldName, newName)
+}
