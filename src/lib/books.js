@@ -89,3 +89,44 @@ export async function listAllTags() {
   }
   return [...tags].sort((a, b) => a.localeCompare(b, 'fr'))
 }
+
+export async function listAllCollections() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data, error } = await supabase
+    .from('books')
+    .select('collection')
+    .eq('user_id', user.id)
+    .not('collection', 'is', null)
+  if (error) throw error
+  const collections = new Set(data.map((row) => row.collection).filter(Boolean))
+  return [...collections].sort((a, b) => a.localeCompare(b, 'fr'))
+}
+
+// Migration : un tag utilisé comme nom de collection éditeur (ex: "folio sf")
+// devient la valeur du champ `collection` sur tous les livres concernés, et
+// est retiré de leurs tags. Retourne le nombre de livres modifiés.
+export async function convertTagToCollection(tag) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data: matching, error: fetchError } = await supabase
+    .from('books')
+    .select('id, tags')
+    .eq('user_id', user.id)
+    .contains('tags', [tag])
+  if (fetchError) throw fetchError
+
+  for (const book of matching) {
+    const { error } = await supabase
+      .from('books')
+      .update({
+        collection: tag,
+        tags: (book.tags ?? []).filter((t) => t !== tag),
+      })
+      .eq('id', book.id)
+    if (error) throw error
+  }
+  return matching.length
+}

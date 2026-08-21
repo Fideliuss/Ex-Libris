@@ -171,7 +171,10 @@ export default function BookDetail() {
                 <p className="text-ink/70 mt-1">{book.author}</p>
               )}
               {book.publisher && (
-                <p className="text-sm text-ink/50 mt-0.5">{book.publisher}</p>
+                <p className="text-sm text-ink/50 mt-0.5">
+                  {book.publisher}
+                  {book.collection && ` · ${book.collection}`}
+                </p>
               )}
 
               <div className="flex flex-wrap items-center gap-2 mt-3">

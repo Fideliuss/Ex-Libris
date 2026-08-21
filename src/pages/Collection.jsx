@@ -45,6 +45,7 @@ export default function Collection() {
   const [search, setSearch] = useState('')
   const [tag, setTag] = useState('')
   const [publisher, setPublisher] = useState('')
+  const [collection, setCollection] = useState('')
   const [series, setSeries] = useState('')
   const [type, setType] = useState('')
   const [status, setStatus] = useState('')
@@ -70,6 +71,14 @@ export default function Collection() {
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
   }, [books])
 
+  const collections = useMemo(() => {
+    const set = new Set()
+    for (const book of books) {
+      if (book.collection) set.add(book.collection)
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [books])
+
   const seriesList = useMemo(() => {
     const set = new Set()
     for (const book of books) {
@@ -87,12 +96,13 @@ export default function Collection() {
       }
       if (tag && !book.tags?.includes(tag)) return false
       if (publisher && book.publisher !== publisher) return false
+      if (collection && book.collection !== collection) return false
       if (series && book.series !== series) return false
       if (type && book.type !== type) return false
       if (status && book.status !== status) return false
       return true
     })
-  }, [books, search, tag, publisher, series, type, status])
+  }, [books, search, tag, publisher, collection, series, type, status])
 
   const sortedBooks = useMemo(
     () => [...filteredBooks].sort(SORT_OPTIONS[sort].compare),
@@ -100,11 +110,12 @@ export default function Collection() {
   )
 
   const hasActiveFilters = Boolean(
-    search || tag || publisher || series || type || status,
+    search || tag || publisher || collection || series || type || status,
   )
 
   function resetFilters() {
     setSearch('')
+    setCollection('')
     setTag('')
     setPublisher('')
     setSeries('')
@@ -254,6 +265,9 @@ export default function Collection() {
             publisher={publisher}
             onPublisherChange={setPublisher}
             publishers={publishers}
+            collection={collection}
+            onCollectionChange={setCollection}
+            collections={collections}
             series={series}
             onSeriesChange={handleSeriesChange}
             seriesList={seriesList}

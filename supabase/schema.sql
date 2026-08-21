@@ -17,6 +17,7 @@ create table books (
   translator text,
   illustrator text,
   publisher text,
+  collection text,
   description text,
   series text,
   series_index numeric,

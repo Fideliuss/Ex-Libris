@@ -12,6 +12,9 @@ export default function CollectionFilters({
   publisher,
   onPublisherChange,
   publishers,
+  collection,
+  onCollectionChange,
+  collections,
   series,
   onSeriesChange,
   seriesList,
@@ -58,6 +61,20 @@ export default function CollectionFilters({
           {publishers.map((p) => (
             <option key={p} value={p}>
               {p}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={collection}
+          onChange={(e) => onCollectionChange(e.target.value)}
+          aria-label="Filtrer par collection"
+          className={selectClass}
+        >
+          <option value="">Toutes les collections</option>
+          {collections.map((c) => (
+            <option key={c} value={c}>
+              {c}
             </option>
           ))}
         </select>
