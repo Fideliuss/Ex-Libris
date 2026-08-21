@@ -1,16 +1,13 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import LoadingScreen from './LoadingScreen'
 
 export default function ProtectedRoute() {
   const { session, loading } = useAuth()
   const location = useLocation()
 
   if (loading) {
-    return (
-      <div className="min-h-svh flex items-center justify-center">
-        <p className="font-mono text-sm text-ink/60">Chargement…</p>
-      </div>
-    )
+    return <LoadingScreen />
   }
 
   if (!session) {
