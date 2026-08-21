@@ -1,7 +1,11 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
-import { convertTagToCollection } from '../lib/books'
+import {
+  convertTagToCollection,
+  renameCollection,
+  renameSeries,
+} from '../lib/books'
 import { describeError } from '../lib/errors'
 import HouseholdTabs from '../components/HouseholdTabs'
 import MonthlyFinishedChart from '../components/MonthlyFinishedChart'
@@ -262,17 +266,16 @@ export default function Stats() {
                 ) : (
                   <ul className="space-y-3">
                     {collectionStats.map((entry) => (
-                      <li key={entry.collection}>
-                        <div className="flex items-baseline justify-between gap-2 mb-1">
-                          <span className="text-sm truncate">
-                            {entry.collection}
-                          </span>
-                          <span className="font-mono text-xs text-ink/60 shrink-0">
-                            {entry.count}
-                          </span>
-                        </div>
-                        <CountBar count={entry.count} max={maxCollectionCount} />
-                      </li>
+                      <RenameableStatRow
+                        key={entry.collection}
+                        name={entry.collection}
+                        count={entry.count}
+                        max={maxCollectionCount}
+                        existingNames={collectionStats.map((e) => e.collection)}
+                        onRename={renameCollection}
+                        isMine={isMine}
+                        onRenamed={refresh}
+                      />
                     ))}
                   </ul>
                 )}
@@ -287,17 +290,16 @@ export default function Stats() {
                 ) : (
                   <ul className="space-y-3">
                     {seriesStats.map((entry) => (
-                      <li key={entry.series}>
-                        <div className="flex items-baseline justify-between gap-2 mb-1">
-                          <span className="text-sm truncate">
-                            {entry.series}
-                          </span>
-                          <span className="font-mono text-xs text-ink/60 shrink-0">
-                            {entry.count}
-                          </span>
-                        </div>
-                        <CountBar count={entry.count} max={maxSeriesCount} />
-                      </li>
+                      <RenameableStatRow
+                        key={entry.series}
+                        name={entry.series}
+                        count={entry.count}
+                        max={maxSeriesCount}
+                        existingNames={seriesStats.map((e) => e.series)}
+                        onRename={renameSeries}
+                        isMine={isMine}
+                        onRenamed={refresh}
+                      />
                     ))}
                   </ul>
                 )}
@@ -318,6 +320,132 @@ function StatTile({ label, value, accent }) {
       </p>
       <p className="text-xs text-ink/60 mt-1">{label}</p>
     </div>
+  )
+}
+
+function RenameableStatRow({
+  name,
+  count,
+  max,
+  existingNames,
+  onRename,
+  onRenamed,
+  isMine,
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(name)
+  const [confirmingMerge, setConfirmingMerge] = useState(false)
+  const [working, setWorking] = useState(false)
+  const [error, setError] = useState(null)
+
+  const trimmed = draft.trim()
+  const collidingName = existingNames.find(
+    (n) => n !== name && n.toLowerCase() === trimmed.toLowerCase(),
+  )
+
+  function startEditing() {
+    setDraft(name)
+    setEditing(true)
+    setConfirmingMerge(false)
+    setError(null)
+  }
+
+  function cancel() {
+    setEditing(false)
+    setConfirmingMerge(false)
+    setError(null)
+  }
+
+  async function submit() {
+    if (!trimmed || trimmed === name) {
+      cancel()
+      return
+    }
+    if (collidingName && !confirmingMerge) {
+      setConfirmingMerge(true)
+      return
+    }
+    setWorking(true)
+    setError(null)
+    try {
+      await onRename(name, trimmed)
+      await onRenamed()
+      setEditing(false)
+      setConfirmingMerge(false)
+    } catch (err) {
+      setError(describeError(err))
+    } finally {
+      setWorking(false)
+    }
+  }
+
+  return (
+    <li>
+      <div className="flex items-baseline justify-between gap-2 mb-1">
+        {editing ? (
+          <input
+            type="text"
+            value={draft}
+            onChange={(e) => {
+              setDraft(e.target.value)
+              setConfirmingMerge(false)
+            }}
+            autoFocus
+            className="text-sm border-b border-ink/30 bg-transparent focus:outline-none focus:border-library flex-1 min-w-0"
+          />
+        ) : (
+          <span className="text-sm truncate">{name}</span>
+        )}
+        <span className="font-mono text-xs text-ink/60 shrink-0">{count}</span>
+      </div>
+      <CountBar count={count} max={max} />
+      {editing ? (
+        <div className="mt-1 space-y-1">
+          {confirmingMerge && (
+            <p className="text-xs text-stamp">
+              « {collidingName} » existe déjà : les livres seront regroupés
+              ensemble. Confirmer ?
+            </p>
+          )}
+          {error && (
+            <p role="alert" className="text-xs text-stamp">
+              {error}
+            </p>
+          )}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={submit}
+              disabled={working}
+              className="text-xs text-library underline underline-offset-2 hover:text-library/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm disabled:opacity-60"
+            >
+              {working
+                ? 'Renommage…'
+                : confirmingMerge
+                  ? 'Confirmer la fusion'
+                  : 'Valider'}
+            </button>
+            <button
+              type="button"
+              onClick={cancel}
+              className="text-xs text-ink/50 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
+      ) : (
+        isMine && (
+          <button
+            type="button"
+            onClick={startEditing}
+            className="mt-1 text-xs text-library underline underline-offset-2 hover:text-library/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+          >
+            Renommer
+          </button>
+        )
+      )}
+    </li>
   )
 }
 
