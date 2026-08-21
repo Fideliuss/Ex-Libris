@@ -13,6 +13,8 @@ const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 const emptyBook = {
   title: '',
   author: '',
+  translator: '',
+  illustrator: '',
   publisher: '',
   isbn: '',
   cover_url: '',
@@ -244,6 +246,23 @@ export default function BookForm() {
               className={inputClass}
             />
           </Field>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Traducteur">
+              <input
+                value={book.translator ?? ''}
+                onChange={(e) => set('translator', e.target.value)}
+                className={inputClass}
+              />
+            </Field>
+            <Field label="Dessinateur">
+              <input
+                value={book.illustrator ?? ''}
+                onChange={(e) => set('illustrator', e.target.value)}
+                className={inputClass}
+              />
+            </Field>
+          </div>
 
           <Field label="Éditeur">
             <input
