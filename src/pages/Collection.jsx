@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { bulkDeleteBooks, bulkUpdateBooks, updateBook } from '../lib/books'
+import { bulkDeleteBooks, bulkUpdateBooks } from '../lib/books'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import { describeError } from '../lib/errors'
 import BookCard from '../components/BookCard'
@@ -93,7 +93,6 @@ export default function Collection() {
   const [selectedIds, setSelectedIds] = useState(() => new Set())
   const [bulkWorking, setBulkWorking] = useState(false)
   const [bulkError, setBulkError] = useState(null)
-  const [quickStatusError, setQuickStatusError] = useState(null)
 
   const tags = useMemo(() => {
     const set = new Set()
@@ -328,16 +327,6 @@ export default function Collection() {
     )
   }
 
-  async function handleQuickStatusChange(id, newStatus) {
-    setQuickStatusError(null)
-    try {
-      await updateBook(id, { status: newStatus })
-      await refresh()
-    } catch (err) {
-      setQuickStatusError(describeError(err))
-    }
-  }
-
   return (
     <div className={`min-h-svh ${selectionMode ? 'pb-40' : 'pb-24'}`}>
       <header className="flex items-start justify-between max-w-5xl mx-auto p-6 gap-4">
@@ -464,11 +453,6 @@ export default function Collection() {
           </div>
         ) : (
           <>
-            {quickStatusError && (
-              <p role="alert" className="text-sm text-stamp mb-3">
-                {quickStatusError}
-              </p>
-            )}
             <div className="flex items-center justify-between gap-3 mb-3">
               {selectionMode ? (
                 <div className="flex items-center gap-3">
@@ -527,9 +511,6 @@ export default function Collection() {
                   selectable={selectionMode}
                   selected={selectedIds.has(book.id)}
                   onToggleSelect={toggleSelect}
-                  onQuickStatusChange={
-                    isMine ? handleQuickStatusChange : undefined
-                  }
                 />
               ))}
             </div>

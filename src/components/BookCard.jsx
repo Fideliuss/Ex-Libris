@@ -8,13 +8,7 @@ import { BOOK_TYPES } from '../lib/bookTypes'
 import WishlistRibbon from './WishlistRibbon'
 import ReadingBookmark from './ReadingBookmark'
 
-export default function BookCard({
-  book,
-  selectable,
-  selected,
-  onToggleSelect,
-  onQuickStatusChange,
-}) {
+export default function BookCard({ book, selectable, selected, onToggleSelect }) {
   // Un manga a quasi toujours le même titre que sa série (juste le tome qui
   // change) : afficher les deux répète la même chose deux fois. On montre
   // la série comme titre principal et le tome bien en évidence à la place.
@@ -113,34 +107,12 @@ export default function BookCard({
         )}
 
         <div className="flex items-center justify-between mt-2 min-h-[1.25rem]">
-          {!selectable && onQuickStatusChange ? (
-            <select
-              value={book.status}
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-              }}
-              onChange={(e) => {
-                e.stopPropagation()
-                onQuickStatusChange(book.id, e.target.value)
-              }}
-              aria-label="Changer le statut"
-              className={`font-mono text-xs uppercase bg-transparent border-none p-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm ${STATUS_BADGE_CLASS[book.status]}`}
+          {book.status !== 'read' && book.status !== 'wishlist' && (
+            <span
+              className={`font-mono text-xs uppercase ${STATUS_BADGE_CLASS[book.status]}`}
             >
-              <option value="wishlist">Wishlist</option>
-              <option value="to-read">À lire</option>
-              <option value="reading">En cours</option>
-              <option value="read">Lu</option>
-            </select>
-          ) : (
-            book.status !== 'read' &&
-            book.status !== 'wishlist' && (
-              <span
-                className={`font-mono text-xs uppercase ${STATUS_BADGE_CLASS[book.status]}`}
-              >
-                {STATUS_LABELS[book.status]}
-              </span>
-            )
+              {STATUS_LABELS[book.status]}
+            </span>
           )}
           {book.rating > 0 && (
             <span className="text-brass text-sm ml-auto" aria-hidden="true">
