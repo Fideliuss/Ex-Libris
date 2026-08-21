@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { getBook } from '../lib/books'
 import { useAuth } from '../context/AuthContext'
 import { getMemberLabel } from '../lib/household'
@@ -11,11 +11,13 @@ import {
 import { describeError } from '../lib/errors'
 import { BOOK_TYPES } from '../lib/bookTypes'
 import WishlistRibbon from '../components/WishlistRibbon'
+import { useGoBack } from '../lib/navigation'
 import ReadingBookmark from '../components/ReadingBookmark'
 
 export default function BookDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const goBack = useGoBack('/')
   const { user } = useAuth()
   const [book, setBook] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -63,12 +65,13 @@ export default function BookDetail() {
           <p className="text-sm text-stamp mb-4">
             {error ?? 'Livre introuvable.'}
           </p>
-          <Link
-            to="/"
+          <button
+            type="button"
+            onClick={goBack}
             className="text-sm text-library underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
           >
             ← Retour à la collection
-          </Link>
+          </button>
         </div>
       </div>
     )
@@ -78,12 +81,13 @@ export default function BookDetail() {
     <div className="min-h-svh p-6">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-4 gap-4">
-          <Link
-            to="/"
+          <button
+            type="button"
+            onClick={goBack}
             className="text-sm text-ink/60 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
           >
             ← Retour à la collection
-          </Link>
+          </button>
           {book.user_id === user?.id ? (
             <button
               type="button"

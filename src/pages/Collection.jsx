@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { bulkDeleteBooks, bulkUpdateBooks } from '../lib/books'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
@@ -42,14 +42,51 @@ export default function Collection() {
   const { partner, isMine, books, loading, error, refresh, setView } =
     useHouseholdBooks()
 
-  const [search, setSearch] = useState('')
-  const [selectedTags, setSelectedTags] = useState([])
-  const [publisher, setPublisher] = useState('')
-  const [collection, setCollection] = useState('')
-  const [series, setSeries] = useState('')
-  const [type, setType] = useState('')
-  const [status, setStatus] = useState('')
-  const [sort, setSort] = useState('recent')
+  // Filtres/tri/recherche vivent dans l'URL (et non un useState local) pour
+  // survivre à un aller-retour vers la fiche d'un livre : la page se
+  // démonte/remonte à chaque navigation, un useState repartirait à zéro.
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const search = searchParams.get('q') ?? ''
+  const selectedTags = searchParams.getAll('tag')
+  const publisher = searchParams.get('publisher') ?? ''
+  const collection = searchParams.get('collection') ?? ''
+  const series = searchParams.get('series') ?? ''
+  const type = searchParams.get('type') ?? ''
+  const status = searchParams.get('status') ?? ''
+  const sort = searchParams.get('sort') ?? 'recent'
+
+  function setParam(key, value) {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        if (!value) next.delete(key)
+        else next.set(key, value)
+        return next
+      },
+      { replace: true },
+    )
+  }
+
+  const setSearch = (value) => setParam('q', value)
+  const setPublisher = (value) => setParam('publisher', value)
+  const setCollection = (value) => setParam('collection', value)
+  const setType = (value) => setParam('type', value)
+  const setStatus = (value) => setParam('status', value)
+  const setSort = (value) => setParam('sort', value)
+
+  function setSelectedTags(nextTags) {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('tag')
+        for (const t of nextTags) next.append('tag', t)
+        return next
+      },
+      { replace: true },
+    )
+  }
+
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState(() => new Set())
   const [bulkWorking, setBulkWorking] = useState(false)
@@ -133,20 +170,42 @@ export default function Collection() {
   )
 
   function resetFilters() {
-    setSearch('')
-    setCollection('')
-    setSelectedTags([])
-    setPublisher('')
-    setSeries('')
-    setType('')
-    setStatus('')
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        for (const key of [
+          'q',
+          'tag',
+          'publisher',
+          'collection',
+          'series',
+          'type',
+          'status',
+        ]) {
+          next.delete(key)
+        }
+        return next
+      },
+      { replace: true },
+    )
   }
 
   function handleSeriesChange(next) {
-    setSeries(next)
     // Regarder une série précise ? Le tri par tome est presque toujours ce
     // qu'on veut, plutôt que l'ordre d'ajout par défaut.
-    if (next) setSort('tome')
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev)
+        if (next) {
+          params.set('series', next)
+          params.set('sort', 'tome')
+        } else {
+          params.delete('series')
+        }
+        return params
+      },
+      { replace: true },
+    )
   }
 
   function switchView(next) {
