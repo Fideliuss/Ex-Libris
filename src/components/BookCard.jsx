@@ -8,7 +8,13 @@ import { BOOK_TYPES } from '../lib/bookTypes'
 import WishlistRibbon from './WishlistRibbon'
 import ReadingBookmark from './ReadingBookmark'
 
-export default function BookCard({ book, selectable, selected, onToggleSelect }) {
+export default function BookCard({
+  book,
+  selectable,
+  selected,
+  onToggleSelect,
+  onStartSelection,
+}) {
   // Un manga a quasi toujours le même titre que sa série (juste le tome qui
   // change) : afficher les deux répète la même chose deux fois. On montre
   // la série comme titre principal et le tome bien en évidence à la place.
@@ -37,6 +43,19 @@ export default function BookCard({ book, selectable, selected, onToggleSelect })
         >
           ✓
         </span>
+      )}
+
+      {!selectable && onStartSelection && (
+        <button
+          type="button"
+          aria-label="Sélectionner ce livre"
+          onClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            onStartSelection(book.id)
+          }}
+          className="absolute top-2 left-2 z-10 w-6 h-6 rounded-full border-2 border-ink/30 bg-card/90 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 focus:opacity-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+        />
       )}
 
       <div className="relative aspect-[2/3] bg-paper flex items-center justify-center overflow-hidden">
