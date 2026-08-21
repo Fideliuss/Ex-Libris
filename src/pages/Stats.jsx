@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import {
   convertTagToCollection,
@@ -8,12 +7,14 @@ import {
   renameSeries,
 } from '../lib/books'
 import { describeError } from '../lib/errors'
+import { useGoBack } from '../lib/navigation'
 import HouseholdTabs from '../components/HouseholdTabs'
 import MonthlyFinishedChart from '../components/MonthlyFinishedChart'
 
 export default function Stats() {
   const { partner, isMine, books, loading, error, refresh, setView } =
     useHouseholdBooks()
+  const goBack = useGoBack('/')
   const [convertingTag, setConvertingTag] = useState(null)
   const [convertError, setConvertError] = useState(null)
 
@@ -128,12 +129,13 @@ export default function Stats() {
   return (
     <div className="min-h-svh p-6">
       <div className="max-w-3xl mx-auto">
-        <Link
-          to="/"
+        <button
+          type="button"
+          onClick={goBack}
           className="text-sm text-ink/60 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
         >
           ← Retour à la collection
-        </Link>
+        </button>
 
         <h1 className="font-serif text-2xl font-semibold mt-4 mb-6">
           Statistiques

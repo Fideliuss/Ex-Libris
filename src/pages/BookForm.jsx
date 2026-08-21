@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import {
   createBook,
   deleteBook,
@@ -14,6 +14,7 @@ import TagInput from '../components/TagInput'
 import { inputClass } from '../lib/ui'
 import { describeError } from '../lib/errors'
 import { BOOK_TYPES } from '../lib/bookTypes'
+import { useGoBack } from '../lib/navigation'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 
@@ -46,6 +47,7 @@ export default function BookForm() {
   const { id } = useParams()
   const isEdit = Boolean(id)
   const navigate = useNavigate()
+  const goBack = useGoBack(isEdit ? `/books/${id}` : '/')
 
   const [book, setBook] = useState(emptyBook)
   const [existingTags, setExistingTags] = useState([])
@@ -211,12 +213,13 @@ export default function BookForm() {
   return (
     <div className="min-h-svh p-6">
       <div className="max-w-xl mx-auto">
-        <Link
-          to={isEdit ? `/books/${id}` : '/'}
+        <button
+          type="button"
+          onClick={goBack}
           className="text-sm text-ink/60 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
         >
           {isEdit ? '← Retour à la fiche' : '← Retour à la collection'}
-        </Link>
+        </button>
 
         <h1 className="font-serif text-2xl font-semibold mt-4 mb-6">
           {isEdit ? 'Modifier le livre' : 'Ajouter un livre'}
