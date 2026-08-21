@@ -43,7 +43,7 @@ export default function Collection() {
     useHouseholdBooks()
 
   const [search, setSearch] = useState('')
-  const [tag, setTag] = useState('')
+  const [selectedTags, setSelectedTags] = useState([])
   const [publisher, setPublisher] = useState('')
   const [collection, setCollection] = useState('')
   const [series, setSeries] = useState('')
@@ -94,7 +94,11 @@ export default function Collection() {
         const haystack = `${book.title} ${book.author ?? ''}`.toLowerCase()
         if (!haystack.includes(query)) return false
       }
-      if (tag && !book.tags?.includes(tag)) return false
+      if (
+        selectedTags.length > 0 &&
+        !selectedTags.some((t) => book.tags?.includes(t))
+      )
+        return false
       if (publisher && book.publisher !== publisher) return false
       if (collection && book.collection !== collection) return false
       if (series && book.series !== series) return false
@@ -102,7 +106,7 @@ export default function Collection() {
       if (status && book.status !== status) return false
       return true
     })
-  }, [books, search, tag, publisher, collection, series, type, status])
+  }, [books, search, selectedTags, publisher, collection, series, type, status])
 
   const sortedBooks = useMemo(
     () => [...filteredBooks].sort(SORT_OPTIONS[sort].compare),
@@ -110,13 +114,19 @@ export default function Collection() {
   )
 
   const hasActiveFilters = Boolean(
-    search || tag || publisher || collection || series || type || status,
+    search ||
+      selectedTags.length > 0 ||
+      publisher ||
+      collection ||
+      series ||
+      type ||
+      status,
   )
 
   function resetFilters() {
     setSearch('')
     setCollection('')
-    setTag('')
+    setSelectedTags([])
     setPublisher('')
     setSeries('')
     setType('')
@@ -209,6 +219,21 @@ export default function Collection() {
     )
   }
 
+  function handleBulkRemoveTag(tagToRemove) {
+    if (!tagToRemove) return Promise.resolve()
+    return runBulkAction(() =>
+      bulkUpdateBooks(
+        [...selectedIds].map((id) => {
+          const book = books.find((b) => b.id === id)
+          return {
+            id,
+            patch: { tags: (book?.tags ?? []).filter((t) => t !== tagToRemove) },
+          }
+        }),
+      ),
+    )
+  }
+
   return (
     <div className={`min-h-svh ${selectionMode ? 'pb-40' : 'pb-24'}`}>
       <header className="flex items-start justify-between max-w-5xl mx-auto p-6 gap-4">
@@ -259,8 +284,8 @@ export default function Collection() {
           <CollectionFilters
             search={search}
             onSearchChange={setSearch}
-            tag={tag}
-            onTagChange={setTag}
+            selectedTags={selectedTags}
+            onSelectedTagsChange={setSelectedTags}
             tags={tags}
             publisher={publisher}
             onPublisherChange={setPublisher}
@@ -402,10 +427,12 @@ export default function Collection() {
           count={selectedIds.size}
           working={bulkWorking}
           error={bulkError}
+          tags={tags}
           onDelete={handleBulkDelete}
           onChangeStatus={handleBulkStatus}
           onChangeType={handleBulkType}
           onAddTag={handleBulkAddTag}
+          onRemoveTag={handleBulkRemoveTag}
           onCancel={exitSelectionMode}
         />
       ) : (

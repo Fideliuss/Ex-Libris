@@ -1,4 +1,5 @@
 import { BOOK_TYPES } from '../lib/bookTypes'
+import TagMultiSelect from './TagMultiSelect'
 
 const selectClass =
   'rounded-sm border border-ink/20 bg-white px-3 py-2 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library'
@@ -6,8 +7,8 @@ const selectClass =
 export default function CollectionFilters({
   search,
   onSearchChange,
-  tag,
-  onTagChange,
+  selectedTags,
+  onSelectedTagsChange,
   tags,
   publisher,
   onPublisherChange,
@@ -36,21 +37,14 @@ export default function CollectionFilters({
         className="w-full rounded-sm border border-ink/20 bg-white px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
       />
 
-      <div className="flex flex-wrap gap-2 items-center">
-        <select
-          value={tag}
-          onChange={(e) => onTagChange(e.target.value)}
-          aria-label="Filtrer par tag"
-          className={selectClass}
-        >
-          <option value="">Tous les tags</option>
-          {tags.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
+      <TagMultiSelect
+        tags={tags}
+        selected={selectedTags}
+        onChange={onSelectedTagsChange}
+        label="Tags :"
+      />
 
+      <div className="flex flex-wrap gap-2 items-center">
         <select
           value={publisher}
           onChange={(e) => onPublisherChange(e.target.value)}
