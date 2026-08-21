@@ -18,6 +18,9 @@ create table books (
   description text,
   series text,
   series_index numeric,
+  type text not null default 'book'
+    check (type in ('book', 'bd', 'comics', 'manga')),
+  universe text,
   tags text[] default '{}',
   status text not null default 'to-read'
     check (status in ('wishlist', 'to-read', 'reading', 'read')),

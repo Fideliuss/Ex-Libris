@@ -1,7 +1,13 @@
 import { Link } from 'react-router-dom'
 import { STATUS_LABELS } from '../lib/statusLabels'
+import { BOOK_TYPES } from '../lib/bookTypes'
 
 export default function BookCard({ book, selectable, selected, onToggleSelect }) {
+  // Un manga a quasi toujours le même titre que sa série (juste le tome qui
+  // change) : afficher les deux répète la même chose deux fois. On montre
+  // la série comme titre principal et le tome bien en évidence à la place.
+  const isMangaVolume = book.type === 'manga' && book.series
+
   const content = (
     <>
       {book.status === 'read' && (
@@ -23,7 +29,7 @@ export default function BookCard({ book, selectable, selected, onToggleSelect })
         </span>
       )}
 
-      <div className="aspect-[2/3] bg-paper flex items-center justify-center overflow-hidden">
+      <div className="relative aspect-[2/3] bg-paper flex items-center justify-center overflow-hidden">
         {book.cover_url ? (
           <img
             src={book.cover_url}
@@ -35,17 +41,37 @@ export default function BookCard({ book, selectable, selected, onToggleSelect })
             {book.title}
           </span>
         )}
+        {book.type !== 'book' && (
+          <span className="absolute bottom-2 left-2 bg-library text-white font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-sm">
+            {BOOK_TYPES[book.type]}
+          </span>
+        )}
       </div>
 
       <div className="p-3">
-        <p className="font-serif text-base leading-snug line-clamp-2">
-          {book.title}
-        </p>
-        {book.series && (
-          <p className="text-xs text-brass mt-0.5 truncate">
-            {book.series}
-            {book.series_index != null && ` · Tome ${book.series_index}`}
-          </p>
+        {isMangaVolume ? (
+          <>
+            <p className="font-serif text-base leading-snug line-clamp-2">
+              {book.series}
+            </p>
+            {book.series_index != null && (
+              <p className="font-mono text-sm text-brass font-semibold mt-0.5">
+                Tome {book.series_index}
+              </p>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="font-serif text-base leading-snug line-clamp-2">
+              {book.title}
+            </p>
+            {book.series && (
+              <p className="text-xs text-brass mt-0.5 truncate">
+                {book.series}
+                {book.series_index != null && ` · Tome ${book.series_index}`}
+              </p>
+            )}
+          </>
         )}
         {book.author && (
           <p className="text-sm text-ink/60 mt-0.5 truncate">{book.author}</p>

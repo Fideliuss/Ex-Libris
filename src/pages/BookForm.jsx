@@ -6,6 +6,7 @@ import { uploadCover } from '../lib/storage'
 import TagInput from '../components/TagInput'
 import { inputClass } from '../lib/ui'
 import { describeError } from '../lib/errors'
+import { BOOK_TYPES } from '../lib/bookTypes'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 
@@ -18,6 +19,8 @@ const emptyBook = {
   description: '',
   series: '',
   series_index: '',
+  type: 'book',
+  universe: '',
   tags: [],
   status: 'to-read',
   date_started: '',
@@ -157,6 +160,7 @@ export default function BookForm() {
       purchase_date: book.purchase_date || null,
       series: book.series?.trim() || null,
       series_index: book.series_index === '' ? null : Number(book.series_index),
+      universe: book.type === 'comics' ? book.universe?.trim() || null : null,
     }
     try {
       if (isEdit) {
@@ -219,6 +223,20 @@ export default function BookForm() {
             />
           </Field>
 
+          <Field label="Type">
+            <select
+              value={book.type}
+              onChange={(e) => set('type', e.target.value)}
+              className={inputClass}
+            >
+              {Object.entries(BOOK_TYPES).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </Field>
+
           <Field label="Auteur">
             <input
               value={book.author ?? ''}
@@ -256,6 +274,17 @@ export default function BookForm() {
               />
             </Field>
           </div>
+
+          {book.type === 'comics' && (
+            <Field label="Univers / Équipe">
+              <input
+                value={book.universe ?? ''}
+                onChange={(e) => set('universe', e.target.value)}
+                placeholder="Avengers, X-Men…"
+                className={inputClass}
+              />
+            </Field>
+          )}
 
           <Field label="Résumé">
             <textarea
