@@ -92,6 +92,7 @@ export default function BookCard({ book, selectable, selected, onToggleSelect })
         {book.publisher && (
           <p className="text-xs text-ink/40 mt-0.5 truncate">
             {book.publisher}
+            {book.collection && ` · ${book.collection}`}
           </p>
         )}
 

@@ -1,6 +1,13 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { createBook, deleteBook, getBook, listAllTags, updateBook } from '../lib/books'
+import {
+  createBook,
+  deleteBook,
+  getBook,
+  listAllCollections,
+  listAllTags,
+  updateBook,
+} from '../lib/books'
 import { lookupIsbn } from '../lib/isbnLookup'
 import { uploadCover } from '../lib/storage'
 import TagInput from '../components/TagInput'
@@ -16,6 +23,7 @@ const emptyBook = {
   translator: '',
   illustrator: '',
   publisher: '',
+  collection: '',
   isbn: '',
   cover_url: '',
   description: '',
@@ -41,6 +49,7 @@ export default function BookForm() {
 
   const [book, setBook] = useState(emptyBook)
   const [existingTags, setExistingTags] = useState([])
+  const [existingCollections, setExistingCollections] = useState([])
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -53,6 +62,7 @@ export default function BookForm() {
 
   useEffect(() => {
     listAllTags().then(setExistingTags).catch(() => {})
+    listAllCollections().then(setExistingCollections).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -270,6 +280,21 @@ export default function BookForm() {
               onChange={(e) => set('publisher', e.target.value)}
               className={inputClass}
             />
+          </Field>
+
+          <Field label="Collection">
+            <input
+              value={book.collection ?? ''}
+              onChange={(e) => set('collection', e.target.value)}
+              placeholder="Folio SF, Champs…"
+              list="collection-suggestions"
+              className={inputClass}
+            />
+            <datalist id="collection-suggestions">
+              {existingCollections.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
           </Field>
 
           <div className="grid grid-cols-3 gap-4">

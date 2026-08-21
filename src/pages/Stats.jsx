@@ -1,11 +1,29 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
+import { convertTagToCollection } from '../lib/books'
+import { describeError } from '../lib/errors'
 import HouseholdTabs from '../components/HouseholdTabs'
 import MonthlyFinishedChart from '../components/MonthlyFinishedChart'
 
 export default function Stats() {
-  const { partner, isMine, books, loading, error, setView } = useHouseholdBooks()
+  const { partner, isMine, books, loading, error, refresh, setView } =
+    useHouseholdBooks()
+  const [convertingTag, setConvertingTag] = useState(null)
+  const [convertError, setConvertError] = useState(null)
+
+  async function handleConvertTag(tag) {
+    setConvertingTag(tag)
+    setConvertError(null)
+    try {
+      await convertTagToCollection(tag)
+      await refresh()
+    } catch (err) {
+      setConvertError(describeError(err))
+    } finally {
+      setConvertingTag(null)
+    }
+  }
 
   const readCount = books.filter((b) => b.status === 'read').length
   const readingCount = books.filter((b) => b.status === 'reading').length
@@ -153,6 +171,18 @@ export default function Stats() {
             <div className="grid sm:grid-cols-3 gap-6">
               <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
                 <h2 className="font-serif text-lg mb-4">Par tag</h2>
+                {isMine && (
+                  <p className="text-xs text-ink/50 mb-3">
+                    Un tag qui est en fait un nom de collection éditeur (ex:
+                    "folio sf") ? Clique "→ Collection" pour le déplacer sur
+                    tous les livres concernés.
+                  </p>
+                )}
+                {convertError && (
+                  <p role="alert" className="text-sm text-stamp mb-3">
+                    {convertError}
+                  </p>
+                )}
                 {tagStats.length === 0 ? (
                   <p className="text-sm text-ink/50">Aucun tag pour l'instant.</p>
                 ) : (
@@ -168,6 +198,18 @@ export default function Stats() {
                           </span>
                         </div>
                         <CountBar count={entry.count} max={maxTagCount} />
+                        {isMine && (
+                          <button
+                            type="button"
+                            onClick={() => handleConvertTag(entry.tag)}
+                            disabled={convertingTag === entry.tag}
+                            className="mt-1 text-xs text-library underline underline-offset-2 hover:text-library/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm disabled:opacity-60"
+                          >
+                            {convertingTag === entry.tag
+                              ? 'Déplacement…'
+                              : '→ Collection'}
+                          </button>
+                        )}
                       </li>
                     ))}
                   </ul>
