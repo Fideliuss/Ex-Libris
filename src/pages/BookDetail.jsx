@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getBook } from '../lib/books'
+import { getBook, updateBook } from '../lib/books'
 import { useAuth } from '../context/AuthContext'
 import { getMemberLabel } from '../lib/household'
 import {
@@ -23,6 +23,21 @@ export default function BookDetail() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [coverExpanded, setCoverExpanded] = useState(false)
+  const [statusSaving, setStatusSaving] = useState(false)
+  const [statusError, setStatusError] = useState(null)
+
+  async function handleStatusChange(newStatus) {
+    setStatusSaving(true)
+    setStatusError(null)
+    try {
+      const updated = await updateBook(id, { status: newStatus })
+      setBook(updated)
+    } catch (err) {
+      setStatusError(describeError(err))
+    } finally {
+      setStatusSaving(false)
+    }
+  }
 
   useEffect(() => {
     if (!coverExpanded) return
@@ -178,11 +193,26 @@ export default function BookDetail() {
               )}
 
               <div className="flex flex-wrap items-center gap-2 mt-3">
-                <span
-                  className={`font-mono text-xs uppercase border border-ink/20 rounded-full px-2 py-0.5 ${STATUS_BADGE_CLASS[book.status] ?? 'text-ink/50'}`}
-                >
-                  {STATUS_LABELS[book.status] ?? book.status}
-                </span>
+                {book.user_id === user?.id ? (
+                  <select
+                    value={book.status}
+                    onChange={(e) => handleStatusChange(e.target.value)}
+                    disabled={statusSaving}
+                    aria-label="Changer le statut"
+                    className={`font-mono text-xs uppercase border border-ink/20 rounded-full px-2 py-0.5 bg-white cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60 ${STATUS_BADGE_CLASS[book.status] ?? 'text-ink/50'}`}
+                  >
+                    <option value="wishlist">Wishlist</option>
+                    <option value="to-read">À lire</option>
+                    <option value="reading">En cours</option>
+                    <option value="read">Lu</option>
+                  </select>
+                ) : (
+                  <span
+                    className={`font-mono text-xs uppercase border border-ink/20 rounded-full px-2 py-0.5 ${STATUS_BADGE_CLASS[book.status] ?? 'text-ink/50'}`}
+                  >
+                    {STATUS_LABELS[book.status] ?? book.status}
+                  </span>
+                )}
                 {book.type !== 'book' && (
                   <span className="font-mono text-xs uppercase text-ink/50 border border-ink/20 rounded-full px-2 py-0.5">
                     {BOOK_TYPES[book.type]}
@@ -195,6 +225,12 @@ export default function BookDetail() {
                   </span>
                 )}
               </div>
+
+              {statusError && (
+                <p role="alert" className="text-xs text-stamp mt-2">
+                  {statusError}
+                </p>
+              )}
 
               {book.tags?.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-3">
