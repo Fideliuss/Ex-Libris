@@ -219,15 +219,17 @@ export default function Collection() {
     )
   }
 
-  function handleBulkRemoveTag(tagToRemove) {
-    if (!tagToRemove) return Promise.resolve()
+  function handleBulkRemoveTag(tagsToRemove) {
+    if (!tagsToRemove?.length) return Promise.resolve()
     return runBulkAction(() =>
       bulkUpdateBooks(
         [...selectedIds].map((id) => {
           const book = books.find((b) => b.id === id)
           return {
             id,
-            patch: { tags: (book?.tags ?? []).filter((t) => t !== tagToRemove) },
+            patch: {
+              tags: (book?.tags ?? []).filter((t) => !tagsToRemove.includes(t)),
+            },
           }
         }),
       ),
