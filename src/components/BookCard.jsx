@@ -23,7 +23,7 @@ export default function BookCard({ book, selectable, selected, onToggleSelect })
       {book.status === 'wishlist' && (
         <div
           aria-hidden="true"
-          className="absolute -left-9 top-3 -rotate-45 w-32 text-center bg-wishlist text-white font-mono text-[10px] font-bold uppercase tracking-widest py-0.5 shadow pointer-events-none"
+          className="absolute -left-9 top-3 -rotate-45 w-32 text-center bg-wishlist text-white font-mono text-[10px] font-bold uppercase tracking-widest py-0.5 shadow pointer-events-none z-10"
         >
           Wishlist
         </div>
