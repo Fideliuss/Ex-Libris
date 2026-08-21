@@ -21,3 +21,32 @@
 body {
   @apply bg-paper text-ink font-sans antialiased;
 }
+
+/* Transition "en volet" vers une fiche livre (voir Link viewTransition dans
+   BookCard) : la fiche glisse depuis la droite comme un volet qui se ferme
+   par-dessus la collection, plutôt que le fondu par défaut du navigateur. */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.22s;
+    animation-timing-function: ease-in-out;
+  }
+  ::view-transition-old(root) {
+    animation-name: volet-out;
+  }
+  ::view-transition-new(root) {
+    animation-name: volet-in;
+  }
+}
+
+@keyframes volet-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes volet-out {
+  to {
+    transform: translateX(-15%);
+  }
+}
