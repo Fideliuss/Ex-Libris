@@ -19,6 +19,9 @@ export default function CollectionFilters({
   series,
   onSeriesChange,
   seriesList,
+  universe,
+  onUniverseChange,
+  universeList,
   type,
   onTypeChange,
   status,
@@ -86,6 +89,22 @@ export default function CollectionFilters({
             </option>
           ))}
         </select>
+
+        {universeList.length > 0 && (
+          <select
+            value={universe}
+            onChange={(e) => onUniverseChange(e.target.value)}
+            aria-label="Filtrer par univers"
+            className={selectClass}
+          >
+            <option value="">Tous les univers</option>
+            {universeList.map((u) => (
+              <option key={u} value={u}>
+                {u}
+              </option>
+            ))}
+          </select>
+        )}
 
         <select
           value={type}
