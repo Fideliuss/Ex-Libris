@@ -1,3 +1,5 @@
+import { BOOK_TYPES } from '../lib/bookTypes'
+
 const selectClass =
   'rounded-sm border border-ink/20 bg-white px-3 py-2 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library'
 
@@ -13,6 +15,8 @@ export default function CollectionFilters({
   series,
   onSeriesChange,
   seriesList,
+  type,
+  onTypeChange,
   status,
   onStatusChange,
   hasActiveFilters,
@@ -68,6 +72,20 @@ export default function CollectionFilters({
           {seriesList.map((s) => (
             <option key={s} value={s}>
               {s}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={type}
+          onChange={(e) => onTypeChange(e.target.value)}
+          aria-label="Filtrer par type"
+          className={selectClass}
+        >
+          <option value="">Tous les types</option>
+          {Object.entries(BOOK_TYPES).map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
             </option>
           ))}
         </select>

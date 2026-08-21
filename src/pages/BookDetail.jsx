@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import { getMemberLabel } from '../lib/household'
 import { STATUS_LABELS } from '../lib/statusLabels'
 import { describeError } from '../lib/errors'
+import { BOOK_TYPES } from '../lib/bookTypes'
 
 export default function BookDetail() {
   const { id } = useParams()
@@ -123,13 +124,33 @@ export default function BookDetail() {
             </div>
 
             <div className="flex-1 min-w-0">
-              <h1 className="font-serif text-2xl font-semibold">
-                {book.title}
-              </h1>
-              {book.series && (
+              {book.type === 'manga' && book.series ? (
+                <>
+                  <h1 className="font-serif text-2xl font-semibold">
+                    {book.series}
+                  </h1>
+                  {book.series_index != null && (
+                    <p className="font-mono text-base text-brass font-semibold mt-0.5">
+                      Tome {book.series_index}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <h1 className="font-serif text-2xl font-semibold">
+                    {book.title}
+                  </h1>
+                  {book.series && (
+                    <p className="text-sm text-brass mt-0.5">
+                      {book.series}
+                      {book.series_index != null && ` · Tome ${book.series_index}`}
+                    </p>
+                  )}
+                </>
+              )}
+              {book.universe && (
                 <p className="text-sm text-brass mt-0.5">
-                  {book.series}
-                  {book.series_index != null && ` · Tome ${book.series_index}`}
+                  Univers : {book.universe}
                 </p>
               )}
               {book.author && (
@@ -143,6 +164,11 @@ export default function BookDetail() {
                 <span className="font-mono text-xs uppercase text-ink/50 border border-ink/20 rounded-full px-2 py-0.5">
                   {STATUS_LABELS[book.status] ?? book.status}
                 </span>
+                {book.type !== 'book' && (
+                  <span className="font-mono text-xs uppercase text-ink/50 border border-ink/20 rounded-full px-2 py-0.5">
+                    {BOOK_TYPES[book.type]}
+                  </span>
+                )}
                 {book.rating > 0 && (
                   <span className="text-brass text-sm" aria-hidden="true">
                     {'★'.repeat(book.rating)}

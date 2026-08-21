@@ -42,6 +42,7 @@ export default function Collection() {
   const [tag, setTag] = useState('')
   const [publisher, setPublisher] = useState('')
   const [series, setSeries] = useState('')
+  const [type, setType] = useState('')
   const [status, setStatus] = useState('')
   const [sort, setSort] = useState('recent')
   const [selectionMode, setSelectionMode] = useState(false)
@@ -83,23 +84,27 @@ export default function Collection() {
       if (tag && !book.tags?.includes(tag)) return false
       if (publisher && book.publisher !== publisher) return false
       if (series && book.series !== series) return false
+      if (type && book.type !== type) return false
       if (status && book.status !== status) return false
       return true
     })
-  }, [books, search, tag, publisher, series, status])
+  }, [books, search, tag, publisher, series, type, status])
 
   const sortedBooks = useMemo(
     () => [...filteredBooks].sort(SORT_OPTIONS[sort].compare),
     [filteredBooks, sort],
   )
 
-  const hasActiveFilters = Boolean(search || tag || publisher || series || status)
+  const hasActiveFilters = Boolean(
+    search || tag || publisher || series || type || status,
+  )
 
   function resetFilters() {
     setSearch('')
     setTag('')
     setPublisher('')
     setSeries('')
+    setType('')
     setStatus('')
   }
 
@@ -154,6 +159,14 @@ export default function Collection() {
     return runBulkAction(() =>
       bulkUpdateBooks(
         [...selectedIds].map((id) => ({ id, patch: { status: newStatus } })),
+      ),
+    )
+  }
+
+  function handleBulkType(newType) {
+    return runBulkAction(() =>
+      bulkUpdateBooks(
+        [...selectedIds].map((id) => ({ id, patch: { type: newType } })),
       ),
     )
   }
@@ -233,6 +246,8 @@ export default function Collection() {
             series={series}
             onSeriesChange={setSeries}
             seriesList={seriesList}
+            type={type}
+            onTypeChange={setType}
             status={status}
             onStatusChange={setStatus}
             hasActiveFilters={hasActiveFilters}
@@ -364,6 +379,7 @@ export default function Collection() {
           error={bulkError}
           onDelete={handleBulkDelete}
           onChangeStatus={handleBulkStatus}
+          onChangeType={handleBulkType}
           onAddTag={handleBulkAddTag}
           onCancel={exitSelectionMode}
         />

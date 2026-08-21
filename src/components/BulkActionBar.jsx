@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { BOOK_TYPES } from '../lib/bookTypes'
 
 export default function BulkActionBar({
   count,
@@ -6,11 +7,13 @@ export default function BulkActionBar({
   error,
   onDelete,
   onChangeStatus,
+  onChangeType,
   onAddTag,
   onCancel,
 }) {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [statusToApply, setStatusToApply] = useState('to-read')
+  const [typeToApply, setTypeToApply] = useState('book')
   const [tagDraft, setTagDraft] = useState('')
 
   const disabled = working || count === 0
@@ -67,6 +70,27 @@ export default function BulkActionBar({
               className="text-sm px-3 py-1.5 rounded-sm border border-library text-library hover:bg-library hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60"
             >
               Appliquer le statut
+            </button>
+
+            <select
+              value={typeToApply}
+              onChange={(e) => setTypeToApply(e.target.value)}
+              aria-label="Nouveau type"
+              className="rounded-sm border border-ink/20 bg-white px-2 py-1.5 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+            >
+              {Object.entries(BOOK_TYPES).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={() => onChangeType(typeToApply)}
+              disabled={disabled}
+              className="text-sm px-3 py-1.5 rounded-sm border border-library text-library hover:bg-library hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60"
+            >
+              Appliquer le type
             </button>
 
             <input
