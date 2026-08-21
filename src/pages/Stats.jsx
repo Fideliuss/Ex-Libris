@@ -66,6 +66,17 @@ export default function Stats() {
       .sort((a, b) => b.count - a.count)
   }, [books])
 
+  const collectionStats = useMemo(() => {
+    const map = new Map()
+    for (const book of books) {
+      if (!book.collection) continue
+      map.set(book.collection, (map.get(book.collection) ?? 0) + 1)
+    }
+    return [...map.entries()]
+      .map(([collection, count]) => ({ collection, count }))
+      .sort((a, b) => b.count - a.count)
+  }, [books])
+
   const seriesStats = useMemo(() => {
     const map = new Map()
     for (const book of books) {
@@ -106,6 +117,7 @@ export default function Stats() {
 
   const maxTagCount = tagStats[0]?.count ?? 0
   const maxPublisherCount = publisherStats[0]?.count ?? 0
+  const maxCollectionCount = collectionStats[0]?.count ?? 0
   const maxSeriesCount = seriesStats[0]?.count ?? 0
 
   return (
@@ -168,7 +180,7 @@ export default function Stats() {
               <MonthlyFinishedChart months={monthlyFinished} />
             </section>
 
-            <div className="grid sm:grid-cols-3 gap-6">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
               <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
                 <h2 className="font-serif text-lg mb-4">Par tag</h2>
                 {isMine && (
@@ -235,6 +247,31 @@ export default function Stats() {
                           </span>
                         </div>
                         <CountBar count={entry.count} max={maxPublisherCount} />
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+
+              <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+                <h2 className="font-serif text-lg mb-4">Par collection</h2>
+                {collectionStats.length === 0 ? (
+                  <p className="text-sm text-ink/50">
+                    Aucune collection renseignée pour l'instant.
+                  </p>
+                ) : (
+                  <ul className="space-y-3">
+                    {collectionStats.map((entry) => (
+                      <li key={entry.collection}>
+                        <div className="flex items-baseline justify-between gap-2 mb-1">
+                          <span className="text-sm truncate">
+                            {entry.collection}
+                          </span>
+                          <span className="font-mono text-xs text-ink/60 shrink-0">
+                            {entry.count}
+                          </span>
+                        </div>
+                        <CountBar count={entry.count} max={maxCollectionCount} />
                       </li>
                     ))}
                   </ul>
