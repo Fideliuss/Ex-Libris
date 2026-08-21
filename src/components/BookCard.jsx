@@ -1,5 +1,9 @@
 import { Link } from 'react-router-dom'
-import { STATUS_LABELS } from '../lib/statusLabels'
+import {
+  STATUS_BADGE_CLASS,
+  STATUS_BORDER_CLASS,
+  STATUS_LABELS,
+} from '../lib/statusLabels'
 import { BOOK_TYPES } from '../lib/bookTypes'
 
 export default function BookCard({ book, selectable, selected, onToggleSelect }) {
@@ -11,9 +15,18 @@ export default function BookCard({ book, selectable, selected, onToggleSelect })
   const content = (
     <>
       {book.status === 'read' && (
-        <span className="absolute top-3 right-3 -rotate-6 border-2 border-stamp text-stamp font-mono text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm bg-card/90 pointer-events-none">
+        <span className="absolute top-3 right-3 -rotate-6 border-2 border-library text-library font-mono text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm bg-card/90 pointer-events-none z-10">
           Lu
         </span>
+      )}
+
+      {book.status === 'wishlist' && (
+        <div
+          aria-hidden="true"
+          className="absolute -left-9 top-3 -rotate-45 w-32 text-center bg-wishlist text-white font-mono text-[10px] font-bold uppercase tracking-widest py-0.5 shadow pointer-events-none"
+        >
+          Souhaité
+        </div>
       )}
 
       {selectable && (
@@ -96,8 +109,10 @@ export default function BookCard({ book, selectable, selected, onToggleSelect })
         )}
 
         <div className="flex items-center justify-between mt-2 min-h-[1.25rem]">
-          {book.status !== 'read' && (
-            <span className="font-mono text-xs text-ink/50 uppercase">
+          {book.status !== 'read' && book.status !== 'wishlist' && (
+            <span
+              className={`font-mono text-xs uppercase ${STATUS_BADGE_CLASS[book.status]}`}
+            >
               {STATUS_LABELS[book.status]}
             </span>
           )}
@@ -115,6 +130,8 @@ export default function BookCard({ book, selectable, selected, onToggleSelect })
   const baseClass =
     'group relative block w-full text-left bg-card border-t-4 border-dashed rounded-sm shadow-sm overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-library'
 
+  const statusBorderClass = STATUS_BORDER_CLASS[book.status]
+
   if (selectable) {
     return (
       <button
@@ -122,7 +139,7 @@ export default function BookCard({ book, selectable, selected, onToggleSelect })
         onClick={() => onToggleSelect(book.id)}
         aria-pressed={selected}
         className={`${baseClass} hover:shadow-md transition-shadow ${
-          selected ? 'border-library' : 'border-brass'
+          selected ? 'border-library' : statusBorderClass
         }`}
       >
         {content}
@@ -133,7 +150,7 @@ export default function BookCard({ book, selectable, selected, onToggleSelect })
   return (
     <Link
       to={`/books/${book.id}`}
-      className={`${baseClass} border-brass hover:shadow-md transition-shadow`}
+      className={`${baseClass} ${statusBorderClass} hover:shadow-md transition-shadow`}
     >
       {content}
     </Link>
