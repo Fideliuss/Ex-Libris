@@ -144,6 +144,10 @@ async function renameFieldValue(field, oldValue, newValue) {
   if (error) throw error
 }
 
+export function renamePublisher(oldName, newName) {
+  return renameFieldValue('publisher', oldName, newName)
+}
+
 export function renameCollection(oldName, newName) {
   return renameFieldValue('collection', oldName, newName)
 }

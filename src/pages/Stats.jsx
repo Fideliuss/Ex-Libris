@@ -4,6 +4,7 @@ import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import {
   convertTagToCollection,
   renameCollection,
+  renamePublisher,
   renameSeries,
 } from '../lib/books'
 import { describeError } from '../lib/errors'
@@ -241,17 +242,16 @@ export default function Stats() {
                 ) : (
                   <ul className="space-y-3">
                     {publisherStats.map((entry) => (
-                      <li key={entry.publisher}>
-                        <div className="flex items-baseline justify-between gap-2 mb-1">
-                          <span className="text-sm truncate">
-                            {entry.publisher}
-                          </span>
-                          <span className="font-mono text-xs text-ink/60 shrink-0">
-                            {entry.count}
-                          </span>
-                        </div>
-                        <CountBar count={entry.count} max={maxPublisherCount} />
-                      </li>
+                      <RenameableStatRow
+                        key={entry.publisher}
+                        name={entry.publisher}
+                        count={entry.count}
+                        max={maxPublisherCount}
+                        existingNames={publisherStats.map((e) => e.publisher)}
+                        onRename={renamePublisher}
+                        isMine={isMine}
+                        onRenamed={refresh}
+                      />
                     ))}
                   </ul>
                 )}
