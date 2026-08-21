@@ -6,6 +6,7 @@ import {
 } from '../lib/statusLabels'
 import { BOOK_TYPES } from '../lib/bookTypes'
 import WishlistRibbon from './WishlistRibbon'
+import ReadingBookmark from './ReadingBookmark'
 
 export default function BookCard({ book, selectable, selected, onToggleSelect }) {
   // Un manga a quasi toujours le même titre que sa série (juste le tome qui
@@ -22,6 +23,8 @@ export default function BookCard({ book, selectable, selected, onToggleSelect })
       )}
 
       {book.status === 'wishlist' && <WishlistRibbon />}
+
+      {book.status === 'reading' && <ReadingBookmark />}
 
       {selectable && (
         <span

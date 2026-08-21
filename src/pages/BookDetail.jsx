@@ -11,6 +11,7 @@ import {
 import { describeError } from '../lib/errors'
 import { BOOK_TYPES } from '../lib/bookTypes'
 import WishlistRibbon from '../components/WishlistRibbon'
+import ReadingBookmark from '../components/ReadingBookmark'
 
 export default function BookDetail() {
   const { id } = useParams()
@@ -109,6 +110,7 @@ export default function BookDetail() {
                 </span>
               )}
               {book.status === 'wishlist' && <WishlistRibbon />}
+              {book.status === 'reading' && <ReadingBookmark />}
               {book.cover_url ? (
                 <button
                   type="button"
