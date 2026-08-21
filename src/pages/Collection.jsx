@@ -52,6 +52,7 @@ export default function Collection() {
   const publisher = searchParams.get('publisher') ?? ''
   const collection = searchParams.get('collection') ?? ''
   const series = searchParams.get('series') ?? ''
+  const universe = searchParams.get('universe') ?? ''
   const type = searchParams.get('type') ?? ''
   const status = searchParams.get('status') ?? ''
   const sort = searchParams.get('sort') ?? 'recent'
@@ -71,6 +72,7 @@ export default function Collection() {
   const setSearch = (value) => setParam('q', value)
   const setPublisher = (value) => setParam('publisher', value)
   const setCollection = (value) => setParam('collection', value)
+  const setUniverse = (value) => setParam('universe', value)
   const setType = (value) => setParam('type', value)
   const setStatus = (value) => setParam('status', value)
   const setSort = (value) => setParam('sort', value)
@@ -133,6 +135,14 @@ export default function Collection() {
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
   }, [books])
 
+  const universeList = useMemo(() => {
+    const set = new Set()
+    for (const book of books) {
+      if (book.universe) set.add(book.universe)
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [books])
+
   const filteredBooks = useMemo(() => {
     const query = search.trim().toLowerCase()
     return books.filter((book) => {
@@ -148,11 +158,22 @@ export default function Collection() {
       if (publisher && book.publisher !== publisher) return false
       if (collection && book.collection !== collection) return false
       if (series && book.series !== series) return false
+      if (universe && book.universe !== universe) return false
       if (type && book.type !== type) return false
       if (status && book.status !== status) return false
       return true
     })
-  }, [books, search, selectedTags, publisher, collection, series, type, status])
+  }, [
+    books,
+    search,
+    selectedTags,
+    publisher,
+    collection,
+    series,
+    universe,
+    type,
+    status,
+  ])
 
   const sortedBooks = useMemo(
     () => [...filteredBooks].sort(SORT_OPTIONS[sort].compare),
@@ -165,6 +186,7 @@ export default function Collection() {
       publisher ||
       collection ||
       series ||
+      universe ||
       type ||
       status,
   )
@@ -179,6 +201,7 @@ export default function Collection() {
           'publisher',
           'collection',
           'series',
+          'universe',
           'type',
           'status',
         ]) {
@@ -366,6 +389,9 @@ export default function Collection() {
             series={series}
             onSeriesChange={handleSeriesChange}
             seriesList={seriesList}
+            universe={universe}
+            onUniverseChange={setUniverse}
+            universeList={universeList}
             type={type}
             onTypeChange={setType}
             status={status}
