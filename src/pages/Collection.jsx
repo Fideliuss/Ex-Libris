@@ -31,6 +31,10 @@ const SORT_OPTIONS = {
     compare: (a, b) =>
       new Date(b.date_finished ?? 0) - new Date(a.date_finished ?? 0),
   },
+  tome: {
+    label: 'Tome (croissant)',
+    compare: (a, b) => (a.series_index ?? 0) - (b.series_index ?? 0),
+  },
 }
 
 export default function Collection() {
@@ -106,6 +110,13 @@ export default function Collection() {
     setSeries('')
     setType('')
     setStatus('')
+  }
+
+  function handleSeriesChange(next) {
+    setSeries(next)
+    // Regarder une série précise ? Le tri par tome est presque toujours ce
+    // qu'on veut, plutôt que l'ordre d'ajout par défaut.
+    if (next) setSort('tome')
   }
 
   function switchView(next) {
@@ -244,7 +255,7 @@ export default function Collection() {
             onPublisherChange={setPublisher}
             publishers={publishers}
             series={series}
-            onSeriesChange={setSeries}
+            onSeriesChange={handleSeriesChange}
             seriesList={seriesList}
             type={type}
             onTypeChange={setType}
