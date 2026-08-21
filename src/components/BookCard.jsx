@@ -5,6 +5,7 @@ import {
   STATUS_LABELS,
 } from '../lib/statusLabels'
 import { BOOK_TYPES } from '../lib/bookTypes'
+import WishlistRibbon from './WishlistRibbon'
 
 export default function BookCard({ book, selectable, selected, onToggleSelect }) {
   // Un manga a quasi toujours le même titre que sa série (juste le tome qui
@@ -20,14 +21,7 @@ export default function BookCard({ book, selectable, selected, onToggleSelect })
         </span>
       )}
 
-      {book.status === 'wishlist' && (
-        <div
-          aria-hidden="true"
-          className="absolute -left-9 top-3 -rotate-45 w-32 text-center bg-wishlist text-white font-mono text-[10px] font-bold uppercase tracking-widest py-0.5 shadow pointer-events-none z-10"
-        >
-          Wishlist
-        </div>
-      )}
+      {book.status === 'wishlist' && <WishlistRibbon />}
 
       {selectable && (
         <span
