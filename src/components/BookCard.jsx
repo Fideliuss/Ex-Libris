@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   STATUS_BADGE_CLASS,
   STATUS_BORDER_CLASS,
@@ -7,6 +7,7 @@ import {
 import { BOOK_TYPES } from '../lib/bookTypes'
 import WishlistRibbon from './WishlistRibbon'
 import ReadingBookmark from './ReadingBookmark'
+import { navigateWithViewTransition } from '../lib/navigation'
 
 export default function BookCard({
   book,
@@ -15,6 +16,16 @@ export default function BookCard({
   onToggleSelect,
   onStartSelection,
 }) {
+  const navigate = useNavigate()
+
+  function handleOpen(e) {
+    // Laisse le navigateur gérer normalement les clics du milieu / avec
+    // modificateur (ouvrir dans un nouvel onglet, etc.).
+    if (e.defaultPrevented || e.button !== 0) return
+    if (e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) return
+    e.preventDefault()
+    navigateWithViewTransition(navigate, `/books/${book.id}`)
+  }
   // Un manga a quasi toujours le même titre que sa série (juste le tome qui
   // change) : afficher les deux répète la même chose deux fois. On montre
   // la série comme titre principal et le tome bien en évidence à la place.
@@ -167,6 +178,7 @@ export default function BookCard({
   return (
     <Link
       to={`/books/${book.id}`}
+      onClick={handleOpen}
       className={`${baseClass} ${statusBorderClass} hover:shadow-md transition-shadow`}
     >
       {content}
