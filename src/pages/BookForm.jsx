@@ -397,7 +397,7 @@ export default function BookForm() {
                   <img
                     src={book.cover_url}
                     alt=""
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                 ) : (
                   <span className="text-ink/30 text-xs text-center px-1">
