@@ -14,6 +14,8 @@ create table books (
   isbn text,
   title text not null,
   author text,
+  translator text,
+  illustrator text,
   publisher text,
   description text,
   series text,
