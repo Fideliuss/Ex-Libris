@@ -4,6 +4,7 @@ import { getBook } from '../lib/books'
 import { useAuth } from '../context/AuthContext'
 import { getMemberLabel } from '../lib/household'
 import { STATUS_LABELS } from '../lib/statusLabels'
+import { describeError } from '../lib/errors'
 
 export default function BookDetail() {
   const { id } = useParams()
@@ -30,7 +31,7 @@ export default function BookDetail() {
         if (active) setBook(data)
       })
       .catch((err) => {
-        if (active) setError(err.message)
+        if (active) setError(describeError(err))
       })
       .finally(() => {
         if (active) setLoading(false)

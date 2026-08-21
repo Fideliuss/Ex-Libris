@@ -7,6 +7,7 @@ import {
   parseLibibCsv,
 } from '../lib/libibImport'
 import { useAuth } from '../context/AuthContext'
+import { describeError } from '../lib/errors'
 
 export default function ImportLibib() {
   const { user } = useAuth()
@@ -96,7 +97,7 @@ export default function ImportLibib() {
       setEnrichedCount(toEnrich.length)
       setStep('done')
     } catch (err) {
-      setError(err.message)
+      setError(describeError(err))
       setStep('ready')
     }
   }

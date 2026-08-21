@@ -5,6 +5,7 @@ import { lookupIsbn } from '../lib/isbnLookup'
 import { uploadCover } from '../lib/storage'
 import TagInput from '../components/TagInput'
 import { inputClass } from '../lib/ui'
+import { describeError } from '../lib/errors'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 
@@ -65,7 +66,7 @@ export default function BookForm() {
           series_index: data.series_index ?? '',
         }),
       )
-      .catch((err) => setError(err.message))
+      .catch((err) => setError(describeError(err)))
       .finally(() => setLoading(false))
   }, [id, isEdit])
 
@@ -166,7 +167,7 @@ export default function BookForm() {
         navigate('/')
       }
     } catch (err) {
-      setError(err.message)
+      setError(describeError(err))
       setSaving(false)
     }
   }
@@ -178,7 +179,7 @@ export default function BookForm() {
       await deleteBook(id)
       navigate('/')
     } catch (err) {
-      setError(err.message)
+      setError(describeError(err))
       setSaving(false)
     }
   }
