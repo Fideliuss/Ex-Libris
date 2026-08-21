@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { bulkDeleteBooks, bulkUpdateBooks } from '../lib/books'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
+import { describeError } from '../lib/errors'
 import BookCard from '../components/BookCard'
 import CollectionFilters from '../components/CollectionFilters'
 import BulkActionBar from '../components/BulkActionBar'
@@ -139,7 +140,7 @@ export default function Collection() {
       await refresh()
       exitSelectionMode()
     } catch (err) {
-      setBulkError(err.message)
+      setBulkError(describeError(err))
     } finally {
       setBulkWorking(false)
     }
