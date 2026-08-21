@@ -179,7 +179,11 @@ export default function BookForm() {
     try {
       if (isEdit) {
         await updateBook(id, payload)
-        navigate(`/books/${id}`)
+        // On revient en arrière (plutôt que naviguer vers la fiche) pour ne
+        // pas empiler une entrée d'historique en plus de celle déjà créée
+        // par le clic sur "Modifier" — sinon "Retour" depuis la fiche
+        // atterrit sur ce formulaire fantôme au lieu de la collection.
+        goBack()
       } else {
         await createBook(payload)
         navigate('/')
