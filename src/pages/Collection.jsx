@@ -237,6 +237,11 @@ export default function Collection() {
     exitSelectionMode()
   }
 
+  function handleStartSelection(id) {
+    setSelectionMode(true)
+    setSelectedIds(new Set([id]))
+  }
+
   function toggleSelect(id) {
     setSelectedIds((prev) => {
       const next = new Set(prev)
@@ -511,6 +516,7 @@ export default function Collection() {
                   selectable={selectionMode}
                   selected={selectedIds.has(book.id)}
                   onToggleSelect={toggleSelect}
+                  onStartSelection={isMine ? handleStartSelection : undefined}
                 />
               ))}
             </div>
