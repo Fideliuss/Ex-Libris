@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { BOOK_TYPES } from '../lib/bookTypes'
+import TagMultiSelect from './TagMultiSelect'
 
 export default function BulkActionBar({
   count,
@@ -17,7 +18,7 @@ export default function BulkActionBar({
   const [statusToApply, setStatusToApply] = useState('to-read')
   const [typeToApply, setTypeToApply] = useState('book')
   const [tagDraft, setTagDraft] = useState('')
-  const [tagToRemove, setTagToRemove] = useState('')
+  const [tagsToRemove, setTagsToRemove] = useState([])
 
   const disabled = working || count === 0
 
@@ -54,6 +55,7 @@ export default function BulkActionBar({
             </div>
           </div>
         ) : (
+          <>
           <div className="flex flex-wrap items-center gap-2">
             <select
               value={statusToApply}
@@ -61,7 +63,7 @@ export default function BulkActionBar({
               aria-label="Nouveau statut"
               className="rounded-sm border border-ink/20 bg-white px-2 py-1.5 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
             >
-              <option value="wishlist">Souhaité</option>
+              <option value="wishlist">Wishlist</option>
               <option value="to-read">À lire</option>
               <option value="reading">En cours</option>
               <option value="read">Lu</option>
@@ -116,35 +118,6 @@ export default function BulkActionBar({
               Ajouter le tag
             </button>
 
-            {tags?.length > 0 && (
-              <>
-                <select
-                  value={tagToRemove}
-                  onChange={(e) => setTagToRemove(e.target.value)}
-                  aria-label="Tag à retirer"
-                  className="rounded-sm border border-ink/20 bg-white px-2 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-                >
-                  <option value="">Retirer un tag…</option>
-                  {tags.map((t) => (
-                    <option key={t} value={t}>
-                      {t}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onRemoveTag(tagToRemove)
-                    setTagToRemove('')
-                  }}
-                  disabled={disabled || !tagToRemove}
-                  className="text-sm px-3 py-1.5 rounded-sm border border-stamp/40 text-stamp hover:bg-stamp hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp disabled:opacity-60"
-                >
-                  Retirer le tag
-                </button>
-              </>
-            )}
-
             <button
               type="button"
               onClick={() => setConfirmingDelete(true)}
@@ -162,6 +135,29 @@ export default function BulkActionBar({
               Fermer
             </button>
           </div>
+
+          {tags?.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              <TagMultiSelect
+                tags={tags}
+                selected={tagsToRemove}
+                onChange={setTagsToRemove}
+                label="Retirer :"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  onRemoveTag(tagsToRemove)
+                  setTagsToRemove([])
+                }}
+                disabled={disabled || tagsToRemove.length === 0}
+                className="text-sm px-3 py-1.5 rounded-sm border border-stamp/40 text-stamp hover:bg-stamp hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp disabled:opacity-60"
+              >
+                Retirer le{tagsToRemove.length > 1 ? 's' : ''} tag{tagsToRemove.length > 1 ? 's' : ''}
+              </button>
+            </div>
+          )}
+          </>
         )}
       </div>
     </div>

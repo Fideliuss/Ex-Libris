@@ -63,6 +63,15 @@ export default function Collection() {
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
   }, [books])
 
+  const selectedBooksTags = useMemo(() => {
+    const set = new Set()
+    for (const book of books) {
+      if (!selectedIds.has(book.id)) continue
+      for (const t of book.tags ?? []) set.add(t)
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [books, selectedIds])
+
   const publishers = useMemo(() => {
     const set = new Set()
     for (const book of books) {
@@ -219,15 +228,17 @@ export default function Collection() {
     )
   }
 
-  function handleBulkRemoveTag(tagToRemove) {
-    if (!tagToRemove) return Promise.resolve()
+  function handleBulkRemoveTag(tagsToRemove) {
+    if (!tagsToRemove?.length) return Promise.resolve()
     return runBulkAction(() =>
       bulkUpdateBooks(
         [...selectedIds].map((id) => {
           const book = books.find((b) => b.id === id)
           return {
             id,
-            patch: { tags: (book?.tags ?? []).filter((t) => t !== tagToRemove) },
+            patch: {
+              tags: (book?.tags ?? []).filter((t) => !tagsToRemove.includes(t)),
+            },
           }
         }),
       ),
@@ -427,7 +438,7 @@ export default function Collection() {
           count={selectedIds.size}
           working={bulkWorking}
           error={bulkError}
-          tags={tags}
+          tags={selectedBooksTags}
           onDelete={handleBulkDelete}
           onChangeStatus={handleBulkStatus}
           onChangeType={handleBulkType}

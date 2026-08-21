@@ -112,7 +112,7 @@ export default function BookDetail() {
                   aria-hidden="true"
                   className="absolute -left-9 top-3 -rotate-45 w-32 text-center bg-wishlist text-white font-mono text-[10px] font-bold uppercase tracking-widest py-0.5 shadow"
                 >
-                  Souhaité
+                  Wishlist
                 </div>
               )}
               {book.cover_url ? (

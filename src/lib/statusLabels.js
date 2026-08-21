@@ -1,5 +1,5 @@
 export const STATUS_LABELS = {
-  wishlist: 'Souhaité',
+  wishlist: 'Wishlist',
   'to-read': 'À lire',
   reading: 'En cours',
   read: 'Lu',
