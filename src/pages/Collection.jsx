@@ -8,6 +8,7 @@ import BookCard from '../components/BookCard'
 import CollectionFilters from '../components/CollectionFilters'
 import BulkActionBar from '../components/BulkActionBar'
 import HouseholdTabs from '../components/HouseholdTabs'
+import LoadingScreen from '../components/LoadingScreen'
 
 const SORT_OPTIONS = {
   recent: {
@@ -407,9 +408,7 @@ export default function Collection() {
         )}
 
         {loading ? (
-          <p className="font-mono text-sm text-ink/60 text-center py-16">
-            Chargement…
-          </p>
+          <LoadingScreen fullScreen={false} />
         ) : error ? (
           <p role="alert" className="text-sm text-stamp text-center py-16">
             Erreur : {error}

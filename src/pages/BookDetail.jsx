@@ -13,6 +13,7 @@ import { BOOK_TYPES } from '../lib/bookTypes'
 import WishlistRibbon from '../components/WishlistRibbon'
 import { useGoBack } from '../lib/navigation'
 import ReadingBookmark from '../components/ReadingBookmark'
+import LoadingScreen from '../components/LoadingScreen'
 
 export default function BookDetail() {
   const { id } = useParams()
@@ -66,11 +67,7 @@ export default function BookDetail() {
   }, [id])
 
   if (loading) {
-    return (
-      <div className="min-h-svh flex items-center justify-center">
-        <p className="font-mono text-sm text-ink/60">Chargement…</p>
-      </div>
-    )
+    return <LoadingScreen />
   }
 
   if (error || !book) {

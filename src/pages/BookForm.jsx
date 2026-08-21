@@ -15,6 +15,7 @@ import { inputClass } from '../lib/ui'
 import { describeError } from '../lib/errors'
 import { BOOK_TYPES } from '../lib/bookTypes'
 import { useGoBack } from '../lib/navigation'
+import LoadingScreen from '../components/LoadingScreen'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 
@@ -207,11 +208,7 @@ export default function BookForm() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-svh flex items-center justify-center">
-        <p className="font-mono text-sm text-ink/60">Chargement…</p>
-      </div>
-    )
+    return <LoadingScreen />
   }
 
   return (
@@ -592,7 +589,8 @@ export default function BookForm() {
       {scannerOpen && (
         <Suspense
           fallback={
-            <div className="fixed inset-0 z-50 bg-ink/90 flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-50 bg-ink/90 flex flex-col items-center justify-center gap-3 p-4">
+              <img src="/favicon.svg" alt="" className="w-10 h-10 animate-float" />
               <p className="font-mono text-sm text-white/80">
                 Chargement du scanner…
               </p>

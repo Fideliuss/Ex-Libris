@@ -10,6 +10,7 @@ import { describeError } from '../lib/errors'
 import { useGoBack } from '../lib/navigation'
 import HouseholdTabs from '../components/HouseholdTabs'
 import MonthlyFinishedChart from '../components/MonthlyFinishedChart'
+import LoadingScreen from '../components/LoadingScreen'
 
 export default function Stats() {
   const { partner, isMine, books, loading, error, refresh, setView } =
@@ -153,9 +154,7 @@ export default function Stats() {
         )}
 
         {loading ? (
-          <p className="font-mono text-sm text-ink/60 text-center py-16">
-            Chargement…
-          </p>
+          <LoadingScreen fullScreen={false} />
         ) : error ? (
           <p role="alert" className="text-sm text-stamp text-center py-16">
             Erreur : {error}

@@ -8,6 +8,7 @@ import Collection from './pages/Collection'
 import BookForm from './pages/BookForm'
 import BookDetail from './pages/BookDetail'
 import Stats from './pages/Stats'
+import LoadingScreen from './components/LoadingScreen'
 
 const ImportLibib = lazy(() => import('./pages/ImportLibib'))
 
@@ -26,13 +27,7 @@ function App() {
           <Route
             path="/import"
             element={
-              <Suspense
-                fallback={
-                  <div className="min-h-svh flex items-center justify-center">
-                    <p className="font-mono text-sm text-ink/60">Chargement…</p>
-                  </div>
-                }
-              >
+              <Suspense fallback={<LoadingScreen />}>
                 <ImportLibib />
               </Suspense>
             }

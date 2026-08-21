@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { inputClass } from '../lib/ui'
+import LoadingScreen from '../components/LoadingScreen'
 
 export default function ResetPassword() {
   const { session, loading, updatePassword } = useAuth()
@@ -37,11 +38,7 @@ export default function ResetPassword() {
   }
 
   if (loading) {
-    return (
-      <div className="min-h-svh flex items-center justify-center">
-        <p className="font-mono text-sm text-ink/60">Chargement…</p>
-      </div>
-    )
+    return <LoadingScreen />
   }
 
   if (!session) {
