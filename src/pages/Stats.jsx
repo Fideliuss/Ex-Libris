@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import {
   convertTagToCollection,
@@ -237,6 +238,12 @@ export default function Stats() {
     return rated.reduce((sum, b) => sum + b.rating, 0) / rated.length
   }, [finishedInPeriod])
 
+  const coverWallBooks = useMemo(() => {
+    return finishedInPeriod
+      .filter((b) => b.cover_url)
+      .sort((a, b) => (b.date_finished ?? '').localeCompare(a.date_finished ?? ''))
+  }, [finishedInPeriod])
+
   const maxTagCount = tagStats[0]?.count ?? 0
   const maxPublisherCount = publisherStats[0]?.count ?? 0
   const maxCollectionCount = collectionStats[0]?.count ?? 0
@@ -391,6 +398,49 @@ export default function Stats() {
                 </div>
               )}
             </section>
+
+            {finishedInPeriod.length > 0 && (
+              <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+                <h2 className="font-serif text-lg mb-4">Couvertures</h2>
+                {coverWallBooks.length === 0 ? (
+                  <p className="text-sm text-ink/50">
+                    Aucune couverture pour les livres finis sur cette période.
+                  </p>
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-2">
+                      {coverWallBooks.map((book) => (
+                        <Link
+                          key={book.id}
+                          to={`/books/${book.id}`}
+                          title={book.title}
+                          className="w-12 aspect-[2/3] rounded-sm overflow-hidden border border-ink/10 bg-paper shrink-0 hover:ring-2 hover:ring-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                        >
+                          {/* Mosaïque décorative et compacte : ici on veut que
+                              chaque case soit pleine, donc object-cover est
+                              volontaire (contrairement à l'affichage complet
+                              utilisé ailleurs pour les couvertures). */}
+                          <img
+                            src={book.cover_url}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        </Link>
+                      ))}
+                    </div>
+                    {finishedInPeriod.length > coverWallBooks.length && (
+                      <p className="text-xs text-ink/40 mt-3">
+                        + {finishedInPeriod.length - coverWallBooks.length} livre
+                        {finishedInPeriod.length - coverWallBooks.length > 1
+                          ? 's'
+                          : ''}{' '}
+                        sans couverture
+                      </p>
+                    )}
+                  </>
+                )}
+              </section>
+            )}
 
             <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
               <h2 className="font-serif text-lg mb-4">Calendrier de lecture</h2>
