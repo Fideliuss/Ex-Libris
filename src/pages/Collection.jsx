@@ -39,7 +39,7 @@ const SORT_OPTIONS = {
 }
 
 export default function Collection() {
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
   const { partner, isMine, books, loading, error, refresh, setView } =
     useHouseholdBooks()
 
@@ -335,15 +335,14 @@ export default function Collection() {
 
   return (
     <div className={`min-h-svh ${selectionMode ? 'pb-40' : 'pb-24'}`}>
-      <header className="flex flex-col sm:flex-row sm:items-start justify-between max-w-5xl mx-auto p-6 gap-4">
-        <div>
-          <p className="font-mono text-xs tracking-widest text-library uppercase mb-1">
-            {user?.email}
-          </p>
-          <h1 className="font-serif text-2xl font-semibold">
-            Ex Libris
-          </h1>
-        </div>
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between max-w-5xl mx-auto p-6 gap-4">
+        <Link
+          to="/"
+          className="flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+        >
+          <img src="/favicon.svg" alt="" className="w-7 h-7" />
+          <span className="font-serif text-xl font-semibold">Ex Libris</span>
+        </Link>
         <div className="flex flex-wrap items-center gap-2">
           <Link
             to="/import"
@@ -357,13 +356,14 @@ export default function Collection() {
           >
             Statistiques
           </Link>
-          <button
-            type="button"
-            onClick={() => signOut()}
-            className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:text-stamp hover:border-stamp focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+          <Link
+            to="/account"
+            title={user?.email}
+            aria-label="Mon compte"
+            className="w-9 h-9 rounded-full bg-library text-white font-mono text-sm flex items-center justify-center hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-library focus-visible:ring-offset-2"
           >
-            Se déconnecter
-          </button>
+            {user?.email?.[0]?.toUpperCase() ?? '?'}
+          </Link>
         </div>
       </header>
 
