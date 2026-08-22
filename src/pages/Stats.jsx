@@ -8,8 +8,12 @@ import {
   renamePublisher,
   renameSeries,
 } from '../lib/books'
-import { getAnnualGoal, updateAnnualGoal } from '../lib/userSettings'
-import { bookPoints } from '../lib/points'
+import {
+  getReadingGoal,
+  updateReadingGoal,
+  getReadingGoalHistory,
+} from '../lib/readingGoals'
+import { bookPoints, TYPE_POINTS } from '../lib/points'
 import { describeError } from '../lib/errors'
 import { useGoBack } from '../lib/navigation'
 import { BOOK_TYPES } from '../lib/bookTypes'
@@ -108,6 +112,23 @@ export default function Stats() {
       .reduce((sum, b) => sum + bookPoints(b), 0)
   }, [books])
 
+  const currentYearBreakdown = useMemo(() => {
+    const year = String(new Date().getFullYear())
+    const counts = { book: 0, bd: 0, comics: 0, manga: 0 }
+    for (const b of books) {
+      if (!b.date_finished?.startsWith(year)) continue
+      counts[b.type ?? 'book'] += 1
+    }
+    return Object.entries(BOOK_TYPES)
+      .map(([key, label]) => ({
+        key,
+        label,
+        count: counts[key],
+        points: counts[key] * TYPE_POINTS[key],
+      }))
+      .filter((entry) => entry.count > 0)
+  }, [books])
+
   const lastFinished = useMemo(() => {
     return (
       books
@@ -188,35 +209,8 @@ export default function Stats() {
       .sort((a, b) => b.count - a.count)
   }, [books])
 
-  const monthlyFinished = useMemo(() => {
-    const now = new Date()
-    const months = []
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-      months.push({
-        key: `${d.getFullYear()}-${d.getMonth()}`,
-        year: d.getFullYear(),
-        month: d.getMonth(),
-        count: 0,
-        shortLabel: new Intl.DateTimeFormat('fr-FR', { month: 'short' }).format(d),
-        fullLabel: new Intl.DateTimeFormat('fr-FR', {
-          month: 'long',
-          year: 'numeric',
-        }).format(d),
-      })
-    }
-    const byKey = new Map(months.map((m) => [m.key, m]))
-    for (const book of books) {
-      if (!book.date_finished) continue
-      const [y, m] = book.date_finished.split('-').map(Number)
-      const bucket = byKey.get(`${y}-${m - 1}`)
-      if (bucket) bucket.count += 1
-    }
-    return months
-  }, [books])
-
-  // Bornes de la période sélectionnée, pour le rythme de lecture et les
-  // notes uniquement (le reste de la page reste sur toute la collection).
+  // Bornes de la période sélectionnée : pilote tout l'onglet "Activité de
+  // lecture" (rythme, notes, couvertures, calendrier, livres finis par mois).
   const periodRange = useMemo(() => {
     const now = new Date()
     if (period === 'year') {
@@ -242,6 +236,42 @@ export default function Stats() {
       return d <= periodRange.end
     })
   }, [books, periodRange])
+
+  // Un mois par barre, sur la période sélectionnée, plafonné à 12 barres
+  // (les 12 derniers mois de la période) pour rester lisible même avec
+  // "Tout" sélectionné sur plusieurs années.
+  const monthlyFinished = useMemo(() => {
+    const end = periodRange.end
+    const cappedStart = new Date(end.getFullYear(), end.getMonth() - 11, 1)
+    const start =
+      periodRange.start && periodRange.start > cappedStart
+        ? new Date(periodRange.start.getFullYear(), periodRange.start.getMonth(), 1)
+        : cappedStart
+
+    const months = []
+    const cursor = new Date(start)
+    while (cursor <= end) {
+      months.push({
+        key: `${cursor.getFullYear()}-${cursor.getMonth()}`,
+        count: 0,
+        shortLabel: new Intl.DateTimeFormat('fr-FR', { month: 'short' }).format(
+          cursor,
+        ),
+        fullLabel: new Intl.DateTimeFormat('fr-FR', {
+          month: 'long',
+          year: 'numeric',
+        }).format(cursor),
+      })
+      cursor.setMonth(cursor.getMonth() + 1)
+    }
+    const byKey = new Map(months.map((m) => [m.key, m]))
+    for (const book of finishedInPeriod) {
+      const [y, m] = book.date_finished.split('-').map(Number)
+      const bucket = byKey.get(`${y}-${m - 1}`)
+      if (bucket) bucket.count += 1
+    }
+    return months
+  }, [finishedInPeriod, periodRange])
 
   const paceStats = useMemo(() => {
     const pagesRead = finishedInPeriod.reduce(
@@ -374,6 +404,7 @@ export default function Stats() {
                   viewedUserId={viewedUserId}
                   isMine={isMine}
                   score={currentYearScore}
+                  breakdown={currentYearBreakdown}
                 />
 
                 <div className="grid sm:grid-cols-2 gap-6">
@@ -451,42 +482,44 @@ export default function Stats() {
 
             {statsTab === 'activity' && (
               <div className="space-y-6">
-                <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
-                  <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                    <h2 className="font-serif text-lg">Rythme &amp; notes</h2>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <select
-                        value={period}
-                        onChange={(e) => setPeriod(e.target.value)}
-                        aria-label="Période"
-                        className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-                      >
-                        {Object.entries(PERIOD_OPTIONS).map(([key, label]) => (
-                          <option key={key} value={key}>
-                            {label}
-                          </option>
-                        ))}
-                      </select>
-                      {period === 'custom' && (
-                        <>
-                          <input
-                            type="date"
-                            value={customFrom}
-                            onChange={(e) => setCustomFrom(e.target.value)}
-                            aria-label="Du"
-                            className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-                          />
-                          <input
-                            type="date"
-                            value={customTo}
-                            onChange={(e) => setCustomTo(e.target.value)}
-                            aria-label="Au"
-                            className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-                          />
-                        </>
-                      )}
-                    </div>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 className="font-serif text-lg">Activité de lecture</h2>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <select
+                      value={period}
+                      onChange={(e) => setPeriod(e.target.value)}
+                      aria-label="Période"
+                      className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                    >
+                      {Object.entries(PERIOD_OPTIONS).map(([key, label]) => (
+                        <option key={key} value={key}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                    {period === 'custom' && (
+                      <>
+                        <input
+                          type="date"
+                          value={customFrom}
+                          onChange={(e) => setCustomFrom(e.target.value)}
+                          aria-label="Du"
+                          className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                        />
+                        <input
+                          type="date"
+                          value={customTo}
+                          onChange={(e) => setCustomTo(e.target.value)}
+                          aria-label="Au"
+                          className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                        />
+                      </>
+                    )}
                   </div>
+                </div>
+
+                <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+                  <h2 className="font-serif text-lg mb-4">Rythme &amp; notes</h2>
 
                   {finishedInPeriod.length === 0 ? (
                     <p className="text-sm text-ink/50">
@@ -604,7 +637,7 @@ export default function Stats() {
                   <h2 className="font-serif text-lg mb-4">
                     Calendrier de lecture
                   </h2>
-                  <ReadingHeatmap books={books} />
+                  <ReadingHeatmap books={finishedInPeriod} />
                 </section>
 
                 <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
@@ -613,6 +646,12 @@ export default function Stats() {
                   </h2>
                   <BarChart bars={monthlyFinished} />
                 </section>
+
+                <GoalHistorySection
+                  viewedUserId={viewedUserId}
+                  isMine={isMine}
+                  books={books}
+                />
               </div>
             )}
 
@@ -775,7 +814,7 @@ function formatScore(value) {
   return value.toFixed(2).replace(/\.?0+$/, '')
 }
 
-function ObjectiveCard({ viewedUserId, isMine, score }) {
+function ObjectiveCard({ viewedUserId, isMine, score, breakdown }) {
   // Garde le userId avec le résultat : si viewedUserId change (bascule
   // Mine/Partenaire) avant que la requête ne revienne, ce résultat est
   // "périmé" et on retombe sur l'état de chargement au lieu d'afficher
@@ -790,10 +829,12 @@ function ObjectiveCard({ viewedUserId, isMine, score }) {
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState(null)
 
+  const year = new Date().getFullYear()
+
   useEffect(() => {
     if (!viewedUserId) return
     let active = true
-    getAnnualGoal(viewedUserId)
+    getReadingGoal(viewedUserId, year)
       .then((g) => {
         if (active) setResult({ userId: viewedUserId, goal: g, error: null })
       })
@@ -805,7 +846,7 @@ function ObjectiveCard({ viewedUserId, isMine, score }) {
     return () => {
       active = false
     }
-  }, [viewedUserId])
+  }, [viewedUserId, year])
 
   function startEditing() {
     setDraft(String(goal ?? 12))
@@ -822,7 +863,7 @@ function ObjectiveCard({ viewedUserId, isMine, score }) {
     setSaving(true)
     setSaveError(null)
     try {
-      await updateAnnualGoal(value)
+      await updateReadingGoal(year, value)
       setResult({ userId: viewedUserId, goal: value, error: null })
       setEditing(false)
     } catch (err) {
@@ -832,13 +873,12 @@ function ObjectiveCard({ viewedUserId, isMine, score }) {
     }
   }
 
-  const year = new Date().getFullYear()
   const pct = goal ? Math.min(100, Math.round((score / goal) * 100)) : 0
 
   return (
     <section className="bg-card border-t-4 border-dashed border-library rounded-sm shadow-sm p-6">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h2 className="font-serif text-lg">Objectif {year}</h2>
+        <h2 className="font-serif text-lg">Objectif de lecture {year}</h2>
         {isMine && !editing && goal != null && (
           <button
             type="button"
@@ -899,12 +939,203 @@ function ObjectiveCard({ viewedUserId, isMine, score }) {
             {pct}% de l'objectif · 1 livre = 1 pt, BD/Comics = 0,5 pt, Manga =
             1/3 pt
           </p>
+          {breakdown.length > 0 && (
+            <ul className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-xs text-ink/60">
+              {breakdown.map((entry) => (
+                <li key={entry.key}>
+                  {entry.count} {entry.label.toLowerCase()}
+                  {entry.count > 1 && !['bd', 'comics'].includes(entry.key) && 's'}{' '}
+                  · {formatScore(entry.points)} pt
+                  {entry.points > 1 ? 's' : ''}
+                </li>
+              ))}
+            </ul>
+          )}
         </>
       )}
       {saveError && (
         <p role="alert" className="text-xs text-stamp mt-2">
           {saveError}
         </p>
+      )}
+    </section>
+  )
+}
+
+// Une ligne par année où soit un objectif a été fixé, soit au moins un
+// livre a été fini (+ l'année en cours, pour pouvoir y fixer un objectif
+// même sans historique). L'objectif est indépendant par année : pas de
+// valeur par défaut reportée d'une année à l'autre.
+function GoalHistorySection({ viewedUserId, isMine, books }) {
+  const [result, setResult] = useState({ userId: null, goals: null, error: null })
+  const isStale = result.userId !== viewedUserId
+  const goals = isStale ? null : result.goals
+  const loadError = isStale ? null : result.error
+
+  const [editingYear, setEditingYear] = useState(null)
+  const [draft, setDraft] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(null)
+
+  useEffect(() => {
+    if (!viewedUserId) return
+    let active = true
+    getReadingGoalHistory(viewedUserId)
+      .then((rows) => {
+        if (active) setResult({ userId: viewedUserId, goals: rows, error: null })
+      })
+      .catch((err) => {
+        if (active) {
+          setResult({ userId: viewedUserId, goals: null, error: describeError(err) })
+        }
+      })
+    return () => {
+      active = false
+    }
+  }, [viewedUserId])
+
+  const scoreByYear = useMemo(() => {
+    const map = new Map()
+    for (const b of books) {
+      if (!b.date_finished) continue
+      const year = Number(b.date_finished.slice(0, 4))
+      map.set(year, (map.get(year) ?? 0) + bookPoints(b))
+    }
+    return map
+  }, [books])
+
+  const rows = useMemo(() => {
+    if (!goals) return []
+    const goalByYear = new Map(goals.map((g) => [g.year, g.goal]))
+    const years = new Set(goalByYear.keys())
+    for (const year of scoreByYear.keys()) years.add(year)
+    years.add(new Date().getFullYear())
+    return [...years]
+      .sort((a, b) => b - a)
+      .map((year) => ({
+        year,
+        goal: goalByYear.get(year) ?? null,
+        score: scoreByYear.get(year) ?? 0,
+      }))
+  }, [goals, scoreByYear])
+
+  function startEditing(row) {
+    setEditingYear(row.year)
+    setDraft(String(row.goal ?? 12))
+    setSaveError(null)
+  }
+
+  async function submit(year) {
+    const value = Number(draft)
+    if (!value || value <= 0) {
+      setSaveError('Entre un nombre positif.')
+      return
+    }
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await updateReadingGoal(year, value)
+      setResult((prev) => ({
+        userId: viewedUserId,
+        error: null,
+        goals: [
+          ...(prev.goals ?? []).filter((g) => g.year !== year),
+          { year, goal: value },
+        ],
+      }))
+      setEditingYear(null)
+    } catch (err) {
+      setSaveError(describeError(err))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+      <h2 className="font-serif text-lg mb-4">Historique des objectifs</h2>
+
+      {loadError ? (
+        <p role="alert" className="text-sm text-stamp">
+          {loadError}
+        </p>
+      ) : goals == null ? (
+        <p className="text-sm text-ink/50">Chargement…</p>
+      ) : (
+        <>
+          <ul className="space-y-3">
+            {rows.map((row) => {
+              const pct =
+                row.goal != null
+                  ? Math.min(100, Math.round((row.score / row.goal) * 100))
+                  : null
+              return (
+                <li key={row.year}>
+                  <div className="flex items-baseline justify-between gap-2 mb-1">
+                    <span className="font-mono text-sm text-ink/70">
+                      {row.year}
+                    </span>
+                    {editingYear === row.year ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="1"
+                          step="0.5"
+                          value={draft}
+                          onChange={(e) => setDraft(e.target.value)}
+                          autoFocus
+                          className="w-20 rounded-sm border border-ink/20 bg-white px-2 py-0.5 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => submit(row.year)}
+                          disabled={saving}
+                          className="text-xs text-library underline underline-offset-2 hover:text-library/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm disabled:opacity-60"
+                        >
+                          {saving ? 'Enregistrement…' : 'Valider'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingYear(null)}
+                          className="text-xs text-ink/50 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="font-mono text-xs text-ink/60">
+                        {formatScore(row.score)}
+                        {row.goal != null ? ` / ${row.goal}` : ''}
+                      </span>
+                    )}
+                  </div>
+                  {row.goal != null && (
+                    <div className="h-2 w-full bg-ink/10 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-library rounded-full"
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                  )}
+                  {isMine && editingYear !== row.year && (
+                    <button
+                      type="button"
+                      onClick={() => startEditing(row)}
+                      className="mt-1 text-xs text-library underline underline-offset-2 hover:text-library/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                    >
+                      {row.goal != null ? 'Modifier' : "Fixer un objectif"}
+                    </button>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+          {saveError && (
+            <p role="alert" className="text-xs text-stamp mt-3">
+              {saveError}
+            </p>
+          )}
+        </>
       )}
     </section>
   )
