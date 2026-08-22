@@ -116,9 +116,15 @@ export default function BookDetail() {
         </div>
 
         <div
-          className={`bg-card border-t-4 border-dashed rounded-sm shadow-sm p-6 ${STATUS_BORDER_CLASS[book.status]}`}
+          className={`relative bg-card border-t-4 border-dashed rounded-sm shadow-sm p-6 ${STATUS_BORDER_CLASS[book.status]}`}
         >
-          <div className="flex gap-6 flex-col sm:flex-row">
+          {book.created_at && (
+            <p className="absolute top-3 right-4 font-mono text-[10px] text-ink/30">
+              Ajouté le {formatDate(book.created_at.slice(0, 10))}
+            </p>
+          )}
+
+          <div className="flex gap-6 flex-col sm:flex-row mt-3">
             <div className="relative w-40 aspect-[2/3] shrink-0 rounded-sm border border-ink/10 bg-paper overflow-hidden mx-auto sm:mx-0">
               {book.status === 'read' && (
                 <span className="absolute top-2 right-2 -rotate-6 border-2 border-library text-library font-mono text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm bg-card/90 z-10">
@@ -181,6 +187,13 @@ export default function BookDetail() {
               )}
               {book.author && (
                 <p className="text-ink/70 mt-1">{book.author}</p>
+              )}
+              {(book.translator || book.illustrator) && (
+                <p className="text-xs text-ink/50 mt-0.5">
+                  {book.translator && `Traduit par ${book.translator}`}
+                  {book.translator && book.illustrator && ' · '}
+                  {book.illustrator && `Illustré par ${book.illustrator}`}
+                </p>
               )}
               {book.publisher && (
                 <p className="text-sm text-ink/50 mt-0.5">
