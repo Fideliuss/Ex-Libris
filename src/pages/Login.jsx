@@ -57,7 +57,7 @@ export default function Login() {
           {mode === 'signin' ? 'Connexion' : 'Mot de passe oublié'}
         </p>
         <h1 className="font-serif text-3xl font-semibold mb-6 text-center">
-          Ma Bibliothèque
+          Ex Libris
         </h1>
 
         {mode === 'signin' ? (

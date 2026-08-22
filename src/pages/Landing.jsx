@@ -7,9 +7,9 @@ const STRINGS = {
   fr: {
     nav: { features: 'Fonctionnalités', pricing: 'Tarifs', login: 'Se connecter' },
     hero: {
-      eyebrow: 'Ta collection, enfin bien rangée',
-      titleLine1: 'Livres, BD et mangas.',
-      titleLine2: 'Une seule bibliothèque.',
+      eyebrow: 'Ta bibliothèque personnelle',
+      titleLine1: 'La bibliothèque qui porte',
+      titleLine2: 'ton nom.',
       subtitle:
         'Scanne, classe, suis tes objectifs de lecture et partage le tout avec ton foyer.',
       cta: 'Se connecter',
@@ -79,14 +79,14 @@ const STRINGS = {
       },
     ],
     finalCtaTitle: 'Prêt·e à ranger ta bibliothèque ?',
-    footer: 'Ma Bibliothèque',
+    footer: 'Ex Libris',
   },
   en: {
     nav: { features: 'Features', pricing: 'Pricing', login: 'Log in' },
     hero: {
-      eyebrow: 'Your collection, finally organized',
-      titleLine1: 'Books, comics and manga.',
-      titleLine2: 'One single library.',
+      eyebrow: 'Your personal library',
+      titleLine1: 'The library that bears',
+      titleLine2: 'your name.',
       subtitle:
         'Scan, sort, track your reading goals and share it all with your household.',
       cta: 'Log in',
@@ -156,7 +156,7 @@ const STRINGS = {
       },
     ],
     finalCtaTitle: 'Ready to organize your library?',
-    footer: 'Ma Bibliothèque',
+    footer: 'Ex Libris',
   },
 }
 
@@ -203,7 +203,7 @@ function Nav() {
       <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
         <a href="#top" className="flex items-center gap-2">
           <img src="/favicon.svg" alt="" className="w-6 h-6" />
-          <span className="font-serif text-lg font-semibold">Ma Bibliothèque</span>
+          <span className="font-serif text-lg font-semibold">Ex Libris</span>
         </a>
         <nav className="hidden sm:flex items-center gap-6 text-sm text-ink/60">
           <a href="#features" className="hover:text-ink">

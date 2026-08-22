@@ -12,8 +12,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'Ma Bibliothèque',
-        short_name: 'Bibliothèque',
+        name: 'Ex Libris',
+        short_name: 'Ex Libris',
         description: 'Suivi personnel de collection de livres et de lecture.',
         lang: 'fr',
         start_url: '/',

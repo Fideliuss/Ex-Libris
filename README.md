@@ -1,4 +1,4 @@
-# Ma Bibliothèque
+# Ex Libris
 
 PWA personnelle de gestion de collection de livres (remplaçante de Libib + Excel).
 

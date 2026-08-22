@@ -70,7 +70,7 @@ export default function ResetPassword() {
           Nouveau mot de passe
         </p>
         <h1 className="font-serif text-3xl font-semibold mb-6 text-center">
-          Ma Bibliothèque
+          Ex Libris
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
