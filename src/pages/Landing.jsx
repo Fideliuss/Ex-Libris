@@ -302,10 +302,8 @@ function Hero() {
   )
 }
 
-// Étagère illustrative (rectangles colorés) qui défile en boucle infinie,
-// pour donner une idée de la collection sans dépendre d'une vraie capture
-// d'écran. Le tableau est dupliqué : la piste fait 200% de large et
-// l'animation glisse de 0 à -50%, ce qui boucle sans à-coup sur la copie.
+// Mur de couvertures illustratif (rectangles colorés), pour donner une idée
+// de la collection sans dépendre d'une vraie capture d'écran.
 function ShelfMockup() {
   const spines = [
     'bg-library',
@@ -321,14 +319,13 @@ function ShelfMockup() {
     'bg-brass',
     'bg-wishlist',
   ]
-  const track = [...spines, ...spines]
   return (
-    <div className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm py-6 overflow-hidden">
-      <div className="marquee flex gap-2 w-max">
-        {track.map((c, i) => (
+    <div className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6 max-w-md mx-auto">
+      <div className="flex flex-wrap gap-2 justify-center">
+        {spines.map((c, i) => (
           <div
             key={i}
-            className={`w-10 aspect-[2/3] rounded-sm shrink-0 ${c}`}
+            className={`w-10 aspect-[2/3] rounded-sm ${c}`}
             style={{ opacity: 0.85 }}
           />
         ))}

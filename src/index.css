@@ -71,23 +71,6 @@ body {
   }
 }
 
-/* Bandeau de couvertures qui défile en boucle (page vitrine) : la piste
-   contient le tableau dupliqué, glisser jusqu'à -50% revient donc pile sur
-   la copie identique, sans à-coup visible. */
-@media (prefers-reduced-motion: no-preference) {
-  .marquee {
-    animation: marquee 18s linear infinite;
-  }
-}
-@keyframes marquee {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-
 /* Transition "en volet" vers une fiche livre (voir Link viewTransition dans
    BookCard) : la fiche glisse depuis la droite comme un volet qui se ferme
    par-dessus la collection, plutôt que le fondu par défaut du navigateur. */
