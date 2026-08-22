@@ -23,7 +23,7 @@ export function useGoBack(fallback = '/') {
 // change to apply synchronously so the API captures the right "after" DOM.
 //
 // `direction` ('forward' | 'back') sets data-transition-direction on <html>,
-// which the .fondu-in/-out keyframes in index.css read to slide from the
+// which the .volet-in/-out keyframes in index.css read to slide from the
 // right (forward, the default) or the left (back).
 //
 // `replace` (default false) swaps history.pushState for replaceState, so
