@@ -72,19 +72,31 @@ body {
 }
 
 /* Transition "en volet" vers une fiche livre (voir Link viewTransition dans
-   BookCard) : la fiche glisse depuis la droite comme un volet qui se ferme
-   par-dessus la collection, plutôt que le fondu par défaut du navigateur. */
+   BookCard) : la fiche glisse comme un volet qui se ferme par-dessus la vue
+   précédente, plutôt que le fondu par défaut du navigateur. Le sens dépend
+   de `data-transition-direction` sur <html>, posé par
+   navigateWithViewTransition() juste avant de démarrer la transition :
+   "forward" (par défaut, ex: ouvrir une fiche, tome suivant) glisse depuis
+   la droite ; "back" (ex: tome précédent) glisse depuis la gauche. */
 @media (prefers-reduced-motion: no-preference) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
     animation-duration: 0.4s;
     animation-timing-function: ease-in-out;
   }
-  ::view-transition-old(root) {
+
+  :root:not([data-transition-direction='back']) ::view-transition-old(root) {
     animation-name: volet-out;
   }
-  ::view-transition-new(root) {
+  :root:not([data-transition-direction='back']) ::view-transition-new(root) {
     animation-name: volet-in;
+  }
+
+  :root[data-transition-direction='back'] ::view-transition-old(root) {
+    animation-name: volet-out-reverse;
+  }
+  :root[data-transition-direction='back'] ::view-transition-new(root) {
+    animation-name: volet-in-reverse;
   }
 }
 
@@ -97,6 +109,18 @@ body {
 @keyframes volet-out {
   to {
     transform: translateX(-15%);
+  }
+}
+
+@keyframes volet-in-reverse {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes volet-out-reverse {
+  to {
+    transform: translateX(15%);
   }
 }
 

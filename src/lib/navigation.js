@@ -21,11 +21,16 @@ export function useGoBack(fallback = '/') {
 // prop is silently ignored. Driving the native View Transitions API
 // ourselves works regardless of router mode; flushSync forces the route
 // change to apply synchronously so the API captures the right "after" DOM.
-export function navigateWithViewTransition(navigate, to) {
+//
+// `direction` ('forward' | 'back') sets data-transition-direction on <html>,
+// which the .volet-in/-out keyframes in index.css read to slide from the
+// right (forward, the default) or the left (back).
+export function navigateWithViewTransition(navigate, to, direction = 'forward') {
   if (!document.startViewTransition) {
     navigate(to)
     return
   }
+  document.documentElement.dataset.transitionDirection = direction
   document.startViewTransition(() => {
     flushSync(() => navigate(to))
   })

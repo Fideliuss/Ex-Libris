@@ -100,10 +100,10 @@ export default function BookDetail() {
       : null
 
   const goToSibling = useCallback(
-    (sibling) => {
+    (sibling, direction) => {
       if (!sibling) return
       setCoverExpanded(false)
-      navigateWithViewTransition(navigate, `/books/${sibling.id}`)
+      navigateWithViewTransition(navigate, `/books/${sibling.id}`, direction)
     },
     [navigate],
   )
@@ -117,8 +117,8 @@ export default function BookDetail() {
       if (coverExpanded) return
       const tag = document.activeElement?.tagName
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
-      if (e.key === 'ArrowLeft' && prevSibling) goToSibling(prevSibling)
-      if (e.key === 'ArrowRight' && nextSibling) goToSibling(nextSibling)
+      if (e.key === 'ArrowLeft' && prevSibling) goToSibling(prevSibling, 'back')
+      if (e.key === 'ArrowRight' && nextSibling) goToSibling(nextSibling, 'forward')
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
@@ -242,7 +242,7 @@ export default function BookDetail() {
                 <div className="flex items-center gap-2 mt-1">
                   <button
                     type="button"
-                    onClick={() => goToSibling(prevSibling)}
+                    onClick={() => goToSibling(prevSibling, 'back')}
                     disabled={!prevSibling}
                     aria-label="Tome précédent"
                     className="text-sm text-library hover:text-library/80 disabled:text-ink/20 disabled:cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
@@ -254,7 +254,7 @@ export default function BookDetail() {
                   </span>
                   <button
                     type="button"
-                    onClick={() => goToSibling(nextSibling)}
+                    onClick={() => goToSibling(nextSibling, 'forward')}
                     disabled={!nextSibling}
                     aria-label="Tome suivant"
                     className="text-sm text-library hover:text-library/80 disabled:text-ink/20 disabled:cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
