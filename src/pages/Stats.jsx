@@ -414,7 +414,7 @@ export default function Stats() {
                           key={book.id}
                           to={`/books/${book.id}`}
                           title={book.title}
-                          className="w-12 aspect-[2/3] rounded-sm overflow-hidden border border-ink/10 bg-paper shrink-0 hover:ring-2 hover:ring-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                          className="relative w-12 aspect-[2/3] rounded-sm overflow-hidden border border-ink/10 bg-paper shrink-0 transition-transform duration-150 hover:scale-150 hover:z-10 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-library focus-visible:scale-150 focus-visible:z-10"
                         >
                           {/* Mosaïque décorative et compacte : ici on veut que
                               chaque case soit pleine, donc object-cover est
