@@ -31,7 +31,14 @@ export default function BookDetail() {
     setStatusSaving(true)
     setStatusError(null)
     try {
-      const updated = await updateBook(id, { status: newStatus })
+      const patch = { status: newStatus }
+      if (newStatus === 'reading' && !book.date_started) {
+        patch.date_started = todayDateOnly()
+      }
+      if (newStatus === 'read' && !book.date_finished) {
+        patch.date_finished = todayDateOnly()
+      }
+      const updated = await updateBook(id, patch)
       setBook(updated)
     } catch (err) {
       setStatusError(describeError(err))
@@ -331,4 +338,12 @@ function formatDate(value) {
   if (!value) return null
   const [y, m, d] = value.split('-')
   return `${d}/${m}/${y}`
+}
+
+// `new Date().toISOString()` convertit en UTC et peut décaler d'un jour en
+// soirée selon le fuseau ; on construit la date locale à la main, comme
+// formatDate() ci-dessus.
+function todayDateOnly() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 }
