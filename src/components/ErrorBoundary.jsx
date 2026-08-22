@@ -1,6 +1,7 @@
 import { Component } from 'react'
+import { useLocation } from 'react-router-dom'
 
-export default class ErrorBoundary extends Component {
+class ErrorBoundaryImpl extends Component {
   state = { error: null }
 
   static getDerivedStateFromError(error) {
@@ -35,4 +36,14 @@ export default class ErrorBoundary extends Component {
     }
     return this.props.children
   }
+}
+
+// Remonte (donc réinitialise) la boundary à chaque changement de page : une
+// erreur sur un écran ne doit pas empêcher de naviguer ailleurs pour s'en
+// sortir, seul un rechargement complet le faisait avant.
+export default function ErrorBoundary({ children }) {
+  const location = useLocation()
+  return (
+    <ErrorBoundaryImpl key={location.pathname}>{children}</ErrorBoundaryImpl>
+  )
 }

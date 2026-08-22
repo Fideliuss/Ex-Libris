@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { listBooks } from '../lib/books'
 import { getPartner } from '../lib/household'
+import { describeError } from '../lib/errors'
 
 // Charge tous les livres visibles (les miens + ceux du partenaire, autorisés
 // par la RLS), puis expose une bascule "mine" / "partner" pour filtrer côté
@@ -21,7 +22,7 @@ export function useHouseholdBooks() {
         if (active) setAllBooks(data)
       })
       .catch((err) => {
-        if (active) setError(err.message)
+        if (active) setError(describeError(err))
       })
       .finally(() => {
         if (active) setLoading(false)

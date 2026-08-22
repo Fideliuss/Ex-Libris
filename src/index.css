@@ -11,8 +11,133 @@
   --color-library: #2f4a3c;
   --color-brass: #ad8a54;
   --color-stamp: #a2372e;
+
+  /* Signal de statut : wishlist=bleu, à lire=neutre (brass), en cours=jaune,
+     lu=vert (library). */
+  --color-wishlist: #3b6e91;
+  --color-reading: #b8860b;
 }
 
 body {
   @apply bg-paper text-ink font-sans antialiased;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Apparition au scroll (page vitrine) : fondu + léger glissement, piloté par
+   IntersectionObserver dans Landing.jsx. Visible directement si l'utilisateur
+   préfère moins d'animations. */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+}
+.reveal.reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    transition:
+      opacity 0.7s ease-out,
+      transform 0.7s ease-out;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Entrée du hero au chargement (pas de scroll à observer, donc animation CSS
+   pure plutôt qu'un état React + IntersectionObserver comme .reveal). */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-in {
+    animation: hero-in 0.7s ease-out both;
+  }
+}
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Transition "en volet" vers une fiche livre (voir Link viewTransition dans
+   BookCard) : la fiche glisse comme un volet qui se ferme par-dessus la vue
+   précédente, plutôt que le fondu par défaut du navigateur. Courbe de
+   décélération (type Material standard) plutôt qu'ease-in-out, pour un
+   rendu plus doux/moins mécanique. Le sens dépend de
+   `data-transition-direction` sur <html>, posé par
+   navigateWithViewTransition() juste avant de démarrer la transition :
+   "forward" (par défaut, ex: ouvrir une fiche, tome suivant) glisse depuis
+   la droite ; "back" (ex: tome précédent) glisse depuis la gauche. */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.4s;
+    animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  :root:not([data-transition-direction='back'])::view-transition-old(root) {
+    animation-name: volet-out;
+  }
+  :root:not([data-transition-direction='back'])::view-transition-new(root) {
+    animation-name: volet-in;
+  }
+
+  :root[data-transition-direction='back']::view-transition-old(root) {
+    animation-name: volet-out-reverse;
+  }
+  :root[data-transition-direction='back']::view-transition-new(root) {
+    animation-name: volet-in-reverse;
+  }
+}
+
+@keyframes volet-in {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes volet-out {
+  to {
+    transform: translateX(-15%);
+  }
+}
+
+@keyframes volet-in-reverse {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes volet-out-reverse {
+  to {
+    transform: translateX(15%);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animate-float {
+    animation: float 2.4s ease-in-out infinite;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
 }

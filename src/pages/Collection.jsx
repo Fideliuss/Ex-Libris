@@ -1,12 +1,15 @@
 import { useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { bulkDeleteBooks, bulkUpdateBooks } from '../lib/books'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
+import { describeError } from '../lib/errors'
 import BookCard from '../components/BookCard'
 import CollectionFilters from '../components/CollectionFilters'
 import BulkActionBar from '../components/BulkActionBar'
 import HouseholdTabs from '../components/HouseholdTabs'
+import TabBar from '../components/TabBar'
+import LoadingScreen from '../components/LoadingScreen'
 
 const SORT_OPTIONS = {
   recent: {
@@ -30,19 +33,76 @@ const SORT_OPTIONS = {
     compare: (a, b) =>
       new Date(b.date_finished ?? 0) - new Date(a.date_finished ?? 0),
   },
+  tome: {
+    label: 'Tome (croissant)',
+    compare: (a, b) => (a.series_index ?? 0) - (b.series_index ?? 0),
+  },
 }
 
 export default function Collection() {
   const { user, signOut } = useAuth()
   const { partner, isMine, books, loading, error, refresh, setView } =
     useHouseholdBooks()
+  const navigate = useNavigate()
 
-  const [search, setSearch] = useState('')
-  const [tag, setTag] = useState('')
-  const [publisher, setPublisher] = useState('')
-  const [series, setSeries] = useState('')
-  const [status, setStatus] = useState('')
-  const [sort, setSort] = useState('recent')
+  async function handleSignOut() {
+    await signOut()
+    navigate('/', { replace: true })
+  }
+
+  // Filtres/tri/recherche vivent dans l'URL (et non un useState local) pour
+  // survivre à un aller-retour vers la fiche d'un livre : la page se
+  // démonte/remonte à chaque navigation, un useState repartirait à zéro.
+  const [searchParams, setSearchParams] = useSearchParams()
+
+  const search = searchParams.get('q') ?? ''
+  const selectedTags = searchParams.getAll('tag')
+  const publisher = searchParams.get('publisher') ?? ''
+  const collection = searchParams.get('collection') ?? ''
+  const series = searchParams.get('series') ?? ''
+  const universe = searchParams.get('universe') ?? ''
+  const type = searchParams.get('type') ?? ''
+  const status = searchParams.get('status') ?? ''
+  const sort = searchParams.get('sort') ?? 'recent'
+  const collectionTab = searchParams.get('tab') ?? 'collection'
+
+  function setParam(key, value) {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        if (!value) next.delete(key)
+        else next.set(key, value)
+        return next
+      },
+      { replace: true },
+    )
+  }
+
+  const setSearch = (value) => setParam('q', value)
+  const setPublisher = (value) => setParam('publisher', value)
+  const setCollection = (value) => setParam('collection', value)
+  const setUniverse = (value) => setParam('universe', value)
+  const setType = (value) => setParam('type', value)
+  const setStatus = (value) => setParam('status', value)
+  const setSort = (value) => setParam('sort', value)
+
+  function setCollectionTab(next) {
+    setParam('tab', next === 'collection' ? null : next)
+    exitSelectionMode()
+  }
+
+  function setSelectedTags(nextTags) {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.delete('tag')
+        for (const t of nextTags) next.append('tag', t)
+        return next
+      },
+      { replace: true },
+    )
+  }
+
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState(() => new Set())
   const [bulkWorking, setBulkWorking] = useState(false)
@@ -56,10 +116,27 @@ export default function Collection() {
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
   }, [books])
 
+  const selectedBooksTags = useMemo(() => {
+    const set = new Set()
+    for (const book of books) {
+      if (!selectedIds.has(book.id)) continue
+      for (const t of book.tags ?? []) set.add(t)
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [books, selectedIds])
+
   const publishers = useMemo(() => {
     const set = new Set()
     for (const book of books) {
       if (book.publisher) set.add(book.publisher)
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [books])
+
+  const collections = useMemo(() => {
+    const set = new Set()
+    for (const book of books) {
+      if (book.collection) set.add(book.collection)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
   }, [books])
@@ -72,6 +149,33 @@ export default function Collection() {
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
   }, [books])
 
+  const universeList = useMemo(() => {
+    const set = new Set()
+    for (const book of books) {
+      if (book.universe) set.add(book.universe)
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [books])
+
+  // Livres sans couverture ou sans les champs qu'un scan ISBN réussi remplit
+  // normalement tout seul (auteur, éditeur, pages, description) : à
+  // compléter à la main.
+  const incompleteBooks = useMemo(() => {
+    return books.filter(
+      (book) =>
+        !book.cover_url ||
+        !book.author ||
+        !book.publisher ||
+        !book.page_count ||
+        !book.description,
+    )
+  }, [books])
+
+  const sortedIncompleteBooks = useMemo(
+    () => [...incompleteBooks].sort(SORT_OPTIONS[sort].compare),
+    [incompleteBooks, sort],
+  )
+
   const filteredBooks = useMemo(() => {
     const query = search.trim().toLowerCase()
     return books.filter((book) => {
@@ -79,33 +183,99 @@ export default function Collection() {
         const haystack = `${book.title} ${book.author ?? ''}`.toLowerCase()
         if (!haystack.includes(query)) return false
       }
-      if (tag && !book.tags?.includes(tag)) return false
+      if (
+        selectedTags.length > 0 &&
+        !selectedTags.some((t) => book.tags?.includes(t))
+      )
+        return false
       if (publisher && book.publisher !== publisher) return false
+      if (collection && book.collection !== collection) return false
       if (series && book.series !== series) return false
+      if (universe && book.universe !== universe) return false
+      if (type && book.type !== type) return false
       if (status && book.status !== status) return false
       return true
     })
-  }, [books, search, tag, publisher, series, status])
+  }, [
+    books,
+    search,
+    selectedTags,
+    publisher,
+    collection,
+    series,
+    universe,
+    type,
+    status,
+  ])
 
   const sortedBooks = useMemo(
     () => [...filteredBooks].sort(SORT_OPTIONS[sort].compare),
     [filteredBooks, sort],
   )
 
-  const hasActiveFilters = Boolean(search || tag || publisher || series || status)
+  const visibleBooks =
+    collectionTab === 'todo' ? sortedIncompleteBooks : sortedBooks
+
+  const hasActiveFilters = Boolean(
+    search ||
+      selectedTags.length > 0 ||
+      publisher ||
+      collection ||
+      series ||
+      universe ||
+      type ||
+      status,
+  )
 
   function resetFilters() {
-    setSearch('')
-    setTag('')
-    setPublisher('')
-    setSeries('')
-    setStatus('')
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        for (const key of [
+          'q',
+          'tag',
+          'publisher',
+          'collection',
+          'series',
+          'universe',
+          'type',
+          'status',
+        ]) {
+          next.delete(key)
+        }
+        return next
+      },
+      { replace: true },
+    )
+  }
+
+  function handleSeriesChange(next) {
+    // Regarder une série précise ? Le tri par tome est presque toujours ce
+    // qu'on veut, plutôt que l'ordre d'ajout par défaut.
+    setSearchParams(
+      (prev) => {
+        const params = new URLSearchParams(prev)
+        if (next) {
+          params.set('series', next)
+          params.set('sort', 'tome')
+        } else {
+          params.delete('series')
+        }
+        return params
+      },
+      { replace: true },
+    )
   }
 
   function switchView(next) {
     setView(next)
     resetFilters()
     exitSelectionMode()
+  }
+
+  function handleStartSelection(id) {
+    setSelectionMode(true)
+    setSelectedIds(new Set([id]))
   }
 
   function toggleSelect(id) {
@@ -119,9 +289,9 @@ export default function Collection() {
 
   function toggleSelectAll() {
     setSelectedIds((prev) =>
-      prev.size === sortedBooks.length
+      prev.size === visibleBooks.length
         ? new Set()
-        : new Set(sortedBooks.map((b) => b.id)),
+        : new Set(visibleBooks.map((b) => b.id)),
     )
   }
 
@@ -139,7 +309,7 @@ export default function Collection() {
       await refresh()
       exitSelectionMode()
     } catch (err) {
-      setBulkError(err.message)
+      setBulkError(describeError(err))
     } finally {
       setBulkWorking(false)
     }
@@ -153,6 +323,14 @@ export default function Collection() {
     return runBulkAction(() =>
       bulkUpdateBooks(
         [...selectedIds].map((id) => ({ id, patch: { status: newStatus } })),
+      ),
+    )
+  }
+
+  function handleBulkType(newType) {
+    return runBulkAction(() =>
+      bulkUpdateBooks(
+        [...selectedIds].map((id) => ({ id, patch: { type: newType } })),
       ),
     )
   }
@@ -173,18 +351,45 @@ export default function Collection() {
     )
   }
 
+  function handleBulkRemoveTag(tagsToRemove) {
+    if (!tagsToRemove?.length) return Promise.resolve()
+    return runBulkAction(() =>
+      bulkUpdateBooks(
+        [...selectedIds].map((id) => {
+          const book = books.find((b) => b.id === id)
+          return {
+            id,
+            patch: {
+              tags: (book?.tags ?? []).filter((t) => !tagsToRemove.includes(t)),
+            },
+          }
+        }),
+      ),
+    )
+  }
+
   return (
     <div className={`min-h-svh ${selectionMode ? 'pb-40' : 'pb-24'}`}>
-      <header className="flex items-start justify-between max-w-5xl mx-auto p-6 gap-4">
-        <div>
-          <p className="font-mono text-xs tracking-widest text-library uppercase mb-1">
-            {user?.email}
-          </p>
-          <h1 className="font-serif text-2xl font-semibold">
-            Ma Bibliothèque
-          </h1>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
+      <header className="flex flex-col sm:flex-row sm:items-center justify-between max-w-5xl mx-auto p-6 gap-4">
+        <Link
+          to="/"
+          className="flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+        >
+          <img src="/favicon.svg" alt="" className="w-7 h-7" />
+          <span className="font-serif text-xl font-semibold">Ex Libris</span>
+        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          {partner && (
+            <HouseholdTabs
+              isMine={isMine}
+              onSelectMine={() => switchView('mine')}
+              onSelectPartner={() => switchView('partner')}
+              mineLabel="Toi"
+              partnerLabel={partner.label}
+              ariaLabel="Bibliothèque à afficher"
+              compact
+            />
+          )}
           <Link
             to="/import"
             className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
@@ -197,41 +402,76 @@ export default function Collection() {
           >
             Statistiques
           </Link>
-          <button
-            type="button"
-            onClick={() => signOut()}
-            className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:text-stamp hover:border-stamp focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-          >
-            Se déconnecter
-          </button>
+          <div className="relative group">
+            <Link
+              to="/account"
+              title={user?.email}
+              aria-label="Mon compte"
+              className="w-9 h-9 rounded-full bg-library text-white font-mono text-sm flex items-center justify-center hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-library focus-visible:ring-offset-2"
+            >
+              {user?.email?.[0]?.toUpperCase() ?? '?'}
+            </Link>
+            <div className="absolute right-0 top-full pt-1 w-40 opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-opacity z-30">
+              <div className="rounded-sm border border-ink/10 bg-card shadow-sm py-1">
+                <Link
+                  to="/account"
+                  className="block px-3 py-2 text-sm text-ink/70 hover:bg-paper hover:text-ink focus:outline-none focus-visible:bg-paper"
+                >
+                  Mon compte
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="block w-full text-left px-3 py-2 text-sm text-ink/70 hover:bg-paper hover:text-stamp focus:outline-none focus-visible:bg-paper"
+                >
+                  Déconnexion
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-6">
-        {partner && (
-          <HouseholdTabs
-            isMine={isMine}
-            onSelectMine={() => switchView('mine')}
-            onSelectPartner={() => switchView('partner')}
-            mineLabel="Ma bibliothèque"
-            partnerLabel={`Bibliothèque de ${partner.label}`}
-            ariaLabel="Bibliothèque à afficher"
+        {!loading && !error && books.length > 0 && (
+          <TabBar
+            tabs={[
+              { key: 'collection', label: 'Collection' },
+              {
+                key: 'todo',
+                label:
+                  incompleteBooks.length > 0
+                    ? `À traiter (${incompleteBooks.length})`
+                    : 'À traiter',
+              },
+            ]}
+            active={collectionTab}
+            onChange={setCollectionTab}
+            ariaLabel="Vue de la collection"
           />
         )}
 
-        {!loading && !error && books.length > 0 && (
+        {!loading && !error && books.length > 0 && collectionTab === 'collection' && (
           <CollectionFilters
             search={search}
             onSearchChange={setSearch}
-            tag={tag}
-            onTagChange={setTag}
+            selectedTags={selectedTags}
+            onSelectedTagsChange={setSelectedTags}
             tags={tags}
             publisher={publisher}
             onPublisherChange={setPublisher}
             publishers={publishers}
+            collection={collection}
+            onCollectionChange={setCollection}
+            collections={collections}
             series={series}
-            onSeriesChange={setSeries}
+            onSeriesChange={handleSeriesChange}
             seriesList={seriesList}
+            universe={universe}
+            onUniverseChange={setUniverse}
+            universeList={universeList}
+            type={type}
+            onTypeChange={setType}
             status={status}
             onStatusChange={setStatus}
             hasActiveFilters={hasActiveFilters}
@@ -240,9 +480,7 @@ export default function Collection() {
         )}
 
         {loading ? (
-          <p className="font-mono text-sm text-ink/60 text-center py-16">
-            Chargement…
-          </p>
+          <LoadingScreen fullScreen={false} />
         ) : error ? (
           <p role="alert" className="text-sm text-stamp text-center py-16">
             Erreur : {error}
@@ -273,7 +511,14 @@ export default function Collection() {
               </p>
             )}
           </div>
-        ) : filteredBooks.length === 0 ? (
+        ) : collectionTab === 'todo' && incompleteBooks.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="font-serif text-xl mb-2">Tout est renseigné 🎉</p>
+            <p className="text-sm text-ink/60">
+              Aucun livre à compléter pour l'instant.
+            </p>
+          </div>
+        ) : collectionTab === 'collection' && filteredBooks.length === 0 ? (
           <div className="text-center py-16">
             <p className="font-serif text-xl mb-2">
               Aucun livre ne correspond
@@ -302,15 +547,25 @@ export default function Collection() {
                     onClick={toggleSelectAll}
                     className="text-xs text-library underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
                   >
-                    {selectedIds.size === sortedBooks.length
+                    {selectedIds.size === visibleBooks.length
                       ? 'Tout désélectionner'
                       : 'Tout sélectionner'}
                   </button>
                 </div>
               ) : (
                 <p className="font-mono text-xs text-ink/50">
-                  {filteredBooks.length} livre{filteredBooks.length > 1 ? 's' : ''}
-                  {hasActiveFilters ? ` sur ${books.length}` : ''}
+                  {collectionTab === 'todo' ? (
+                    <>
+                      {visibleBooks.length} livre
+                      {visibleBooks.length > 1 ? 's' : ''} à traiter
+                    </>
+                  ) : (
+                    <>
+                      {filteredBooks.length} livre
+                      {filteredBooks.length > 1 ? 's' : ''}
+                      {hasActiveFilters ? ` sur ${books.length}` : ''}
+                    </>
+                  )}
                 </p>
               )}
               <div className="flex items-center gap-2">
@@ -342,13 +597,14 @@ export default function Collection() {
               </div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {sortedBooks.map((book) => (
+              {visibleBooks.map((book) => (
                 <BookCard
                   key={book.id}
                   book={book}
                   selectable={selectionMode}
                   selected={selectedIds.has(book.id)}
                   onToggleSelect={toggleSelect}
+                  onStartSelection={isMine ? handleStartSelection : undefined}
                 />
               ))}
             </div>
@@ -361,9 +617,12 @@ export default function Collection() {
           count={selectedIds.size}
           working={bulkWorking}
           error={bulkError}
+          tags={selectedBooksTags}
           onDelete={handleBulkDelete}
           onChangeStatus={handleBulkStatus}
+          onChangeType={handleBulkType}
           onAddTag={handleBulkAddTag}
+          onRemoveTag={handleBulkRemoveTag}
           onCancel={exitSelectionMode}
         />
       ) : (

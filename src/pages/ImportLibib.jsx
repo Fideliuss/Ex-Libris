@@ -7,9 +7,12 @@ import {
   parseLibibCsv,
 } from '../lib/libibImport'
 import { useAuth } from '../context/AuthContext'
+import { describeError } from '../lib/errors'
+import { useGoBack } from '../lib/navigation'
 
 export default function ImportLibib() {
   const { user } = useAuth()
+  const goBack = useGoBack('/')
   const [step, setStep] = useState('idle') // idle | ready | importing | done
   const [error, setError] = useState(null)
   const [fileName, setFileName] = useState('')
@@ -96,7 +99,7 @@ export default function ImportLibib() {
       setEnrichedCount(toEnrich.length)
       setStep('done')
     } catch (err) {
-      setError(err.message)
+      setError(describeError(err))
       setStep('ready')
     }
   }
@@ -106,12 +109,13 @@ export default function ImportLibib() {
   return (
     <div className="min-h-svh p-6">
       <div className="max-w-xl mx-auto">
-        <Link
-          to="/"
+        <button
+          type="button"
+          onClick={goBack}
           className="text-sm text-ink/60 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
         >
           ← Retour à la collection
-        </Link>
+        </button>
 
         <h1 className="font-serif text-2xl font-semibold mt-4 mb-6">
           Importer depuis Libib

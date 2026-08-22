@@ -4,10 +4,12 @@ import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import Login from './pages/Login'
 import ResetPassword from './pages/ResetPassword'
-import Collection from './pages/Collection'
+import Home from './pages/Home'
+import Account from './pages/Account'
 import BookForm from './pages/BookForm'
 import BookDetail from './pages/BookDetail'
 import Stats from './pages/Stats'
+import LoadingScreen from './components/LoadingScreen'
 
 const ImportLibib = lazy(() => import('./pages/ImportLibib'))
 
@@ -15,10 +17,11 @@ function App() {
   return (
     <AuthProvider>
       <Routes>
+        <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<Collection />} />
+          <Route path="/account" element={<Account />} />
           <Route path="/books/new" element={<BookForm />} />
           <Route path="/books/:id" element={<BookDetail />} />
           <Route path="/books/:id/edit" element={<BookForm />} />
@@ -26,13 +29,7 @@ function App() {
           <Route
             path="/import"
             element={
-              <Suspense
-                fallback={
-                  <div className="min-h-svh flex items-center justify-center">
-                    <p className="font-mono text-sm text-ink/60">Chargement…</p>
-                  </div>
-                }
-              >
+              <Suspense fallback={<LoadingScreen />}>
                 <ImportLibib />
               </Suspense>
             }

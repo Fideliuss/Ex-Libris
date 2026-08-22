@@ -1,22 +1,38 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { createBook, deleteBook, getBook, listAllTags, updateBook } from '../lib/books'
+import { useNavigate, useParams } from 'react-router-dom'
+import {
+  createBook,
+  deleteBook,
+  getBook,
+  listAllCollections,
+  listAllTags,
+  updateBook,
+} from '../lib/books'
 import { lookupIsbn } from '../lib/isbnLookup'
 import { uploadCover } from '../lib/storage'
 import TagInput from '../components/TagInput'
 import { inputClass } from '../lib/ui'
+import { describeError } from '../lib/errors'
+import { BOOK_TYPES } from '../lib/bookTypes'
+import { useGoBack } from '../lib/navigation'
+import LoadingScreen from '../components/LoadingScreen'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 
 const emptyBook = {
   title: '',
   author: '',
+  translator: '',
+  illustrator: '',
   publisher: '',
+  collection: '',
   isbn: '',
   cover_url: '',
   description: '',
   series: '',
   series_index: '',
+  type: 'book',
+  universe: '',
   tags: [],
   status: 'to-read',
   date_started: '',
@@ -32,9 +48,11 @@ export default function BookForm() {
   const { id } = useParams()
   const isEdit = Boolean(id)
   const navigate = useNavigate()
+  const goBack = useGoBack(isEdit ? `/books/${id}` : '/')
 
   const [book, setBook] = useState(emptyBook)
   const [existingTags, setExistingTags] = useState([])
+  const [existingCollections, setExistingCollections] = useState([])
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -47,6 +65,7 @@ export default function BookForm() {
 
   useEffect(() => {
     listAllTags().then(setExistingTags).catch(() => {})
+    listAllCollections().then(setExistingCollections).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -65,7 +84,7 @@ export default function BookForm() {
           series_index: data.series_index ?? '',
         }),
       )
-      .catch((err) => setError(err.message))
+      .catch((err) => setError(describeError(err)))
       .finally(() => setLoading(false))
   }, [id, isEdit])
 
@@ -156,17 +175,22 @@ export default function BookForm() {
       purchase_date: book.purchase_date || null,
       series: book.series?.trim() || null,
       series_index: book.series_index === '' ? null : Number(book.series_index),
+      universe: book.type === 'comics' ? book.universe?.trim() || null : null,
     }
     try {
       if (isEdit) {
         await updateBook(id, payload)
-        navigate(`/books/${id}`)
+        // On revient en arrière (plutôt que naviguer vers la fiche) pour ne
+        // pas empiler une entrée d'historique en plus de celle déjà créée
+        // par le clic sur "Modifier" — sinon "Retour" depuis la fiche
+        // atterrit sur ce formulaire fantôme au lieu de la collection.
+        goBack()
       } else {
         await createBook(payload)
         navigate('/')
       }
     } catch (err) {
-      setError(err.message)
+      setError(describeError(err))
       setSaving(false)
     }
   }
@@ -178,28 +202,25 @@ export default function BookForm() {
       await deleteBook(id)
       navigate('/')
     } catch (err) {
-      setError(err.message)
+      setError(describeError(err))
       setSaving(false)
     }
   }
 
   if (loading) {
-    return (
-      <div className="min-h-svh flex items-center justify-center">
-        <p className="font-mono text-sm text-ink/60">Chargement…</p>
-      </div>
-    )
+    return <LoadingScreen />
   }
 
   return (
     <div className="min-h-svh p-6">
       <div className="max-w-xl mx-auto">
-        <Link
-          to={isEdit ? `/books/${id}` : '/'}
+        <button
+          type="button"
+          onClick={goBack}
           className="text-sm text-ink/60 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
         >
           {isEdit ? '← Retour à la fiche' : '← Retour à la collection'}
-        </Link>
+        </button>
 
         <h1 className="font-serif text-2xl font-semibold mt-4 mb-6">
           {isEdit ? 'Modifier le livre' : 'Ajouter un livre'}
@@ -218,6 +239,20 @@ export default function BookForm() {
             />
           </Field>
 
+          <Field label="Type">
+            <select
+              value={book.type}
+              onChange={(e) => set('type', e.target.value)}
+              className={inputClass}
+            >
+              {Object.entries(BOOK_TYPES).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </Field>
+
           <Field label="Auteur">
             <input
               value={book.author ?? ''}
@@ -226,12 +261,44 @@ export default function BookForm() {
             />
           </Field>
 
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Traducteur">
+              <input
+                value={book.translator ?? ''}
+                onChange={(e) => set('translator', e.target.value)}
+                className={inputClass}
+              />
+            </Field>
+            <Field label="Dessinateur">
+              <input
+                value={book.illustrator ?? ''}
+                onChange={(e) => set('illustrator', e.target.value)}
+                className={inputClass}
+              />
+            </Field>
+          </div>
+
           <Field label="Éditeur">
             <input
               value={book.publisher ?? ''}
               onChange={(e) => set('publisher', e.target.value)}
               className={inputClass}
             />
+          </Field>
+
+          <Field label="Collection">
+            <input
+              value={book.collection ?? ''}
+              onChange={(e) => set('collection', e.target.value)}
+              placeholder="Folio SF, Champs…"
+              list="collection-suggestions"
+              className={inputClass}
+            />
+            <datalist id="collection-suggestions">
+              {existingCollections.map((c) => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
           </Field>
 
           <div className="grid grid-cols-3 gap-4">
@@ -255,6 +322,17 @@ export default function BookForm() {
               />
             </Field>
           </div>
+
+          {book.type === 'comics' && (
+            <Field label="Univers / Équipe">
+              <input
+                value={book.universe ?? ''}
+                onChange={(e) => set('universe', e.target.value)}
+                placeholder="Avengers, X-Men…"
+                className={inputClass}
+              />
+            </Field>
+          )}
 
           <Field label="Résumé">
             <textarea
@@ -320,7 +398,7 @@ export default function BookForm() {
                   <img
                     src={book.cover_url}
                     alt=""
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain"
                   />
                 ) : (
                   <span className="text-ink/30 text-xs text-center px-1">
@@ -382,7 +460,7 @@ export default function BookForm() {
                 onChange={(e) => set('status', e.target.value)}
                 className={inputClass}
               >
-                <option value="wishlist">Souhaité</option>
+                <option value="wishlist">Wishlist</option>
                 <option value="to-read">À lire</option>
                 <option value="reading">En cours</option>
                 <option value="read">Lu</option>
@@ -511,7 +589,8 @@ export default function BookForm() {
       {scannerOpen && (
         <Suspense
           fallback={
-            <div className="fixed inset-0 z-50 bg-ink/90 flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-50 bg-ink/90 flex flex-col items-center justify-center gap-3 p-4">
+              <img src="/favicon.svg" alt="" className="w-10 h-10 animate-float" />
               <p className="font-mono text-sm text-white/80">
                 Chargement du scanner…
               </p>

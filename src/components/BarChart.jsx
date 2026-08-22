@@ -12,10 +12,13 @@ function niceMax(value) {
   return niceResidual * magnitude
 }
 
-export default function MonthlyFinishedChart({ months }) {
+// Graphique en barres générique : `bars` est une liste de
+// { key, count, shortLabel, fullLabel }. Réutilisé pour les livres finis
+// par mois et pour la distribution des notes.
+export default function BarChart({ bars }) {
   const [hovered, setHovered] = useState(null)
 
-  const max = Math.max(0, ...months.map((m) => m.count))
+  const max = Math.max(0, ...bars.map((m) => m.count))
   const chartMax = niceMax(max)
   const midTick = Math.round(chartMax / 2)
 
@@ -34,7 +37,7 @@ export default function MonthlyFinishedChart({ months }) {
         </div>
 
         <div className="relative flex items-end gap-0.5 h-40">
-          {months.map((m, i) => {
+          {bars.map((m, i) => {
             const heightPct = (m.count / chartMax) * 100
             return (
               <div
@@ -55,7 +58,7 @@ export default function MonthlyFinishedChart({ months }) {
                   onMouseLeave={() => setHovered(null)}
                   onFocus={() => setHovered(i)}
                   onBlur={() => setHovered(null)}
-                  aria-label={`${m.fullLabel} : ${m.count} livre${m.count > 1 ? 's' : ''} terminé${m.count > 1 ? 's' : ''}`}
+                  aria-label={`${m.fullLabel} : ${m.count}`}
                   className="w-full max-w-[24px] bg-library rounded-t-[4px] hover:bg-library/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-library transition-colors"
                   style={{ height: `${m.count > 0 ? Math.max(heightPct, 4) : 0}%` }}
                 />
@@ -66,7 +69,7 @@ export default function MonthlyFinishedChart({ months }) {
       </div>
 
       <div className="flex gap-0.5 mt-1.5 pl-8">
-        {months.map((m) => (
+        {bars.map((m) => (
           <div key={m.key} className="flex-1 text-center">
             <span className="font-mono text-[10px] text-ink/50">
               {m.shortLabel}

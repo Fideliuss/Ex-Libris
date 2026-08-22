@@ -48,6 +48,19 @@ export async function getBook(id) {
   return data
 }
 
+// Les autres tomes de la même série, chez le même propriétaire (pas de
+// mélange avec les tomes du foyer), pour la navigation tome par tome.
+export async function getSeriesSiblings(series, userId) {
+  const { data, error } = await supabase
+    .from('books')
+    .select('id, series_index')
+    .eq('series', series)
+    .eq('user_id', userId)
+    .order('series_index', { ascending: true, nullsFirst: false })
+  if (error) throw error
+  return data
+}
+
 export async function bulkCreateBooks(books) {
   const {
     data: { user },
@@ -88,4 +101,70 @@ export async function listAllTags() {
     for (const tag of row.tags ?? []) tags.add(tag)
   }
   return [...tags].sort((a, b) => a.localeCompare(b, 'fr'))
+}
+
+export async function listAllCollections() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data, error } = await supabase
+    .from('books')
+    .select('collection')
+    .eq('user_id', user.id)
+    .not('collection', 'is', null)
+  if (error) throw error
+  const collections = new Set(data.map((row) => row.collection).filter(Boolean))
+  return [...collections].sort((a, b) => a.localeCompare(b, 'fr'))
+}
+
+// Migration : un tag utilisé comme nom de collection éditeur (ex: "folio sf")
+// devient la valeur du champ `collection` sur tous les livres concernés, et
+// est retiré de leurs tags. Retourne le nombre de livres modifiés.
+export async function convertTagToCollection(tag) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data: matching, error: fetchError } = await supabase
+    .from('books')
+    .select('id, tags')
+    .eq('user_id', user.id)
+    .contains('tags', [tag])
+  if (fetchError) throw fetchError
+
+  for (const book of matching) {
+    const { error } = await supabase
+      .from('books')
+      .update({
+        collection: tag,
+        tags: (book.tags ?? []).filter((t) => t !== tag),
+      })
+      .eq('id', book.id)
+    if (error) throw error
+  }
+  return matching.length
+}
+
+// Renomme une collection ou une série sur tous les livres qui la portent.
+async function renameFieldValue(field, oldValue, newValue) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { error } = await supabase
+    .from('books')
+    .update({ [field]: newValue })
+    .eq('user_id', user.id)
+    .eq(field, oldValue)
+  if (error) throw error
+}
+
+export function renamePublisher(oldName, newName) {
+  return renameFieldValue('publisher', oldName, newName)
+}
+
+export function renameCollection(oldName, newName) {
+  return renameFieldValue('collection', oldName, newName)
+}
+
+export function renameSeries(oldName, newName) {
+  return renameFieldValue('series', oldName, newName)
 }
