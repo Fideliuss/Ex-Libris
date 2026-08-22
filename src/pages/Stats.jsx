@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import {
   convertTagToCollection,
@@ -7,11 +8,15 @@ import {
   renamePublisher,
   renameSeries,
 } from '../lib/books'
+import { getAnnualGoal, updateAnnualGoal } from '../lib/userSettings'
+import { bookPoints } from '../lib/points'
 import { describeError } from '../lib/errors'
 import { useGoBack } from '../lib/navigation'
 import { BOOK_TYPES } from '../lib/bookTypes'
+import { STATUS_LABELS } from '../lib/statusLabels'
 import HouseholdTabs from '../components/HouseholdTabs'
 import TabBar from '../components/TabBar'
+import StatusStackedBar from '../components/StatusStackedBar'
 import BarChart from '../components/BarChart'
 import DonutChart from '../components/DonutChart'
 import ReadingHeatmap from '../components/ReadingHeatmap'
@@ -39,9 +44,17 @@ function parseDateOnly(str) {
   return new Date(y, m - 1, d)
 }
 
+function formatDate(value) {
+  if (!value) return null
+  const [y, m, d] = value.split('-')
+  return `${d}/${m}/${y}`
+}
+
 export default function Stats() {
+  const { user } = useAuth()
   const { partner, isMine, books, loading, error, refresh, setView } =
     useHouseholdBooks()
+  const viewedUserId = isMine ? user?.id : partner?.id
   const goBack = useGoBack('/')
   const [convertingTag, setConvertingTag] = useState(null)
   const [convertError, setConvertError] = useState(null)
@@ -71,6 +84,38 @@ export default function Stats() {
   const totalSpent = books
     .filter((b) => b.status !== 'wishlist')
     .reduce((sum, b) => sum + (Number(b.price) || 0), 0)
+
+  const statusSegments = [
+    { key: 'read', label: STATUS_LABELS.read, value: readCount, colorClass: 'bg-library' },
+    {
+      key: 'reading',
+      label: STATUS_LABELS.reading,
+      value: readingCount,
+      colorClass: 'bg-reading',
+    },
+    {
+      key: 'to-read',
+      label: STATUS_LABELS['to-read'],
+      value: toReadCount,
+      colorClass: 'bg-brass',
+    },
+  ]
+
+  const currentYearScore = useMemo(() => {
+    const year = String(new Date().getFullYear())
+    return books
+      .filter((b) => b.date_finished?.startsWith(year))
+      .reduce((sum, b) => sum + bookPoints(b), 0)
+  }, [books])
+
+  const lastFinished = useMemo(() => {
+    return (
+      books
+        .filter((b) => b.date_finished)
+        .sort((a, b) => b.date_finished.localeCompare(a.date_finished))[0] ??
+      null
+    )
+  }, [books])
 
   const typeSegments = useMemo(() => {
     const colorByType = {
@@ -325,28 +370,82 @@ export default function Stats() {
 
             {statsTab === 'overview' && (
               <div className="space-y-6">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  <StatTile label="Total" value={totalCount} />
-                  <StatTile label="Lus" value={readCount} accent="text-stamp" />
-                  <StatTile label="En cours" value={readingCount} />
-                  <StatTile label="À lire" value={toReadCount} />
-                  <StatTile
-                    label="Wishlist"
-                    value={wishlistCount}
-                    accent="text-brass"
-                  />
-                  <StatTile
-                    label="Dépensé"
-                    value={`${totalSpent.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}
-                  />
+                <ObjectiveCard
+                  viewedUserId={viewedUserId}
+                  isMine={isMine}
+                  score={currentYearScore}
+                />
+
+                <div className="grid sm:grid-cols-2 gap-6">
+                  <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+                    <h2 className="font-serif text-lg mb-1">
+                      Statut de la collection
+                    </h2>
+                    <p className="text-sm text-ink/50 mb-3">
+                      {totalCount} livre{totalCount > 1 ? 's' : ''} au total
+                    </p>
+                    <StatusStackedBar segments={statusSegments} />
+                    <div className="grid grid-cols-2 gap-3 mt-4">
+                      <StatTile
+                        label="Wishlist"
+                        value={wishlistCount}
+                        accent="text-brass"
+                      />
+                      <StatTile
+                        label="Dépensé"
+                        value={`${totalSpent.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}
+                      />
+                    </div>
+                  </section>
+
+                  <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+                    <h2 className="font-serif text-lg mb-4">
+                      Répartition par type
+                    </h2>
+                    <DonutChart segments={typeSegments} />
+                  </section>
                 </div>
 
-                <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
-                  <h2 className="font-serif text-lg mb-4">
-                    Répartition par type
-                  </h2>
-                  <DonutChart segments={typeSegments} />
-                </section>
+                {lastFinished && (
+                  <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+                    <h2 className="font-serif text-lg mb-4">
+                      Dernier livre terminé
+                    </h2>
+                    <Link
+                      to={`/books/${lastFinished.id}`}
+                      className="flex gap-4 items-center hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                    >
+                      <div className="w-16 aspect-[2/3] rounded-sm overflow-hidden border border-ink/10 bg-paper shrink-0">
+                        {lastFinished.cover_url ? (
+                          <img
+                            src={lastFinished.cover_url}
+                            alt=""
+                            className="w-full h-full object-contain"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <span className="font-serif text-ink/30 text-xs px-1 text-center">
+                              {lastFinished.title}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-serif text-lg truncate">
+                          {lastFinished.title}
+                        </p>
+                        {lastFinished.author && (
+                          <p className="text-sm text-ink/60 truncate">
+                            {lastFinished.author}
+                          </p>
+                        )}
+                        <p className="text-xs text-ink/40 mt-1">
+                          Terminé le {formatDate(lastFinished.date_finished)}
+                        </p>
+                      </div>
+                    </Link>
+                  </section>
+                )}
               </div>
             )}
 
@@ -667,6 +766,147 @@ function StatTile({ label, value, accent }) {
       </p>
       <p className="text-xs text-ink/60 mt-1">{label}</p>
     </div>
+  )
+}
+
+// Enlève les zéros inutiles après la virgule (9.50 -> 9.5, 12.00 -> 12), le
+// score cumulant des points fractionnaires (1, 1/2, 1/3 selon le type).
+function formatScore(value) {
+  return value.toFixed(2).replace(/\.?0+$/, '')
+}
+
+function ObjectiveCard({ viewedUserId, isMine, score }) {
+  // Garde le userId avec le résultat : si viewedUserId change (bascule
+  // Mine/Partenaire) avant que la requête ne revienne, ce résultat est
+  // "périmé" et on retombe sur l'état de chargement au lieu d'afficher
+  // brièvement l'objectif de l'autre.
+  const [result, setResult] = useState({ userId: null, goal: null, error: null })
+  const isStale = result.userId !== viewedUserId
+  const goal = isStale ? null : result.goal
+  const loadError = isStale ? null : result.error
+
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState(null)
+
+  useEffect(() => {
+    if (!viewedUserId) return
+    let active = true
+    getAnnualGoal(viewedUserId)
+      .then((g) => {
+        if (active) setResult({ userId: viewedUserId, goal: g, error: null })
+      })
+      .catch((err) => {
+        if (active) {
+          setResult({ userId: viewedUserId, goal: null, error: describeError(err) })
+        }
+      })
+    return () => {
+      active = false
+    }
+  }, [viewedUserId])
+
+  function startEditing() {
+    setDraft(String(goal ?? 12))
+    setEditing(true)
+    setSaveError(null)
+  }
+
+  async function submit() {
+    const value = Number(draft)
+    if (!value || value <= 0) {
+      setSaveError('Entre un nombre positif.')
+      return
+    }
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await updateAnnualGoal(value)
+      setResult({ userId: viewedUserId, goal: value, error: null })
+      setEditing(false)
+    } catch (err) {
+      setSaveError(describeError(err))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const year = new Date().getFullYear()
+  const pct = goal ? Math.min(100, Math.round((score / goal) * 100)) : 0
+
+  return (
+    <section className="bg-card border-t-4 border-dashed border-library rounded-sm shadow-sm p-6">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <h2 className="font-serif text-lg">Objectif {year}</h2>
+        {isMine && !editing && goal != null && (
+          <button
+            type="button"
+            onClick={startEditing}
+            className="text-xs text-library underline underline-offset-2 hover:text-library/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+          >
+            Modifier l'objectif
+          </button>
+        )}
+      </div>
+
+      {loadError ? (
+        <p role="alert" className="text-sm text-stamp">
+          {loadError}
+        </p>
+      ) : goal == null ? (
+        <p className="text-sm text-ink/50">Chargement…</p>
+      ) : editing ? (
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min="1"
+            step="0.5"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            autoFocus
+            className="w-24 rounded-sm border border-ink/20 bg-white px-2 py-1 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+          />
+          <button
+            type="button"
+            onClick={submit}
+            disabled={saving}
+            className="text-xs text-library underline underline-offset-2 hover:text-library/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm disabled:opacity-60"
+          >
+            {saving ? 'Enregistrement…' : 'Valider'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditing(false)}
+            className="text-xs text-ink/50 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+          >
+            Annuler
+          </button>
+        </div>
+      ) : (
+        <>
+          <p className="font-mono text-3xl font-semibold text-library">
+            {formatScore(score)}
+            <span className="text-lg text-ink/40 font-normal"> / {goal}</span>
+          </p>
+          <div className="h-3 w-full rounded-full bg-ink/5 overflow-hidden mt-3">
+            <div
+              className="h-full bg-library rounded-full"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <p className="text-xs text-ink/50 mt-2">
+            {pct}% de l'objectif · 1 livre = 1 pt, BD/Comics = 0,5 pt, Manga =
+            1/3 pt
+          </p>
+        </>
+      )}
+      {saveError && (
+        <p role="alert" className="text-xs text-stamp mt-2">
+          {saveError}
+        </p>
+      )}
+    </section>
   )
 }
 
