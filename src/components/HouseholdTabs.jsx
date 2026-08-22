@@ -13,9 +13,14 @@ export default function HouseholdTabs({
   mineLabel,
   partnerLabel,
   ariaLabel,
+  compact = false,
 }) {
   return (
-    <div className="flex gap-2 mb-6" role="tablist" aria-label={ariaLabel}>
+    <div
+      className={`flex gap-2 ${compact ? '' : 'mb-6'}`}
+      role="tablist"
+      aria-label={ariaLabel}
+    >
       <button
         type="button"
         role="tab"
