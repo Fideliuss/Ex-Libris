@@ -11,6 +11,7 @@ import { describeError } from '../lib/errors'
 import { useGoBack } from '../lib/navigation'
 import { BOOK_TYPES } from '../lib/bookTypes'
 import HouseholdTabs from '../components/HouseholdTabs'
+import TabBar from '../components/TabBar'
 import BarChart from '../components/BarChart'
 import DonutChart from '../components/DonutChart'
 import ReadingHeatmap from '../components/ReadingHeatmap'
@@ -22,6 +23,12 @@ const PERIOD_OPTIONS = {
   rolling12: '12 derniers mois',
   custom: 'Personnalisé',
 }
+
+const STATS_TABS = [
+  { key: 'overview', label: "Vue d'ensemble" },
+  { key: 'activity', label: 'Activité de lecture' },
+  { key: 'library', label: 'Bibliothèque' },
+]
 
 // Les champs date_started/date_finished sont des "date" Postgres (pas de
 // composante horaire) : les parser avec `new Date(string)` les interprète en
@@ -38,6 +45,7 @@ export default function Stats() {
   const goBack = useGoBack('/')
   const [convertingTag, setConvertingTag] = useState(null)
   const [convertError, setConvertError] = useState(null)
+  const [statsTab, setStatsTab] = useState('overview')
   const [period, setPeriod] = useState('all')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
@@ -308,296 +316,342 @@ export default function Stats() {
           </p>
         ) : (
           <div className="space-y-6">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <StatTile label="Total" value={totalCount} />
-              <StatTile label="Lus" value={readCount} accent="text-stamp" />
-              <StatTile label="En cours" value={readingCount} />
-              <StatTile label="À lire" value={toReadCount} />
-              <StatTile label="Wishlist" value={wishlistCount} accent="text-brass" />
-              <StatTile
-                label="Dépensé"
-                value={`${totalSpent.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}
-              />
-            </div>
+            <TabBar
+              tabs={STATS_TABS}
+              active={statsTab}
+              onChange={setStatsTab}
+              ariaLabel="Section de statistiques"
+            />
 
-            <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
-              <h2 className="font-serif text-lg mb-4">Répartition par type</h2>
-              <DonutChart segments={typeSegments} />
-            </section>
-
-            <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
-              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-                <h2 className="font-serif text-lg">Rythme &amp; notes</h2>
-                <div className="flex flex-wrap items-center gap-2">
-                  <select
-                    value={period}
-                    onChange={(e) => setPeriod(e.target.value)}
-                    aria-label="Période"
-                    className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-                  >
-                    {Object.entries(PERIOD_OPTIONS).map(([key, label]) => (
-                      <option key={key} value={key}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                  {period === 'custom' && (
-                    <>
-                      <input
-                        type="date"
-                        value={customFrom}
-                        onChange={(e) => setCustomFrom(e.target.value)}
-                        aria-label="Du"
-                        className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-                      />
-                      <input
-                        type="date"
-                        value={customTo}
-                        onChange={(e) => setCustomTo(e.target.value)}
-                        aria-label="Au"
-                        className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-                      />
-                    </>
-                  )}
+            {statsTab === 'overview' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <StatTile label="Total" value={totalCount} />
+                  <StatTile label="Lus" value={readCount} accent="text-stamp" />
+                  <StatTile label="En cours" value={readingCount} />
+                  <StatTile label="À lire" value={toReadCount} />
+                  <StatTile
+                    label="Wishlist"
+                    value={wishlistCount}
+                    accent="text-brass"
+                  />
+                  <StatTile
+                    label="Dépensé"
+                    value={`${totalSpent.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}
+                  />
                 </div>
+
+                <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+                  <h2 className="font-serif text-lg mb-4">
+                    Répartition par type
+                  </h2>
+                  <DonutChart segments={typeSegments} />
+                </section>
               </div>
-
-              {finishedInPeriod.length === 0 ? (
-                <p className="text-sm text-ink/50">
-                  Aucun livre fini sur cette période.
-                </p>
-              ) : (
-                <div className="grid sm:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="font-mono text-xs uppercase tracking-widest text-ink/50 mb-3">
-                      Rythme de lecture
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <StatTile label="Livres finis" value={finishedInPeriod.length} />
-                      <StatTile
-                        label="Pages lues"
-                        value={paceStats.pagesRead.toLocaleString('fr-FR')}
-                      />
-                      <StatTile
-                        label="Par mois (moy.)"
-                        value={paceStats.perMonth.toFixed(1)}
-                      />
-                      <StatTile
-                        label="Jours / livre (moy.)"
-                        value={
-                          paceStats.avgDays != null
-                            ? Math.round(paceStats.avgDays)
-                            : '—'
-                        }
-                      />
-                    </div>
-                    {paceStats.fastest && (
-                      <p className="text-xs text-ink/50 mt-3">
-                        Lecture éclair :{' '}
-                        <span className="text-ink/70">
-                          {paceStats.fastest.book.title}
-                        </span>{' '}
-                        en {paceStats.fastest.days} jour
-                        {paceStats.fastest.days > 1 ? 's' : ''}
-                      </p>
-                    )}
-                    {paceStats.slowest && paceStats.slowest !== paceStats.fastest && (
-                      <p className="text-xs text-ink/50 mt-1">
-                        Lecture marathon :{' '}
-                        <span className="text-ink/70">
-                          {paceStats.slowest.book.title}
-                        </span>{' '}
-                        en {paceStats.slowest.days} jours
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <h3 className="font-mono text-xs uppercase tracking-widest text-ink/50 mb-3">
-                      Notes
-                      {avgRating != null && ` · moyenne ${avgRating.toFixed(1)} ★`}
-                    </h3>
-                    <BarChart bars={ratingBars} />
-                  </div>
-                </div>
-              )}
-            </section>
-
-            {finishedInPeriod.length > 0 && (
-              <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
-                <h2 className="font-serif text-lg mb-4">Couvertures</h2>
-                {coverWallBooks.length === 0 ? (
-                  <p className="text-sm text-ink/50">
-                    Aucune couverture pour les livres finis sur cette période.
-                  </p>
-                ) : (
-                  <>
-                    <div className="flex flex-wrap gap-2">
-                      {coverWallBooks.map((book) => (
-                        <Link
-                          key={book.id}
-                          to={`/books/${book.id}`}
-                          title={book.title}
-                          className="relative w-12 aspect-[2/3] rounded-sm overflow-hidden border border-ink/10 bg-paper shrink-0 transition-transform duration-150 hover:scale-150 hover:z-10 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-library focus-visible:scale-150 focus-visible:z-10"
-                        >
-                          {/* Mosaïque décorative et compacte : ici on veut que
-                              chaque case soit pleine, donc object-cover est
-                              volontaire (contrairement à l'affichage complet
-                              utilisé ailleurs pour les couvertures). */}
-                          <img
-                            src={book.cover_url}
-                            alt=""
-                            className="w-full h-full object-cover"
-                          />
-                        </Link>
-                      ))}
-                    </div>
-                    {finishedInPeriod.length > coverWallBooks.length && (
-                      <p className="text-xs text-ink/40 mt-3">
-                        + {finishedInPeriod.length - coverWallBooks.length} livre
-                        {finishedInPeriod.length - coverWallBooks.length > 1
-                          ? 's'
-                          : ''}{' '}
-                        sans couverture
-                      </p>
-                    )}
-                  </>
-                )}
-              </section>
             )}
 
-            <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
-              <h2 className="font-serif text-lg mb-4">Calendrier de lecture</h2>
-              <ReadingHeatmap books={books} />
-            </section>
+            {statsTab === 'activity' && (
+              <div className="space-y-6">
+                <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+                  <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <h2 className="font-serif text-lg">Rythme &amp; notes</h2>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <select
+                        value={period}
+                        onChange={(e) => setPeriod(e.target.value)}
+                        aria-label="Période"
+                        className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                      >
+                        {Object.entries(PERIOD_OPTIONS).map(([key, label]) => (
+                          <option key={key} value={key}>
+                            {label}
+                          </option>
+                        ))}
+                      </select>
+                      {period === 'custom' && (
+                        <>
+                          <input
+                            type="date"
+                            value={customFrom}
+                            onChange={(e) => setCustomFrom(e.target.value)}
+                            aria-label="Du"
+                            className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                          />
+                          <input
+                            type="date"
+                            value={customTo}
+                            onChange={(e) => setCustomTo(e.target.value)}
+                            aria-label="Au"
+                            className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                          />
+                        </>
+                      )}
+                    </div>
+                  </div>
 
-            <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
-              <h2 className="font-serif text-lg mb-4">
-                Livres finis par mois
-              </h2>
-              <BarChart bars={monthlyFinished} />
-            </section>
-
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
-                <h2 className="font-serif text-lg mb-4">Par tag</h2>
-                {isMine && (
-                  <p className="text-xs text-ink/50 mb-3">
-                    Un tag qui est en fait un nom de collection éditeur (ex:
-                    "folio sf") ? Clique "→ Collection" pour le déplacer sur
-                    tous les livres concernés.
-                  </p>
-                )}
-                {convertError && (
-                  <p role="alert" className="text-sm text-stamp mb-3">
-                    {convertError}
-                  </p>
-                )}
-                {tagStats.length === 0 ? (
-                  <p className="text-sm text-ink/50">Aucun tag pour l'instant.</p>
-                ) : (
-                  <ul className="space-y-3">
-                    {tagStats.map((entry) => (
-                      <li key={entry.tag}>
-                        <div className="flex items-baseline justify-between gap-2 mb-1">
-                          <span className="text-sm truncate">{entry.tag}</span>
-                          <span className="font-mono text-xs text-ink/60 shrink-0">
-                            {entry.count}
-                            {entry.avgRating != null &&
-                              ` · ★ ${entry.avgRating.toFixed(1)}`}
-                          </span>
+                  {finishedInPeriod.length === 0 ? (
+                    <p className="text-sm text-ink/50">
+                      Aucun livre fini sur cette période.
+                    </p>
+                  ) : (
+                    <div className="grid sm:grid-cols-2 gap-6">
+                      <div>
+                        <h3 className="font-mono text-xs uppercase tracking-widest text-ink/50 mb-3">
+                          Rythme de lecture
+                        </h3>
+                        <div className="grid grid-cols-2 gap-3">
+                          <StatTile
+                            label="Livres finis"
+                            value={finishedInPeriod.length}
+                          />
+                          <StatTile
+                            label="Pages lues"
+                            value={paceStats.pagesRead.toLocaleString('fr-FR')}
+                          />
+                          <StatTile
+                            label="Par mois (moy.)"
+                            value={paceStats.perMonth.toFixed(1)}
+                          />
+                          <StatTile
+                            label="Jours / livre (moy.)"
+                            value={
+                              paceStats.avgDays != null
+                                ? Math.round(paceStats.avgDays)
+                                : '—'
+                            }
+                          />
                         </div>
-                        <CountBar count={entry.count} max={maxTagCount} />
-                        {isMine && (
-                          <button
-                            type="button"
-                            onClick={() => handleConvertTag(entry.tag)}
-                            disabled={convertingTag === entry.tag}
-                            className="mt-1 text-xs text-library underline underline-offset-2 hover:text-library/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm disabled:opacity-60"
-                          >
-                            {convertingTag === entry.tag
-                              ? 'Déplacement…'
-                              : '→ Collection'}
-                          </button>
+                        {paceStats.fastest && (
+                          <p className="text-xs text-ink/50 mt-3">
+                            Lecture éclair :{' '}
+                            <span className="text-ink/70">
+                              {paceStats.fastest.book.title}
+                            </span>{' '}
+                            en {paceStats.fastest.days} jour
+                            {paceStats.fastest.days > 1 ? 's' : ''}
+                          </p>
                         )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
+                        {paceStats.slowest &&
+                          paceStats.slowest !== paceStats.fastest && (
+                            <p className="text-xs text-ink/50 mt-1">
+                              Lecture marathon :{' '}
+                              <span className="text-ink/70">
+                                {paceStats.slowest.book.title}
+                              </span>{' '}
+                              en {paceStats.slowest.days} jours
+                            </p>
+                          )}
+                      </div>
 
-              <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
-                <h2 className="font-serif text-lg mb-4">Par éditeur</h2>
-                {publisherStats.length === 0 ? (
-                  <p className="text-sm text-ink/50">
-                    Aucun éditeur renseigné pour l'instant.
-                  </p>
-                ) : (
-                  <ul className="space-y-3">
-                    {publisherStats.map((entry) => (
-                      <RenameableStatRow
-                        key={entry.publisher}
-                        name={entry.publisher}
-                        count={entry.count}
-                        max={maxPublisherCount}
-                        existingNames={publisherStats.map((e) => e.publisher)}
-                        onRename={renamePublisher}
-                        isMine={isMine}
-                        onRenamed={refresh}
-                      />
-                    ))}
-                  </ul>
-                )}
-              </section>
+                      <div>
+                        <h3 className="font-mono text-xs uppercase tracking-widest text-ink/50 mb-3">
+                          Notes
+                          {avgRating != null &&
+                            ` · moyenne ${avgRating.toFixed(1)} ★`}
+                        </h3>
+                        <BarChart bars={ratingBars} />
+                      </div>
+                    </div>
+                  )}
+                </section>
 
-              <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
-                <h2 className="font-serif text-lg mb-4">Par collection</h2>
-                {collectionStats.length === 0 ? (
-                  <p className="text-sm text-ink/50">
-                    Aucune collection renseignée pour l'instant.
-                  </p>
-                ) : (
-                  <ul className="space-y-3">
-                    {collectionStats.map((entry) => (
-                      <RenameableStatRow
-                        key={entry.collection}
-                        name={entry.collection}
-                        count={entry.count}
-                        max={maxCollectionCount}
-                        existingNames={collectionStats.map((e) => e.collection)}
-                        onRename={renameCollection}
-                        isMine={isMine}
-                        onRenamed={refresh}
-                      />
-                    ))}
-                  </ul>
+                {finishedInPeriod.length > 0 && (
+                  <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+                    <h2 className="font-serif text-lg mb-4">Couvertures</h2>
+                    {coverWallBooks.length === 0 ? (
+                      <p className="text-sm text-ink/50">
+                        Aucune couverture pour les livres finis sur cette
+                        période.
+                      </p>
+                    ) : (
+                      <>
+                        <div className="flex flex-wrap gap-2">
+                          {coverWallBooks.map((book) => (
+                            <Link
+                              key={book.id}
+                              to={`/books/${book.id}`}
+                              title={book.title}
+                              className="relative w-12 aspect-[2/3] rounded-sm overflow-hidden border border-ink/10 bg-paper shrink-0 transition-transform duration-150 hover:scale-150 hover:z-10 hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-library focus-visible:scale-150 focus-visible:z-10"
+                            >
+                              {/* Mosaïque décorative et compacte : ici on veut
+                                  que chaque case soit pleine, donc
+                                  object-cover est volontaire (contrairement à
+                                  l'affichage complet utilisé ailleurs pour les
+                                  couvertures). */}
+                              <img
+                                src={book.cover_url}
+                                alt=""
+                                className="w-full h-full object-cover"
+                              />
+                            </Link>
+                          ))}
+                        </div>
+                        {finishedInPeriod.length > coverWallBooks.length && (
+                          <p className="text-xs text-ink/40 mt-3">
+                            + {finishedInPeriod.length - coverWallBooks.length}{' '}
+                            livre
+                            {finishedInPeriod.length - coverWallBooks.length > 1
+                              ? 's'
+                              : ''}{' '}
+                            sans couverture
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </section>
                 )}
-              </section>
 
-              <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
-                <h2 className="font-serif text-lg mb-4">Par série</h2>
-                {seriesStats.length === 0 ? (
-                  <p className="text-sm text-ink/50">
-                    Aucune série renseignée pour l'instant.
-                  </p>
-                ) : (
-                  <ul className="space-y-3">
-                    {seriesStats.map((entry) => (
-                      <RenameableStatRow
-                        key={entry.series}
-                        name={entry.series}
-                        count={entry.count}
-                        max={maxSeriesCount}
-                        existingNames={seriesStats.map((e) => e.series)}
-                        onRename={renameSeries}
-                        isMine={isMine}
-                        onRenamed={refresh}
-                      />
-                    ))}
-                  </ul>
-                )}
-              </section>
-            </div>
+                <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+                  <h2 className="font-serif text-lg mb-4">
+                    Calendrier de lecture
+                  </h2>
+                  <ReadingHeatmap books={books} />
+                </section>
+
+                <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+                  <h2 className="font-serif text-lg mb-4">
+                    Livres finis par mois
+                  </h2>
+                  <BarChart bars={monthlyFinished} />
+                </section>
+              </div>
+            )}
+
+            {statsTab === 'library' && (
+              <div className="grid sm:grid-cols-2 gap-6">
+                <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+                  <h2 className="font-serif text-lg mb-4">Par tag</h2>
+                  {isMine && (
+                    <p className="text-xs text-ink/50 mb-3">
+                      Un tag qui est en fait un nom de collection éditeur (ex:
+                      "folio sf") ? Clique "→ Collection" pour le déplacer sur
+                      tous les livres concernés.
+                    </p>
+                  )}
+                  {convertError && (
+                    <p role="alert" className="text-sm text-stamp mb-3">
+                      {convertError}
+                    </p>
+                  )}
+                  {tagStats.length === 0 ? (
+                    <p className="text-sm text-ink/50">
+                      Aucun tag pour l'instant.
+                    </p>
+                  ) : (
+                    <PaginatedList items={tagStats}>
+                      {(entry) => (
+                        <li key={entry.tag}>
+                          <div className="flex items-baseline justify-between gap-2 mb-1">
+                            <span className="text-sm truncate">
+                              {entry.tag}
+                            </span>
+                            <span className="font-mono text-xs text-ink/60 shrink-0">
+                              {entry.count}
+                              {entry.avgRating != null &&
+                                ` · ★ ${entry.avgRating.toFixed(1)}`}
+                            </span>
+                          </div>
+                          <CountBar
+                            count={entry.count}
+                            max={maxTagCount}
+                            colorClass="bg-library"
+                          />
+                          {isMine && (
+                            <button
+                              type="button"
+                              onClick={() => handleConvertTag(entry.tag)}
+                              disabled={convertingTag === entry.tag}
+                              className="mt-1 text-xs text-library underline underline-offset-2 hover:text-library/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm disabled:opacity-60"
+                            >
+                              {convertingTag === entry.tag
+                                ? 'Déplacement…'
+                                : '→ Collection'}
+                            </button>
+                          )}
+                        </li>
+                      )}
+                    </PaginatedList>
+                  )}
+                </section>
+
+                <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+                  <h2 className="font-serif text-lg mb-4">Par éditeur</h2>
+                  {publisherStats.length === 0 ? (
+                    <p className="text-sm text-ink/50">
+                      Aucun éditeur renseigné pour l'instant.
+                    </p>
+                  ) : (
+                    <PaginatedList items={publisherStats}>
+                      {(entry) => (
+                        <RenameableStatRow
+                          key={entry.publisher}
+                          name={entry.publisher}
+                          count={entry.count}
+                          max={maxPublisherCount}
+                          colorClass="bg-brass"
+                          existingNames={publisherStats.map((e) => e.publisher)}
+                          onRename={renamePublisher}
+                          isMine={isMine}
+                          onRenamed={refresh}
+                        />
+                      )}
+                    </PaginatedList>
+                  )}
+                </section>
+
+                <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+                  <h2 className="font-serif text-lg mb-4">Par collection</h2>
+                  {collectionStats.length === 0 ? (
+                    <p className="text-sm text-ink/50">
+                      Aucune collection renseignée pour l'instant.
+                    </p>
+                  ) : (
+                    <PaginatedList items={collectionStats}>
+                      {(entry) => (
+                        <RenameableStatRow
+                          key={entry.collection}
+                          name={entry.collection}
+                          count={entry.count}
+                          max={maxCollectionCount}
+                          colorClass="bg-wishlist"
+                          existingNames={collectionStats.map(
+                            (e) => e.collection,
+                          )}
+                          onRename={renameCollection}
+                          isMine={isMine}
+                          onRenamed={refresh}
+                        />
+                      )}
+                    </PaginatedList>
+                  )}
+                </section>
+
+                <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+                  <h2 className="font-serif text-lg mb-4">Par série</h2>
+                  {seriesStats.length === 0 ? (
+                    <p className="text-sm text-ink/50">
+                      Aucune série renseignée pour l'instant.
+                    </p>
+                  ) : (
+                    <PaginatedList items={seriesStats}>
+                      {(entry) => (
+                        <RenameableStatRow
+                          key={entry.series}
+                          name={entry.series}
+                          count={entry.count}
+                          max={maxSeriesCount}
+                          colorClass="bg-reading"
+                          existingNames={seriesStats.map((e) => e.series)}
+                          onRename={renameSeries}
+                          isMine={isMine}
+                          onRenamed={refresh}
+                        />
+                      )}
+                    </PaginatedList>
+                  )}
+                </section>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -616,10 +670,54 @@ function StatTile({ label, value, accent }) {
   )
 }
 
+const PAGE_SIZE = 6
+
+// Les listes Par tag/éditeur/collection/série peuvent compter des dizaines
+// d'entrées : on les pagine plutôt que de dérouler un mur de texte.
+function PaginatedList({ items, children }) {
+  const [page, setPage] = useState(0)
+  const pageCount = Math.max(1, Math.ceil(items.length / PAGE_SIZE))
+  const clampedPage = Math.min(page, pageCount - 1)
+  const visible = items.slice(
+    clampedPage * PAGE_SIZE,
+    clampedPage * PAGE_SIZE + PAGE_SIZE,
+  )
+
+  return (
+    <>
+      <ul className="space-y-3">{visible.map(children)}</ul>
+      {pageCount > 1 && (
+        <div className="flex items-center justify-between mt-3">
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={clampedPage === 0}
+            className="text-xs text-library underline underline-offset-2 hover:text-library/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm disabled:opacity-30 disabled:no-underline"
+          >
+            ← Précédent
+          </button>
+          <span className="text-xs text-ink/40 font-mono">
+            {clampedPage + 1} / {pageCount}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+            disabled={clampedPage === pageCount - 1}
+            className="text-xs text-library underline underline-offset-2 hover:text-library/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm disabled:opacity-30 disabled:no-underline"
+          >
+            Suivant →
+          </button>
+        </div>
+      )}
+    </>
+  )
+}
+
 function RenameableStatRow({
   name,
   count,
   max,
+  colorClass,
   existingNames,
   onRename,
   onRenamed,
@@ -691,7 +789,7 @@ function RenameableStatRow({
         )}
         <span className="font-mono text-xs text-ink/60 shrink-0">{count}</span>
       </div>
-      <CountBar count={count} max={max} />
+      <CountBar count={count} max={max} colorClass={colorClass} />
       {editing ? (
         <div className="mt-1 space-y-1">
           {confirmingMerge && (
@@ -742,12 +840,12 @@ function RenameableStatRow({
   )
 }
 
-function CountBar({ count, max }) {
+function CountBar({ count, max, colorClass = 'bg-library' }) {
   const pct = max > 0 ? Math.max(4, Math.round((count / max) * 100)) : 0
   return (
-    <div className="h-1.5 w-full bg-ink/10 rounded-full overflow-hidden">
+    <div className="h-2 w-full bg-ink/10 rounded-full overflow-hidden">
       <div
-        className="h-full bg-library rounded-full"
+        className={`h-full rounded-full ${colorClass}`}
         style={{ width: `${pct}%` }}
       />
     </div>
