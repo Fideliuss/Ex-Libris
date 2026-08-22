@@ -10,6 +10,7 @@ import { describeError } from '../lib/errors'
 import { useGoBack } from '../lib/navigation'
 import HouseholdTabs from '../components/HouseholdTabs'
 import BarChart from '../components/BarChart'
+import ReadingHeatmap from '../components/ReadingHeatmap'
 import LoadingScreen from '../components/LoadingScreen'
 
 const PERIOD_OPTIONS = {
@@ -389,6 +390,11 @@ export default function Stats() {
                   </div>
                 </div>
               )}
+            </section>
+
+            <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+              <h2 className="font-serif text-lg mb-4">Calendrier de lecture</h2>
+              <ReadingHeatmap books={books} />
             </section>
 
             <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
