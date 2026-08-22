@@ -99,11 +99,17 @@ export default function BookDetail() {
       ? visibleSiblings[siblingIndex + 1]
       : null
 
+  // replace: true pour ne pas empiler un tome par hop dans l'historique —
+  // sinon "Retour à la collection" doit défaire toute la chaîne de tomes
+  // visités avant de revenir en arrière.
   const goToSibling = useCallback(
     (sibling, direction) => {
       if (!sibling) return
       setCoverExpanded(false)
-      navigateWithViewTransition(navigate, `/books/${sibling.id}`, direction)
+      navigateWithViewTransition(navigate, `/books/${sibling.id}`, {
+        direction,
+        replace: true,
+      })
     },
     [navigate],
   )

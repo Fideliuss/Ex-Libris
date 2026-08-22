@@ -71,56 +71,60 @@ body {
   }
 }
 
-/* Transition "en volet" vers une fiche livre (voir Link viewTransition dans
-   BookCard) : la fiche glisse comme un volet qui se ferme par-dessus la vue
-   précédente, plutôt que le fondu par défaut du navigateur. Le sens dépend
-   de `data-transition-direction` sur <html>, posé par
+/* Transition "fondu doux" vers une fiche livre (voir Link viewTransition
+   dans BookCard) : la fiche apparaît en fondu avec un léger glissement,
+   plutôt que le fondu abrupt par défaut du navigateur. Le sens dépend de
+   `data-transition-direction` sur <html>, posé par
    navigateWithViewTransition() juste avant de démarrer la transition :
    "forward" (par défaut, ex: ouvrir une fiche, tome suivant) glisse depuis
    la droite ; "back" (ex: tome précédent) glisse depuis la gauche. */
 @media (prefers-reduced-motion: no-preference) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
-    animation-duration: 0.4s;
-    animation-timing-function: ease-in-out;
+    animation-duration: 0.35s;
+    animation-timing-function: ease-out;
   }
 
   :root:not([data-transition-direction='back']) ::view-transition-old(root) {
-    animation-name: volet-out;
+    animation-name: fondu-out;
   }
   :root:not([data-transition-direction='back']) ::view-transition-new(root) {
-    animation-name: volet-in;
+    animation-name: fondu-in;
   }
 
   :root[data-transition-direction='back'] ::view-transition-old(root) {
-    animation-name: volet-out-reverse;
+    animation-name: fondu-out-reverse;
   }
   :root[data-transition-direction='back'] ::view-transition-new(root) {
-    animation-name: volet-in-reverse;
+    animation-name: fondu-in-reverse;
   }
 }
 
-@keyframes volet-in {
+@keyframes fondu-in {
   from {
-    transform: translateX(100%);
+    opacity: 0;
+    transform: translateX(8%);
   }
 }
 
-@keyframes volet-out {
+@keyframes fondu-out {
   to {
-    transform: translateX(-15%);
+    opacity: 0;
+    transform: translateX(-8%);
   }
 }
 
-@keyframes volet-in-reverse {
+@keyframes fondu-in-reverse {
   from {
-    transform: translateX(-100%);
+    opacity: 0;
+    transform: translateX(-8%);
   }
 }
 
-@keyframes volet-out-reverse {
+@keyframes fondu-out-reverse {
   to {
-    transform: translateX(15%);
+    opacity: 0;
+    transform: translateX(8%);
   }
 }
 
