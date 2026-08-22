@@ -341,7 +341,7 @@ export default function Collection() {
             {user?.email}
           </p>
           <h1 className="font-serif text-2xl font-semibold">
-            Ma Bibliothèque
+            Ex Libris
           </h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">

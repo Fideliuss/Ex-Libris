@@ -22,6 +22,55 @@ body {
   @apply bg-paper text-ink font-sans antialiased;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Apparition au scroll (page vitrine) : fondu + léger glissement, piloté par
+   IntersectionObserver dans Landing.jsx. Visible directement si l'utilisateur
+   préfère moins d'animations. */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+}
+.reveal.reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    transition:
+      opacity 0.7s ease-out,
+      transform 0.7s ease-out;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Entrée du hero au chargement (pas de scroll à observer, donc animation CSS
+   pure plutôt qu'un état React + IntersectionObserver comme .reveal). */
+@media (prefers-reduced-motion: no-preference) {
+  .hero-in {
+    animation: hero-in 0.7s ease-out both;
+  }
+}
+@keyframes hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Transition "en volet" vers une fiche livre (voir Link viewTransition dans
    BookCard) : la fiche glisse depuis la droite comme un volet qui se ferme
    par-dessus la collection, plutôt que le fondu par défaut du navigateur. */
