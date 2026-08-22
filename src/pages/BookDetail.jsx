@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { getBook, updateBook } from '../lib/books'
+import { getBook, getSeriesSiblings, updateBook } from '../lib/books'
 import { useAuth } from '../context/AuthContext'
 import { getMemberLabel } from '../lib/household'
 import {
@@ -11,7 +11,7 @@ import {
 import { describeError } from '../lib/errors'
 import { BOOK_TYPES } from '../lib/bookTypes'
 import WishlistRibbon from '../components/WishlistRibbon'
-import { useGoBack } from '../lib/navigation'
+import { navigateWithViewTransition, useGoBack } from '../lib/navigation'
 import ReadingBookmark from '../components/ReadingBookmark'
 import LoadingScreen from '../components/LoadingScreen'
 
@@ -26,12 +26,20 @@ export default function BookDetail() {
   const [coverExpanded, setCoverExpanded] = useState(false)
   const [statusSaving, setStatusSaving] = useState(false)
   const [statusError, setStatusError] = useState(null)
+  const [seriesSiblings, setSeriesSiblings] = useState([])
 
   async function handleStatusChange(newStatus) {
     setStatusSaving(true)
     setStatusError(null)
     try {
-      const updated = await updateBook(id, { status: newStatus })
+      const patch = { status: newStatus }
+      if (newStatus === 'reading' && !book.date_started) {
+        patch.date_started = todayDateOnly()
+      }
+      if (newStatus === 'read' && !book.date_finished) {
+        patch.date_finished = todayDateOnly()
+      }
+      const updated = await updateBook(id, patch)
       setBook(updated)
     } catch (err) {
       setStatusError(describeError(err))
@@ -65,6 +73,62 @@ export default function BookDetail() {
       active = false
     }
   }, [id])
+
+  // Les autres tomes de la série (même propriétaire), pour la navigation
+  // tome par tome. Juste id/series_index : pas besoin de la fiche complète.
+  useEffect(() => {
+    if (!book?.series) return
+    let active = true
+    getSeriesSiblings(book.series, book.user_id)
+      .then((data) => {
+        if (active) setSeriesSiblings(data)
+      })
+      .catch(() => {
+        if (active) setSeriesSiblings([])
+      })
+    return () => {
+      active = false
+    }
+  }, [book?.series, book?.user_id])
+
+  const visibleSiblings = book?.series ? seriesSiblings : []
+  const siblingIndex = visibleSiblings.findIndex((s) => s.id === id)
+  const prevSibling = siblingIndex > 0 ? visibleSiblings[siblingIndex - 1] : null
+  const nextSibling =
+    siblingIndex >= 0 && siblingIndex < visibleSiblings.length - 1
+      ? visibleSiblings[siblingIndex + 1]
+      : null
+
+  // replace: true pour ne pas empiler un tome par hop dans l'historique —
+  // sinon "Retour à la collection" doit défaire toute la chaîne de tomes
+  // visités avant de revenir en arrière.
+  const goToSibling = useCallback(
+    (sibling, direction) => {
+      if (!sibling) return
+      setCoverExpanded(false)
+      navigateWithViewTransition(navigate, `/books/${sibling.id}`, {
+        direction,
+        replace: true,
+      })
+    },
+    [navigate],
+  )
+
+  // Flèches du clavier : navigue vers le tome précédent/suivant, sauf si le
+  // focus est dans un champ de formulaire (select du statut, etc.) ou que la
+  // couverture est agrandie.
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+      if (coverExpanded) return
+      const tag = document.activeElement?.tagName
+      if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return
+      if (e.key === 'ArrowLeft' && prevSibling) goToSibling(prevSibling, 'back')
+      if (e.key === 'ArrowRight' && nextSibling) goToSibling(nextSibling, 'forward')
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [prevSibling, nextSibling, coverExpanded, goToSibling])
 
   if (loading) {
     return <LoadingScreen />
@@ -179,6 +243,31 @@ export default function BookDetail() {
                     </p>
                   )}
                 </>
+              )}
+              {visibleSiblings.length > 1 && (
+                <div className="flex items-center gap-2 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => goToSibling(prevSibling, 'back')}
+                    disabled={!prevSibling}
+                    aria-label="Tome précédent"
+                    className="text-sm text-library hover:text-library/80 disabled:text-ink/20 disabled:cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                  >
+                    ‹
+                  </button>
+                  <span className="font-mono text-[11px] text-ink/40">
+                    {siblingIndex + 1} / {visibleSiblings.length}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => goToSibling(nextSibling, 'forward')}
+                    disabled={!nextSibling}
+                    aria-label="Tome suivant"
+                    className="text-sm text-library hover:text-library/80 disabled:text-ink/20 disabled:cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                  >
+                    ›
+                  </button>
+                </div>
               )}
               {book.universe && (
                 <p className="text-sm text-brass mt-0.5">
@@ -331,4 +420,12 @@ function formatDate(value) {
   if (!value) return null
   const [y, m, d] = value.split('-')
   return `${d}/${m}/${y}`
+}
+
+// `new Date().toISOString()` convertit en UTC et peut décaler d'un jour en
+// soirée selon le fuseau ; on construit la date locale à la main, comme
+// formatDate() ci-dessus.
+function todayDateOnly() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 }

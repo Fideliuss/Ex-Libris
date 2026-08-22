@@ -48,6 +48,19 @@ export async function getBook(id) {
   return data
 }
 
+// Les autres tomes de la même série, chez le même propriétaire (pas de
+// mélange avec les tomes du foyer), pour la navigation tome par tome.
+export async function getSeriesSiblings(series, userId) {
+  const { data, error } = await supabase
+    .from('books')
+    .select('id, series_index')
+    .eq('series', series)
+    .eq('user_id', userId)
+    .order('series_index', { ascending: true, nullsFirst: false })
+  if (error) throw error
+  return data
+}
+
 export async function bulkCreateBooks(books) {
   const {
     data: { user },
