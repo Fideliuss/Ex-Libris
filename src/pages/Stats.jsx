@@ -129,13 +129,15 @@ export default function Stats() {
       .filter((entry) => entry.count > 0)
   }, [books])
 
-  const lastFinished = useMemo(() => {
-    return (
-      books
-        .filter((b) => b.date_finished)
-        .sort((a, b) => b.date_finished.localeCompare(a.date_finished))[0] ??
-      null
-    )
+  const lastFinishedByType = useMemo(() => {
+    return Object.entries(BOOK_TYPES)
+      .map(([type, label]) => {
+        const book = books
+          .filter((b) => (b.type ?? 'book') === type && b.date_finished)
+          .sort((a, b) => b.date_finished.localeCompare(a.date_finished))[0]
+        return book ? { type, label, book } : null
+      })
+      .filter(Boolean)
   }, [books])
 
   const typeSegments = useMemo(() => {
@@ -437,44 +439,52 @@ export default function Stats() {
                   </section>
                 </div>
 
-                {lastFinished && (
+                {lastFinishedByType.length > 0 && (
                   <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
                     <h2 className="font-serif text-lg mb-4">
-                      Dernier livre terminé
+                      Derniers livres terminés
                     </h2>
-                    <Link
-                      to={`/books/${lastFinished.id}`}
-                      className="flex gap-4 items-center hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
-                    >
-                      <div className="w-16 aspect-[2/3] rounded-sm overflow-hidden border border-ink/10 bg-paper shrink-0">
-                        {lastFinished.cover_url ? (
-                          <img
-                            src={lastFinished.cover_url}
-                            alt=""
-                            className="w-full h-full object-contain"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <span className="font-serif text-ink/30 text-xs px-1 text-center">
-                              {lastFinished.title}
-                            </span>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      {lastFinishedByType.map(({ type, label, book }) => (
+                        <Link
+                          key={type}
+                          to={`/books/${book.id}`}
+                          className="flex gap-4 items-center hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                        >
+                          <div className="w-14 aspect-[2/3] rounded-sm overflow-hidden border border-ink/10 bg-paper shrink-0">
+                            {book.cover_url ? (
+                              <img
+                                src={book.cover_url}
+                                alt=""
+                                className="w-full h-full object-contain"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <span className="font-serif text-ink/30 text-xs px-1 text-center">
+                                  {book.title}
+                                </span>
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-serif text-lg truncate">
-                          {lastFinished.title}
-                        </p>
-                        {lastFinished.author && (
-                          <p className="text-sm text-ink/60 truncate">
-                            {lastFinished.author}
-                          </p>
-                        )}
-                        <p className="text-xs text-ink/40 mt-1">
-                          Terminé le {formatDate(lastFinished.date_finished)}
-                        </p>
-                      </div>
-                    </Link>
+                          <div className="min-w-0">
+                            <p className="font-mono text-[10px] uppercase tracking-widest text-ink/40">
+                              {label}
+                            </p>
+                            <p className="font-serif text-base truncate">
+                              {book.title}
+                            </p>
+                            {book.author && (
+                              <p className="text-xs text-ink/60 truncate">
+                                {book.author}
+                              </p>
+                            )}
+                            <p className="text-xs text-ink/40 mt-0.5">
+                              Terminé le {formatDate(book.date_finished)}
+                            </p>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
                   </section>
                 )}
               </div>
