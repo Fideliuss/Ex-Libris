@@ -538,7 +538,7 @@ export default function Stats() {
                       Aucun tag pour l'instant.
                     </p>
                   ) : (
-                    <ExpandableList items={tagStats}>
+                    <PaginatedList items={tagStats}>
                       {(entry) => (
                         <li key={entry.tag}>
                           <div className="flex items-baseline justify-between gap-2 mb-1">
@@ -570,7 +570,7 @@ export default function Stats() {
                           )}
                         </li>
                       )}
-                    </ExpandableList>
+                    </PaginatedList>
                   )}
                 </section>
 
@@ -581,7 +581,7 @@ export default function Stats() {
                       Aucun éditeur renseigné pour l'instant.
                     </p>
                   ) : (
-                    <ExpandableList items={publisherStats}>
+                    <PaginatedList items={publisherStats}>
                       {(entry) => (
                         <RenameableStatRow
                           key={entry.publisher}
@@ -595,7 +595,7 @@ export default function Stats() {
                           onRenamed={refresh}
                         />
                       )}
-                    </ExpandableList>
+                    </PaginatedList>
                   )}
                 </section>
 
@@ -606,7 +606,7 @@ export default function Stats() {
                       Aucune collection renseignée pour l'instant.
                     </p>
                   ) : (
-                    <ExpandableList items={collectionStats}>
+                    <PaginatedList items={collectionStats}>
                       {(entry) => (
                         <RenameableStatRow
                           key={entry.collection}
@@ -622,7 +622,7 @@ export default function Stats() {
                           onRenamed={refresh}
                         />
                       )}
-                    </ExpandableList>
+                    </PaginatedList>
                   )}
                 </section>
 
@@ -633,7 +633,7 @@ export default function Stats() {
                       Aucune série renseignée pour l'instant.
                     </p>
                   ) : (
-                    <ExpandableList items={seriesStats}>
+                    <PaginatedList items={seriesStats}>
                       {(entry) => (
                         <RenameableStatRow
                           key={entry.series}
@@ -647,7 +647,7 @@ export default function Stats() {
                           onRenamed={refresh}
                         />
                       )}
-                    </ExpandableList>
+                    </PaginatedList>
                   )}
                 </section>
               </div>
@@ -670,26 +670,44 @@ function StatTile({ label, value, accent }) {
   )
 }
 
-const EXPANDABLE_LIST_LIMIT = 6
+const PAGE_SIZE = 6
 
 // Les listes Par tag/éditeur/collection/série peuvent compter des dizaines
-// d'entrées : on n'en montre que les premières par défaut avec un bouton
-// pour tout dérouler, plutôt qu'un mur de texte.
-function ExpandableList({ items, children }) {
-  const [expanded, setExpanded] = useState(false)
-  const visible = expanded ? items : items.slice(0, EXPANDABLE_LIST_LIMIT)
+// d'entrées : on les pagine plutôt que de dérouler un mur de texte.
+function PaginatedList({ items, children }) {
+  const [page, setPage] = useState(0)
+  const pageCount = Math.max(1, Math.ceil(items.length / PAGE_SIZE))
+  const clampedPage = Math.min(page, pageCount - 1)
+  const visible = items.slice(
+    clampedPage * PAGE_SIZE,
+    clampedPage * PAGE_SIZE + PAGE_SIZE,
+  )
 
   return (
     <>
       <ul className="space-y-3">{visible.map(children)}</ul>
-      {items.length > EXPANDABLE_LIST_LIMIT && (
-        <button
-          type="button"
-          onClick={() => setExpanded((e) => !e)}
-          className="mt-3 text-xs text-library underline underline-offset-2 hover:text-library/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
-        >
-          {expanded ? 'Réduire' : `Voir tout (${items.length})`}
-        </button>
+      {pageCount > 1 && (
+        <div className="flex items-center justify-between mt-3">
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.max(0, p - 1))}
+            disabled={clampedPage === 0}
+            className="text-xs text-library underline underline-offset-2 hover:text-library/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm disabled:opacity-30 disabled:no-underline"
+          >
+            ← Précédent
+          </button>
+          <span className="text-xs text-ink/40 font-mono">
+            {clampedPage + 1} / {pageCount}
+          </span>
+          <button
+            type="button"
+            onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+            disabled={clampedPage === pageCount - 1}
+            className="text-xs text-library underline underline-offset-2 hover:text-library/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm disabled:opacity-30 disabled:no-underline"
+          >
+            Suivant →
+          </button>
+        </div>
       )}
     </>
   )
