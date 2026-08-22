@@ -82,34 +82,37 @@ create policy "Users can delete their own books"
   on books for delete
   using (auth.uid() = user_id);
 
--- Réglages par utilisateur (objectif de lecture annuel), même partage en
--- lecture entre le foyer que pour les livres.
-create table user_settings (
-  user_id uuid primary key references auth.users(id),
-  annual_goal numeric not null default 12,
-  updated_at timestamptz default now()
+-- Objectif de lecture annuel, par utilisateur et par année (l'objectif peut
+-- changer d'une année à l'autre). Même partage en lecture entre le foyer
+-- que pour les livres.
+create table reading_goals (
+  user_id uuid not null references auth.users(id),
+  year int not null,
+  goal numeric not null,
+  updated_at timestamptz default now(),
+  primary key (user_id, year)
 );
 
-alter table user_settings enable row level security;
+alter table reading_goals enable row level security;
 
-create trigger user_settings_set_updated_at
-  before update on user_settings
+create trigger reading_goals_set_updated_at
+  before update on reading_goals
   for each row
   execute function set_updated_at();
 
-create policy "Household members can view all household settings"
-  on user_settings for select
+create policy "Household members can view all household reading goals"
+  on reading_goals for select
   using (auth.uid() in (
     '62c4fc66-007a-4018-bbf1-42c0990284c0',
     '3d041fdc-b619-46a4-8fed-743cce2269f6'
   ));
 
-create policy "Users can insert their own settings"
-  on user_settings for insert
+create policy "Users can insert their own reading goals"
+  on reading_goals for insert
   with check (auth.uid() = user_id);
 
-create policy "Users can update their own settings"
-  on user_settings for update
+create policy "Users can update their own reading goals"
+  on reading_goals for update
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
