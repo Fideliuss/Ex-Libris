@@ -53,36 +53,6 @@ body {
   }
 }
 
-/* Là où le navigateur le permet, on remplace l'apparition binaire (visible
-   ou pas, pilotée par IntersectionObserver) par une animation attachée
-   directement à la position de scroll : le contenu se révèle en continu
-   pendant que la section traverse l'écran, plutôt que d'apparaître d'un
-   coup. C'est cet effet qui donne l'impression de ne pas vraiment "défiler"
-   (type App Store / apple.com). Dégradation silencieuse vers .reveal
-   classique si non supporté (Firefox, anciens Safari). */
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) {
-    .reveal {
-      opacity: 0;
-      transform: translateY(24px) scale(0.97);
-      transition: none;
-      animation: reveal-scroll linear both;
-      animation-timeline: view();
-      animation-range: entry 0% cover 35%;
-    }
-  }
-}
-@keyframes reveal-scroll {
-  from {
-    opacity: 0;
-    transform: translateY(24px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 /* Entrée du hero au chargement (pas de scroll à observer, donc animation CSS
    pure plutôt qu'un état React + IntersectionObserver comme .reveal). */
 @media (prefers-reduced-motion: no-preference) {
