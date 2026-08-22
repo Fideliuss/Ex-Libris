@@ -9,8 +9,10 @@ import {
 } from '../lib/books'
 import { describeError } from '../lib/errors'
 import { useGoBack } from '../lib/navigation'
+import { BOOK_TYPES } from '../lib/bookTypes'
 import HouseholdTabs from '../components/HouseholdTabs'
 import BarChart from '../components/BarChart'
+import DonutChart from '../components/DonutChart'
 import ReadingHeatmap from '../components/ReadingHeatmap'
 import LoadingScreen from '../components/LoadingScreen'
 
@@ -61,6 +63,23 @@ export default function Stats() {
   const totalSpent = books
     .filter((b) => b.status !== 'wishlist')
     .reduce((sum, b) => sum + (Number(b.price) || 0), 0)
+
+  const typeSegments = useMemo(() => {
+    const colorByType = {
+      book: 'text-library',
+      bd: 'text-brass',
+      comics: 'text-wishlist',
+      manga: 'text-reading',
+    }
+    const counts = { book: 0, bd: 0, comics: 0, manga: 0 }
+    for (const b of books) counts[b.type ?? 'book'] += 1
+    return Object.entries(BOOK_TYPES).map(([key, label]) => ({
+      key,
+      label,
+      value: counts[key],
+      colorClass: colorByType[key],
+    }))
+  }, [books])
 
   const tagStats = useMemo(() => {
     const map = new Map()
@@ -300,6 +319,11 @@ export default function Stats() {
                 value={`${totalSpent.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}
               />
             </div>
+
+            <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+              <h2 className="font-serif text-lg mb-4">Répartition par type</h2>
+              <DonutChart segments={typeSegments} />
+            </section>
 
             <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
               <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
