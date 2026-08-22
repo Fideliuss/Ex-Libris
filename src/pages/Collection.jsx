@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { bulkDeleteBooks, bulkUpdateBooks } from '../lib/books'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
@@ -39,9 +39,15 @@ const SORT_OPTIONS = {
 }
 
 export default function Collection() {
-  const { user } = useAuth()
+  const { user, signOut } = useAuth()
   const { partner, isMine, books, loading, error, refresh, setView } =
     useHouseholdBooks()
+  const navigate = useNavigate()
+
+  async function handleSignOut() {
+    await signOut()
+    navigate('/', { replace: true })
+  }
 
   // Filtres/tri/recherche vivent dans l'URL (et non un useState local) pour
   // survivre à un aller-retour vers la fiche d'un livre : la page se
@@ -356,14 +362,33 @@ export default function Collection() {
           >
             Statistiques
           </Link>
-          <Link
-            to="/account"
-            title={user?.email}
-            aria-label="Mon compte"
-            className="w-9 h-9 rounded-full bg-library text-white font-mono text-sm flex items-center justify-center hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-library focus-visible:ring-offset-2"
-          >
-            {user?.email?.[0]?.toUpperCase() ?? '?'}
-          </Link>
+          <div className="relative group">
+            <Link
+              to="/account"
+              title={user?.email}
+              aria-label="Mon compte"
+              className="w-9 h-9 rounded-full bg-library text-white font-mono text-sm flex items-center justify-center hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-library focus-visible:ring-offset-2"
+            >
+              {user?.email?.[0]?.toUpperCase() ?? '?'}
+            </Link>
+            <div className="absolute right-0 top-full pt-1 w-40 opacity-0 invisible group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible transition-opacity z-30">
+              <div className="rounded-sm border border-ink/10 bg-card shadow-sm py-1">
+                <Link
+                  to="/account"
+                  className="block px-3 py-2 text-sm text-ink/70 hover:bg-paper hover:text-ink focus:outline-none focus-visible:bg-paper"
+                >
+                  Mon compte
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="block w-full text-left px-3 py-2 text-sm text-ink/70 hover:bg-paper hover:text-stamp focus:outline-none focus-visible:bg-paper"
+                >
+                  Déconnexion
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import { useGoBack } from '../lib/navigation'
@@ -7,6 +7,12 @@ export default function Account() {
   const { user, signOut } = useAuth()
   const { partner } = useHouseholdBooks()
   const goBack = useGoBack('/')
+  const navigate = useNavigate()
+
+  async function handleSignOut() {
+    await signOut()
+    navigate('/', { replace: true })
+  }
 
   return (
     <div className="min-h-svh p-6">
@@ -51,7 +57,7 @@ export default function Account() {
             </Link>
             <button
               type="button"
-              onClick={() => signOut()}
+              onClick={handleSignOut}
               className="text-sm text-ink/60 underline underline-offset-2 hover:text-stamp focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
             >
               Se déconnecter
