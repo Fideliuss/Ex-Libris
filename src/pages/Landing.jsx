@@ -233,29 +233,33 @@ function LangSwitch() {
     <div
       role="group"
       aria-label="Langue / Language"
-      className="flex items-center gap-1"
+      className="flex items-center rounded-sm border border-ink/15 overflow-hidden text-xs font-mono"
     >
       <button
         type="button"
         onClick={() => setLang('fr')}
         aria-pressed={lang === 'fr'}
         title="Français"
-        className={`text-lg leading-none rounded-sm p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
-          lang === 'fr' ? 'opacity-100' : 'opacity-35 hover:opacity-70'
+        className={`px-2 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
+          lang === 'fr'
+            ? 'bg-library text-white'
+            : 'text-ink/50 hover:text-ink'
         }`}
       >
-        🇫🇷
+        FR
       </button>
       <button
         type="button"
         onClick={() => setLang('en')}
         aria-pressed={lang === 'en'}
         title="English"
-        className={`text-lg leading-none rounded-sm p-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
-          lang === 'en' ? 'opacity-100' : 'opacity-35 hover:opacity-70'
+        className={`px-2 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
+          lang === 'en'
+            ? 'bg-library text-white'
+            : 'text-ink/50 hover:text-ink'
         }`}
       >
-        🇬🇧
+        EN
       </button>
     </div>
   )
