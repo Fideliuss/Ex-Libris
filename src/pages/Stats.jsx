@@ -9,8 +9,24 @@ import {
 import { describeError } from '../lib/errors'
 import { useGoBack } from '../lib/navigation'
 import HouseholdTabs from '../components/HouseholdTabs'
-import MonthlyFinishedChart from '../components/MonthlyFinishedChart'
+import BarChart from '../components/BarChart'
 import LoadingScreen from '../components/LoadingScreen'
+
+const PERIOD_OPTIONS = {
+  all: 'Tout',
+  year: 'Cette année',
+  rolling12: '12 derniers mois',
+  custom: 'Personnalisé',
+}
+
+// Les champs date_started/date_finished sont des "date" Postgres (pas de
+// composante horaire) : les parser avec `new Date(string)` les interprète en
+// UTC et peut décaler d'un jour selon le fuseau du navigateur. On construit
+// la date en local à partir des parties, comme formatDate() plus bas.
+function parseDateOnly(str) {
+  const [y, m, d] = str.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
 
 export default function Stats() {
   const { partner, isMine, books, loading, error, refresh, setView } =
@@ -18,6 +34,9 @@ export default function Stats() {
   const goBack = useGoBack('/')
   const [convertingTag, setConvertingTag] = useState(null)
   const [convertError, setConvertError] = useState(null)
+  const [period, setPeriod] = useState('all')
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
 
   async function handleConvertTag(tag) {
     setConvertingTag(tag)
@@ -122,6 +141,101 @@ export default function Stats() {
     return months
   }, [books])
 
+  // Bornes de la période sélectionnée, pour le rythme de lecture et les
+  // notes uniquement (le reste de la page reste sur toute la collection).
+  const periodRange = useMemo(() => {
+    const now = new Date()
+    if (period === 'year') {
+      return { start: new Date(now.getFullYear(), 0, 1), end: now }
+    }
+    if (period === 'rolling12') {
+      return { start: new Date(now.getFullYear(), now.getMonth() - 11, 1), end: now }
+    }
+    if (period === 'custom') {
+      return {
+        start: customFrom ? parseDateOnly(customFrom) : null,
+        end: customTo ? parseDateOnly(customTo) : now,
+      }
+    }
+    return { start: null, end: now }
+  }, [period, customFrom, customTo])
+
+  const finishedInPeriod = useMemo(() => {
+    return books.filter((b) => {
+      if (!b.date_finished) return false
+      const d = parseDateOnly(b.date_finished)
+      if (periodRange.start && d < periodRange.start) return false
+      return d <= periodRange.end
+    })
+  }, [books, periodRange])
+
+  const paceStats = useMemo(() => {
+    const pagesRead = finishedInPeriod.reduce(
+      (sum, b) => sum + (b.page_count || 0),
+      0,
+    )
+
+    const durations = finishedInPeriod
+      .filter((b) => b.date_started && b.date_finished)
+      .map((b) => ({
+        book: b,
+        days: Math.round(
+          (parseDateOnly(b.date_finished) - parseDateOnly(b.date_started)) /
+            86400000,
+        ),
+      }))
+      .filter((d) => d.days >= 0)
+
+    const avgDays = durations.length
+      ? durations.reduce((sum, d) => sum + d.days, 0) / durations.length
+      : null
+    const fastest = durations.length
+      ? durations.reduce((a, b) => (b.days < a.days ? b : a))
+      : null
+    const slowest = durations.length
+      ? durations.reduce((a, b) => (b.days > a.days ? b : a))
+      : null
+
+    let spanStart = periodRange.start
+    if (!spanStart && finishedInPeriod.length > 0) {
+      const earliest = finishedInPeriod.reduce(
+        (min, b) => (b.date_finished < min ? b.date_finished : min),
+        finishedInPeriod[0].date_finished,
+      )
+      spanStart = parseDateOnly(earliest)
+    }
+    const monthsSpan = spanStart
+      ? Math.max(
+          1,
+          (periodRange.end.getFullYear() - spanStart.getFullYear()) * 12 +
+            (periodRange.end.getMonth() - spanStart.getMonth()) +
+            1,
+        )
+      : 1
+    const perMonth = finishedInPeriod.length / monthsSpan
+
+    return { pagesRead, avgDays, fastest, slowest, perMonth }
+  }, [finishedInPeriod, periodRange])
+
+  const ratingBars = useMemo(() => {
+    const counts = [0, 0, 0, 0, 0, 0]
+    for (const b of finishedInPeriod) counts[b.rating || 0] += 1
+    return ['Non noté', '1 étoile', '2 étoiles', '3 étoiles', '4 étoiles', '5 étoiles'].map(
+      (fullLabel, i) => ({
+        key: String(i),
+        count: counts[i],
+        shortLabel: i === 0 ? '—' : '★'.repeat(i),
+        fullLabel,
+      }),
+    )
+  }, [finishedInPeriod])
+
+  const avgRating = useMemo(() => {
+    const rated = finishedInPeriod.filter((b) => b.rating > 0)
+    if (!rated.length) return null
+    return rated.reduce((sum, b) => sum + b.rating, 0) / rated.length
+  }, [finishedInPeriod])
+
   const maxTagCount = tagStats[0]?.count ?? 0
   const maxPublisherCount = publisherStats[0]?.count ?? 0
   const maxCollectionCount = collectionStats[0]?.count ?? 0
@@ -180,10 +294,108 @@ export default function Stats() {
             </div>
 
             <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <h2 className="font-serif text-lg">Rythme &amp; notes</h2>
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={period}
+                    onChange={(e) => setPeriod(e.target.value)}
+                    aria-label="Période"
+                    className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                  >
+                    {Object.entries(PERIOD_OPTIONS).map(([key, label]) => (
+                      <option key={key} value={key}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  {period === 'custom' && (
+                    <>
+                      <input
+                        type="date"
+                        value={customFrom}
+                        onChange={(e) => setCustomFrom(e.target.value)}
+                        aria-label="Du"
+                        className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                      />
+                      <input
+                        type="date"
+                        value={customTo}
+                        onChange={(e) => setCustomTo(e.target.value)}
+                        aria-label="Au"
+                        className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {finishedInPeriod.length === 0 ? (
+                <p className="text-sm text-ink/50">
+                  Aucun livre fini sur cette période.
+                </p>
+              ) : (
+                <div className="grid sm:grid-cols-2 gap-6">
+                  <div>
+                    <h3 className="font-mono text-xs uppercase tracking-widest text-ink/50 mb-3">
+                      Rythme de lecture
+                    </h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <StatTile label="Livres finis" value={finishedInPeriod.length} />
+                      <StatTile
+                        label="Pages lues"
+                        value={paceStats.pagesRead.toLocaleString('fr-FR')}
+                      />
+                      <StatTile
+                        label="Par mois (moy.)"
+                        value={paceStats.perMonth.toFixed(1)}
+                      />
+                      <StatTile
+                        label="Jours / livre (moy.)"
+                        value={
+                          paceStats.avgDays != null
+                            ? Math.round(paceStats.avgDays)
+                            : '—'
+                        }
+                      />
+                    </div>
+                    {paceStats.fastest && (
+                      <p className="text-xs text-ink/50 mt-3">
+                        Lecture éclair :{' '}
+                        <span className="text-ink/70">
+                          {paceStats.fastest.book.title}
+                        </span>{' '}
+                        en {paceStats.fastest.days} jour
+                        {paceStats.fastest.days > 1 ? 's' : ''}
+                      </p>
+                    )}
+                    {paceStats.slowest && paceStats.slowest !== paceStats.fastest && (
+                      <p className="text-xs text-ink/50 mt-1">
+                        Lecture marathon :{' '}
+                        <span className="text-ink/70">
+                          {paceStats.slowest.book.title}
+                        </span>{' '}
+                        en {paceStats.slowest.days} jours
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <h3 className="font-mono text-xs uppercase tracking-widest text-ink/50 mb-3">
+                      Notes
+                      {avgRating != null && ` · moyenne ${avgRating.toFixed(1)} ★`}
+                    </h3>
+                    <BarChart bars={ratingBars} />
+                  </div>
+                </div>
+              )}
+            </section>
+
+            <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
               <h2 className="font-serif text-lg mb-4">
                 Livres finis par mois
               </h2>
-              <MonthlyFinishedChart months={monthlyFinished} />
+              <BarChart bars={monthlyFinished} />
             </section>
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
