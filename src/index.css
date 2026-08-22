@@ -87,17 +87,17 @@ body {
     animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  :root:not([data-transition-direction='back']) ::view-transition-old(root) {
+  :root:not([data-transition-direction='back'])::view-transition-old(root) {
     animation-name: volet-out;
   }
-  :root:not([data-transition-direction='back']) ::view-transition-new(root) {
+  :root:not([data-transition-direction='back'])::view-transition-new(root) {
     animation-name: volet-in;
   }
 
-  :root[data-transition-direction='back'] ::view-transition-old(root) {
+  :root[data-transition-direction='back']::view-transition-old(root) {
     animation-name: volet-out-reverse;
   }
-  :root[data-transition-direction='back'] ::view-transition-new(root) {
+  :root[data-transition-direction='back']::view-transition-new(root) {
     animation-name: volet-in-reverse;
   }
 }
