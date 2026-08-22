@@ -335,7 +335,7 @@ export default function Collection() {
 
   return (
     <div className={`min-h-svh ${selectionMode ? 'pb-40' : 'pb-24'}`}>
-      <header className="flex items-start justify-between max-w-5xl mx-auto p-6 gap-4">
+      <header className="flex flex-col sm:flex-row sm:items-start justify-between max-w-5xl mx-auto p-6 gap-4">
         <div>
           <p className="font-mono text-xs tracking-widest text-library uppercase mb-1">
             {user?.email}
@@ -344,7 +344,7 @@ export default function Collection() {
             Ma Bibliothèque
           </h1>
         </div>
-        <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2">
           <Link
             to="/import"
             className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
