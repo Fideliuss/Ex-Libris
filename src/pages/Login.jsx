@@ -4,12 +4,13 @@ import { useAuth } from '../context/AuthContext'
 import { inputClass } from '../lib/ui'
 
 export default function Login() {
-  const { session, signIn, resetPasswordForEmail } = useAuth()
+  const { session, signIn, signUp, resetPasswordForEmail } = useAuth()
   const location = useLocation()
 
-  const [mode, setMode] = useState('signin') // 'signin' | 'forgot'
+  const [mode, setMode] = useState('signin') // 'signin' | 'signup' | 'forgot'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [password2, setPassword2] = useState('')
   const [error, setError] = useState(null)
   const [info, setInfo] = useState(null)
   const [submitting, setSubmitting] = useState(false)
@@ -26,6 +27,33 @@ export default function Login() {
     const { error } = await signIn(email, password)
     setSubmitting(false)
     if (error) setError(describeSignInError(error))
+  }
+
+  async function handleSignUp(e) {
+    e.preventDefault()
+    setError(null)
+    setInfo(null)
+    if (password.length < 6) {
+      setError('Le mot de passe doit contenir au moins 6 caractères.')
+      return
+    }
+    if (password !== password2) {
+      setError('Les mots de passe ne correspondent pas.')
+      return
+    }
+    setSubmitting(true)
+    const { data, error } = await signUp(email, password)
+    setSubmitting(false)
+    if (error) {
+      setError(describeSignUpError(error))
+    } else if (!data.session) {
+      setInfo(
+        'Compte créé. Vérifie ta boîte de réception pour confirmer ton email avant de te connecter.',
+      )
+    }
+    // Si data.session existe, Supabase a déjà confirmé le compte : l'écoute
+    // onAuthStateChange dans AuthContext détecte la session et le <Navigate>
+    // plus haut redirige automatiquement.
   }
 
   async function handleForgot(e) {
@@ -48,19 +76,23 @@ export default function Login() {
     setMode(next)
     setError(null)
     setInfo(null)
+    setPassword('')
+    setPassword2('')
   }
 
   return (
     <div className="min-h-svh flex items-center justify-center p-6">
       <div className="max-w-sm w-full bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-8">
         <p className="font-mono text-xs tracking-widest text-library uppercase mb-2 text-center">
-          {mode === 'signin' ? 'Connexion' : 'Mot de passe oublié'}
+          {mode === 'signin' && 'Connexion'}
+          {mode === 'signup' && 'Créer un compte'}
+          {mode === 'forgot' && 'Mot de passe oublié'}
         </p>
         <h1 className="font-serif text-3xl font-semibold mb-6 text-center">
           Ex Libris
         </h1>
 
-        {mode === 'signin' ? (
+        {mode === 'signin' && (
           <form onSubmit={handleSignIn} className="space-y-4" noValidate>
             <div>
               <label htmlFor="email" className="block text-sm font-medium mb-1">
@@ -115,8 +147,101 @@ export default function Login() {
             >
               Mot de passe oublié ?
             </button>
+
+            <button
+              type="button"
+              onClick={() => switchMode('signup')}
+              className="w-full text-center text-sm text-ink/60 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+            >
+              Créer un compte
+            </button>
           </form>
-        ) : (
+        )}
+
+        {mode === 'signup' && (
+          <form onSubmit={handleSignUp} className="space-y-4" noValidate>
+            <div>
+              <label
+                htmlFor="signup-email"
+                className="block text-sm font-medium mb-1"
+              >
+                Email
+              </label>
+              <input
+                id="signup-email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="signup-password"
+                className="block text-sm font-medium mb-1"
+              >
+                Mot de passe
+              </label>
+              <input
+                id="signup-password"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="signup-password2"
+                className="block text-sm font-medium mb-1"
+              >
+                Confirmer le mot de passe
+              </label>
+              <input
+                id="signup-password2"
+                type="password"
+                autoComplete="new-password"
+                required
+                value={password2}
+                onChange={(e) => setPassword2(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+
+            {error && (
+              <p role="alert" className="text-sm text-stamp">
+                {error}
+              </p>
+            )}
+            {info && (
+              <p role="status" className="text-sm text-library">
+                {info}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full rounded-sm bg-library text-white font-medium py-2 text-sm hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
+            >
+              {submitting ? 'Création…' : 'Créer le compte'}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => switchMode('signin')}
+              className="w-full text-center text-sm text-ink/60 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+            >
+              Retour à la connexion
+            </button>
+          </form>
+        )}
+
+        {mode === 'forgot' && (
           <form onSubmit={handleForgot} className="space-y-4" noValidate>
             <p className="text-sm text-ink/70">
               Indique ton email, tu recevras un lien pour réinitialiser ton
@@ -184,4 +309,20 @@ function describeSignInError(error) {
     return 'Email ou mot de passe incorrect.'
   }
   return `Connexion impossible : ${message || 'erreur inconnue'}.`
+}
+
+function describeSignUpError(error) {
+  const code = error.code ?? ''
+  const message = error.message ?? ''
+
+  if (
+    code === 'user_already_exists' ||
+    /already registered|already exists/i.test(message)
+  ) {
+    return 'Un compte existe déjà avec cet email.'
+  }
+  if (code === 'weak_password' || /password/i.test(message)) {
+    return 'Mot de passe trop faible : essaie au moins 6 caractères.'
+  }
+  return `Impossible de créer le compte : ${message || 'erreur inconnue'}.`
 }
