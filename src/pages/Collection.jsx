@@ -378,31 +378,33 @@ export default function Collection() {
           <img src="/favicon.svg" alt="" className="w-7 h-7" />
           <span className="font-serif text-xl font-semibold">Ex Libris</span>
         </Link>
-        <div className="flex flex-wrap items-center gap-2">
-          {partner && (
-            <HouseholdTabs
-              isMine={isMine}
-              onSelectMine={() => switchView('mine')}
-              onSelectPartner={() => switchView('partner')}
-              mineLabel="Toi"
-              partnerLabel={partner.label}
-              ariaLabel="Bibliothèque à afficher"
-              compact
-            />
-          )}
-          <Link
-            to="/import"
-            className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-          >
-            Importer
-          </Link>
-          <Link
-            to="/stats"
-            className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-          >
-            Statistiques
-          </Link>
-          <div className="relative group">
+        <div className="flex items-start gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+            {partner && (
+              <HouseholdTabs
+                isMine={isMine}
+                onSelectMine={() => switchView('mine')}
+                onSelectPartner={() => switchView('partner')}
+                mineLabel="Toi"
+                partnerLabel={partner.label}
+                ariaLabel="Bibliothèque à afficher"
+                compact
+              />
+            )}
+            <Link
+              to="/import"
+              className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+            >
+              Importer
+            </Link>
+            <Link
+              to="/stats"
+              className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+            >
+              Statistiques
+            </Link>
+          </div>
+          <div className="relative group shrink-0">
             <Link
               to="/account"
               title={user?.email}
