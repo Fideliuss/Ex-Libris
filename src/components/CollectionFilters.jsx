@@ -41,8 +41,8 @@ export default function CollectionFilters({
         type="search"
         value={search}
         onChange={(e) => onSearchChange(e.target.value)}
-        placeholder="Rechercher par titre ou auteur…"
-        aria-label="Rechercher par titre ou auteur"
+        placeholder="Rechercher par titre, auteur ou ISBN…"
+        aria-label="Rechercher par titre, auteur ou ISBN"
         className="w-full rounded-sm border border-ink/20 bg-white px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
       />
 

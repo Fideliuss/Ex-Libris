@@ -215,7 +215,8 @@ export default function Collection() {
     const query = search.trim().toLowerCase()
     return books.filter((book) => {
       if (query) {
-        const haystack = `${book.title} ${book.author ?? ''}`.toLowerCase()
+        const isbn = (book.isbn ?? '').replace(/[\s-]/g, '')
+        const haystack = `${book.title} ${book.author ?? ''} ${isbn}`.toLowerCase()
         if (!haystack.includes(query)) return false
       }
       if (
