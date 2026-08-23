@@ -10,6 +10,9 @@ import BulkActionBar from '../components/BulkActionBar'
 import HouseholdTabs from '../components/HouseholdTabs'
 import TabBar from '../components/TabBar'
 import LoadingScreen from '../components/LoadingScreen'
+import { STATUS_LABELS } from '../lib/statusLabels'
+
+const STATUS_ORDER = Object.keys(STATUS_LABELS)
 
 const SORT_OPTIONS = {
   recent: {
@@ -37,6 +40,38 @@ const SORT_OPTIONS = {
     label: 'Tome (croissant)',
     compare: (a, b) => (a.series_index ?? 0) - (b.series_index ?? 0),
   },
+  status: {
+    label: 'Statut',
+    compare: (a, b) =>
+      STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status),
+  },
+}
+
+// Les champs date_finished sont des "date" Postgres (pas d'heure) : les
+// parser avec `new Date(string)` les interprète en UTC et peut décaler d'un
+// jour selon le fuseau du navigateur. On construit la date en local.
+function parseDateOnly(str) {
+  const [y, m, d] = str.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
+function monthLabel(date) {
+  return new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(
+    date,
+  )
+}
+
+// Détermine l'en-tête de section pour un livre selon le tri actif (lettre,
+// mois, statut), ou `null` si ce tri ne se groupe pas naturellement (note,
+// tome) ou si le champ concerné est vide pour ce livre.
+function groupKeyFor(book, sortKey) {
+  if (sortKey === 'title') return book.title[0].toUpperCase()
+  if (sortKey === 'author') return book.author ? book.author[0].toUpperCase() : null
+  if (sortKey === 'recent') return monthLabel(new Date(book.created_at))
+  if (sortKey === 'finished')
+    return book.date_finished ? monthLabel(parseDateOnly(book.date_finished)) : null
+  if (sortKey === 'status') return STATUS_LABELS[book.status] ?? null
+  return null
 }
 
 export default function Collection() {
@@ -180,7 +215,8 @@ export default function Collection() {
     const query = search.trim().toLowerCase()
     return books.filter((book) => {
       if (query) {
-        const haystack = `${book.title} ${book.author ?? ''}`.toLowerCase()
+        const isbn = (book.isbn ?? '').replace(/[\s-]/g, '')
+        const haystack = `${book.title} ${book.author ?? ''} ${isbn}`.toLowerCase()
         if (!haystack.includes(query)) return false
       }
       if (
@@ -215,6 +251,22 @@ export default function Collection() {
 
   const visibleBooks =
     collectionTab === 'todo' ? sortedIncompleteBooks : sortedBooks
+
+  // Une entrée "header" avant chaque nouveau groupe (lettre/mois/statut),
+  // ou juste les livres si le tri actif ne se groupe pas (note, tome).
+  const gridItems = useMemo(() => {
+    const items = []
+    let lastKey
+    for (const book of visibleBooks) {
+      const key = groupKeyFor(book, sort)
+      if (key !== null && key !== lastKey) {
+        items.push({ type: 'header', renderKey: `h-${key}`, label: key })
+      }
+      items.push({ type: 'book', renderKey: book.id, book })
+      lastKey = key
+    }
+    return items
+  }, [visibleBooks, sort])
 
   const hasActiveFilters = Boolean(
     search ||
@@ -599,16 +651,25 @@ export default function Collection() {
               </div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {visibleBooks.map((book) => (
-                <BookCard
-                  key={book.id}
-                  book={book}
-                  selectable={selectionMode}
-                  selected={selectedIds.has(book.id)}
-                  onToggleSelect={toggleSelect}
-                  onStartSelection={isMine ? handleStartSelection : undefined}
-                />
-              ))}
+              {gridItems.map((item) =>
+                item.type === 'header' ? (
+                  <p
+                    key={item.renderKey}
+                    className="col-span-full font-mono text-xs uppercase tracking-widest text-ink/50 border-b border-ink/10 pb-1 mt-2 first:mt-0"
+                  >
+                    {item.label}
+                  </p>
+                ) : (
+                  <BookCard
+                    key={item.renderKey}
+                    book={item.book}
+                    selectable={selectionMode}
+                    selected={selectedIds.has(item.book.id)}
+                    onToggleSelect={toggleSelect}
+                    onStartSelection={isMine ? handleStartSelection : undefined}
+                  />
+                ),
+              )}
             </div>
           </>
         )}
