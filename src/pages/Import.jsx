@@ -6,11 +6,12 @@ import {
   mapLibibRowToBook,
   parseLibibCsv,
 } from '../lib/libibImport'
+import { mapMyLibraryRowToBook, parseMyLibraryXlsx } from '../lib/myLibraryImport'
 import { useAuth } from '../context/AuthContext'
 import { describeError } from '../lib/errors'
 import { useGoBack } from '../lib/navigation'
 
-export default function ImportLibib() {
+export default function Import() {
   const { user } = useAuth()
   const goBack = useGoBack('/')
   const [step, setStep] = useState('idle') // idle | ready | importing | done
@@ -23,7 +24,7 @@ export default function ImportLibib() {
   const [importedCount, setImportedCount] = useState(0)
   const [enrichedCount, setEnrichedCount] = useState(0)
 
-  async function handleFileChange(e) {
+  async function handleFileChange(source, e) {
     const file = e.target.files?.[0]
     e.target.value = ''
     if (!file) return
@@ -32,8 +33,20 @@ export default function ImportLibib() {
     setFileName(file.name)
 
     try {
-      const text = await file.text()
-      const rows = parseLibibCsv(text)
+      let mappedRows
+      if (source === 'libib') {
+        const text = await file.text()
+        const rows = parseLibibCsv(text)
+        mappedRows = rows.map((row) => ({ mapped: mapLibibRowToBook(row), raw: row }))
+      } else {
+        const buffer = await file.arrayBuffer()
+        const rows = parseMyLibraryXlsx(buffer)
+        mappedRows = rows.map((entry) => ({
+          mapped: mapMyLibraryRowToBook(entry),
+          raw: null,
+        }))
+      }
+
       const existingBooks = await listBooks()
       const existingByIsbn = new Map(
         existingBooks
@@ -47,8 +60,7 @@ export default function ImportLibib() {
       let skipped = 0
       let untouchedDuplicates = 0
 
-      for (const row of rows) {
-        const mapped = mapLibibRowToBook(row)
+      for (const { mapped, raw } of mappedRows) {
         if (!mapped.title) {
           skipped += 1
           continue
@@ -58,7 +70,7 @@ export default function ImportLibib() {
         const existing = key ? existingByIsbn.get(key) : null
 
         if (existing) {
-          const patch = computeSeriesRepair(existing, row)
+          const patch = raw ? computeSeriesRepair(existing, raw) : null
           if (patch) {
             nextToEnrich.push({ id: existing.id, patch, title: existing.title })
           } else {
@@ -118,29 +130,40 @@ export default function ImportLibib() {
         </button>
 
         <h1 className="font-serif text-2xl font-semibold mt-4 mb-6">
-          Importer depuis Libib
+          Importer
         </h1>
 
         <div className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6 space-y-5">
           {step === 'idle' && (
             <>
               <p className="text-sm text-ink/70">
-                Exporte ta bibliothèque depuis Libib au format CSV, puis
-                sélectionne le fichier ici. Rien n'est envoyé ailleurs que
-                vers ta base : le fichier est lu directement dans ton
-                navigateur. Tu peux réutiliser le même fichier plusieurs fois
-                sans risque : les livres déjà présents ne sont jamais
-                dupliqués.
+                Exporte ta bibliothèque depuis Libib (CSV) ou My Library
+                (Excel), puis sélectionne le fichier ici. Rien n'est envoyé
+                ailleurs que vers ta base : le fichier est lu directement
+                dans ton navigateur. Tu peux réutiliser le même fichier
+                plusieurs fois sans risque : les livres déjà présents ne sont
+                jamais dupliqués.
               </p>
-              <label className="inline-block cursor-pointer rounded-sm bg-library text-white font-medium px-4 py-2 text-sm hover:bg-library/90 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-library">
-                Choisir un fichier CSV
-                <input
-                  type="file"
-                  accept=".csv,text/csv"
-                  className="sr-only"
-                  onChange={handleFileChange}
-                />
-              </label>
+              <div className="flex flex-wrap gap-3">
+                <label className="inline-block cursor-pointer rounded-sm bg-library text-white font-medium px-4 py-2 text-sm hover:bg-library/90 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-library">
+                  Fichier CSV (Libib)
+                  <input
+                    type="file"
+                    accept=".csv,text/csv"
+                    className="sr-only"
+                    onChange={(e) => handleFileChange('libib', e)}
+                  />
+                </label>
+                <label className="inline-block cursor-pointer rounded-sm border border-ink/20 px-4 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus-within:outline-none focus-within:ring-2 focus-within:ring-library">
+                  Fichier Excel (My Library)
+                  <input
+                    type="file"
+                    accept=".xlsx"
+                    className="sr-only"
+                    onChange={(e) => handleFileChange('mylibrary', e)}
+                  />
+                </label>
+              </div>
             </>
           )}
 

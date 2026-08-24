@@ -11,7 +11,7 @@ import BookDetail from './pages/BookDetail'
 import Stats from './pages/Stats'
 import LoadingScreen from './components/LoadingScreen'
 
-const ImportLibib = lazy(() => import('./pages/ImportLibib'))
+const Import = lazy(() => import('./pages/Import'))
 
 function App() {
   return (
@@ -30,7 +30,7 @@ function App() {
             path="/import"
             element={
               <Suspense fallback={<LoadingScreen />}>
-                <ImportLibib />
+                <Import />
               </Suspense>
             }
           />
