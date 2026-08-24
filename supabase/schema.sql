@@ -9,11 +9,14 @@
 
 create extension if not exists "pgcrypto";
 
--- Un profil par utilisateur : nom affiché + code ami unique, créés à la
--- première visite de la page Compte plutôt qu'à l'inscription.
+-- Un profil par utilisateur : nom affiché + code ami unique. Créé
+-- automatiquement à l'inscription par le trigger plus bas ; first_name et
+-- last_name restent nullable pour un éventuel compte créé autrement.
 create table profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
   display_name text not null,
+  first_name text,
+  last_name text,
   email text not null,
   friend_code text not null unique,
   created_at timestamptz default now()
@@ -97,6 +100,64 @@ $$;
 -- en {user_id, display_name} sans être connecté.
 revoke execute on function find_user_by_code(text) from public;
 grant execute on function find_user_by_code(text) to authenticated;
+
+-- Crée le profil (nom + code ami) automatiquement à l'inscription, plutôt
+-- que d'attendre la première visite de Compte -> Partage. Un trigger sur
+-- auth.users plutôt qu'un appel client après signUp() : si la confirmation
+-- par email est activée, il n'y a pas encore de session juste après
+-- l'inscription, donc un insert RLS depuis le client échouerait.
+create or replace function generate_friend_code()
+returns text
+language plpgsql
+as $$
+declare
+  charset text := 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  code text;
+begin
+  loop
+    select string_agg(substr(charset, (floor(random() * length(charset)))::int + 1, 1), '')
+    into code
+    from generate_series(1, 6);
+    exit when not exists (select 1 from profiles where friend_code = code);
+  end loop;
+  return code;
+end;
+$$;
+
+revoke execute on function generate_friend_code() from public;
+
+-- raw_user_meta_data contient soit first_name/last_name (notre formulaire
+-- d'inscription), soit given_name/family_name (fournis par Google en OAuth) ;
+-- à défaut des deux, on retombe sur le préfixe de l'email pour ne jamais
+-- laisser display_name vide.
+create or replace function handle_new_user_profile()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  fname text := coalesce(
+    nullif(trim(new.raw_user_meta_data->>'first_name'), ''),
+    nullif(trim(new.raw_user_meta_data->>'given_name'), ''),
+    split_part(new.email, '@', 1)
+  );
+  lname text := coalesce(
+    nullif(trim(new.raw_user_meta_data->>'last_name'), ''),
+    nullif(trim(new.raw_user_meta_data->>'family_name'), '')
+  );
+begin
+  insert into profiles (user_id, display_name, first_name, last_name, email, friend_code)
+  values (new.id, fname, fname, lname, new.email, generate_friend_code())
+  on conflict (user_id) do nothing;
+  return new;
+end;
+$$;
+
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row
+  execute function handle_new_user_profile();
 
 create table books (
   id uuid primary key default gen_random_uuid(),

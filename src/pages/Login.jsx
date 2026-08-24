@@ -21,6 +21,8 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [password2, setPassword2] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
   const [error, setError] = useState(null)
   const [info, setInfo] = useState(null)
   const [submitting, setSubmitting] = useState(false)
@@ -64,7 +66,7 @@ export default function Login() {
       return
     }
     setSubmitting(true)
-    const { data, error } = await signUp(email, password)
+    const { data, error } = await signUp(email, password, { firstName, lastName })
     setSubmitting(false)
     if (error) {
       setError(describeSignUpError(error))
@@ -100,6 +102,8 @@ export default function Login() {
     setInfo(null)
     setPassword('')
     setPassword2('')
+    setFirstName('')
+    setLastName('')
   }
 
   return (
@@ -204,6 +208,42 @@ export default function Login() {
 
         {mode === 'signup' && (
           <form onSubmit={handleSignUp} className="space-y-4" noValidate>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label
+                  htmlFor="signup-first-name"
+                  className="block text-sm font-medium mb-1"
+                >
+                  Prénom
+                </label>
+                <input
+                  id="signup-first-name"
+                  type="text"
+                  autoComplete="given-name"
+                  required
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+              <div className="flex-1">
+                <label
+                  htmlFor="signup-last-name"
+                  className="block text-sm font-medium mb-1"
+                >
+                  Nom
+                </label>
+                <input
+                  id="signup-last-name"
+                  type="text"
+                  autoComplete="family-name"
+                  required
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+            </div>
             <div>
               <label
                 htmlFor="signup-email"
