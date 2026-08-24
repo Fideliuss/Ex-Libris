@@ -1,11 +1,20 @@
 import { useState } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { inputClass } from '../lib/ui'
+import { navigateWithViewTransition } from '../lib/navigation'
 
 export default function Login() {
   const { session, signIn, signUp, resetPasswordForEmail } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
+
+  function handleBackToLanding(e) {
+    if (e.defaultPrevented || e.button !== 0) return
+    if (e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) return
+    e.preventDefault()
+    navigateWithViewTransition(navigate, '/', { direction: 'back' })
+  }
 
   const [mode, setMode] = useState('signin') // 'signin' | 'signup' | 'forgot'
   const [email, setEmail] = useState('')
@@ -81,7 +90,14 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-svh flex items-center justify-center p-6">
+    <div className="min-h-svh flex flex-col items-center justify-center p-6 gap-6">
+      <Link
+        to="/"
+        onClick={handleBackToLanding}
+        className="flex items-center gap-2 text-sm text-ink/60 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+      >
+        <span aria-hidden="true">←</span> Retour à l'accueil
+      </Link>
       <div className="max-w-sm w-full bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-8">
         <p className="font-mono text-xs tracking-widest text-library uppercase mb-2 text-center">
           {mode === 'signin' && 'Connexion'}
