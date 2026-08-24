@@ -7,7 +7,7 @@ import { describeError } from '../lib/errors'
 import BookCard from '../components/BookCard'
 import CollectionFilters from '../components/CollectionFilters'
 import BulkActionBar from '../components/BulkActionBar'
-import HouseholdTabs from '../components/HouseholdTabs'
+import HouseholdSwitchBadge from '../components/HouseholdSwitchBadge'
 import TabBar from '../components/TabBar'
 import LoadingScreen from '../components/LoadingScreen'
 import { STATUS_LABELS } from '../lib/statusLabels'
@@ -433,14 +433,11 @@ export default function Collection() {
         <div className="flex items-start gap-2 w-full sm:w-auto">
           <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
             {partner && (
-              <HouseholdTabs
+              <HouseholdSwitchBadge
                 isMine={isMine}
                 onSelectMine={() => switchView('mine')}
                 onSelectPartner={() => switchView('partner')}
-                mineLabel="Toi"
                 partnerLabel={partner.label}
-                ariaLabel="Bibliothèque à afficher"
-                compact
               />
             )}
             <Link
