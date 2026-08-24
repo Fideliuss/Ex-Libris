@@ -5,7 +5,8 @@ import { inputClass } from '../lib/ui'
 import { navigateWithViewTransition } from '../lib/navigation'
 
 export default function Login() {
-  const { session, signIn, signUp, resetPasswordForEmail } = useAuth()
+  const { session, signIn, signUp, signInWithGoogle, resetPasswordForEmail } =
+    useAuth()
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -36,6 +37,18 @@ export default function Login() {
     const { error } = await signIn(email, password)
     setSubmitting(false)
     if (error) setError(describeSignInError(error))
+  }
+
+  async function handleGoogleSignIn() {
+    setError(null)
+    setSubmitting(true)
+    const { error } = await signInWithGoogle()
+    // En cas de succès, Supabase redirige la page entière vers Google : ce
+    // composant est démonté avant même que setSubmitting(false) ne compte.
+    setSubmitting(false)
+    if (error) {
+      setError(`Connexion Google impossible : ${error.message || 'erreur inconnue'}.`)
+    }
   }
 
   async function handleSignUp(e) {
@@ -154,6 +167,21 @@ export default function Login() {
               className="w-full rounded-sm bg-library text-white font-medium py-2 text-sm hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
             >
               {submitting ? 'Connexion…' : 'Se connecter'}
+            </button>
+
+            <div className="flex items-center gap-3 text-xs text-ink/40">
+              <div className="flex-1 border-t border-ink/10" />
+              ou
+              <div className="flex-1 border-t border-ink/10" />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={submitting}
+              className="w-full rounded-sm border border-ink/20 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60"
+            >
+              Continuer avec Google
             </button>
 
             <button
