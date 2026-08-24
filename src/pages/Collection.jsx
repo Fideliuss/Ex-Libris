@@ -483,7 +483,7 @@ export default function Collection() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6">
+      <main key={isMine ? 'mine' : 'partner'} className="max-w-5xl mx-auto px-6 fade-in">
         {!loading && !error && books.length > 0 && (
           <TabBar
             tabs={[
