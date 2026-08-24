@@ -8,6 +8,8 @@ export const HOUSEHOLD_MEMBERS = [
 
 export function getPartner(currentUserId) {
   if (!currentUserId) return null
+  const isHouseholdMember = HOUSEHOLD_MEMBERS.some((m) => m.id === currentUserId)
+  if (!isHouseholdMember) return null
   return HOUSEHOLD_MEMBERS.find((m) => m.id !== currentUserId) ?? null
 }
 
