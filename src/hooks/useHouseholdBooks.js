@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { listBooks } from '../lib/books'
-import { getPartner } from '../lib/household'
+import { getAcceptedPartner } from '../lib/friendCode'
 import { describeError } from '../lib/errors'
 
 // Charge tous les livres visibles (les miens + ceux du partenaire, autorisés
@@ -9,11 +9,27 @@ import { describeError } from '../lib/errors'
 // client sans refaire de requête à chaque changement d'onglet.
 export function useHouseholdBooks() {
   const { user } = useAuth()
-  const partner = getPartner(user?.id)
+  const [partner, setPartner] = useState(null)
   const [view, setView] = useState('mine') // 'mine' | 'partner'
   const [allBooks, setAllBooks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  useEffect(() => {
+    if (!user) return
+    let active = true
+    getAcceptedPartner(user.id)
+      .then((p) => {
+        if (active) setPartner(p)
+      })
+      .catch(() => {
+        // Le partage reste optionnel : une erreur ici ne doit pas bloquer
+        // l'affichage de la collection.
+      })
+    return () => {
+      active = false
+    }
+  }, [user])
 
   useEffect(() => {
     let active = true

@@ -1,11 +1,10 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import { useGoBack } from '../lib/navigation'
+import SharingPanel from '../components/SharingPanel'
 
 export default function Account() {
   const { user, signOut } = useAuth()
-  const { partner } = useHouseholdBooks()
   const goBack = useGoBack('/')
   const navigate = useNavigate()
 
@@ -37,16 +36,12 @@ export default function Account() {
             <p className="text-sm">{user?.email}</p>
           </div>
 
-          {partner && (
-            <div>
-              <p className="font-mono text-xs uppercase tracking-widest text-ink/50 mb-1">
-                Foyer
-              </p>
-              <p className="text-sm">
-                Partagé avec <span className="text-library">{partner.label}</span>
-              </p>
-            </div>
-          )}
+          <div className="pt-2 border-t border-ink/10">
+            <p className="font-mono text-xs uppercase tracking-widest text-ink/50 mb-3">
+              Partage
+            </p>
+            <SharingPanel user={user} />
+          </div>
 
           <div className="pt-2 border-t border-ink/10 space-y-3">
             <Link
