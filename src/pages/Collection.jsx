@@ -693,9 +693,14 @@ export default function Collection() {
           <Link
             to="/books/new"
             aria-label="Ajouter un livre"
-            className="fixed bottom-6 right-6 flex items-center justify-center w-14 h-14 rounded-full bg-library text-white text-3xl leading-none shadow-lg hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+            className="fixed bottom-6 right-6 flex items-center justify-center gap-2 w-14 h-14 sm:w-auto sm:h-auto sm:px-5 sm:py-3 rounded-full bg-library text-white shadow-lg hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
           >
-            +
+            <span className="text-3xl sm:text-xl leading-none" aria-hidden="true">
+              +
+            </span>
+            <span className="hidden sm:inline text-sm font-medium">
+              Ajouter un livre
+            </span>
           </Link>
         )
       )}
