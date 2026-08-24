@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { navigateWithViewTransition } from '../lib/navigation'
 
 const LANG_STORAGE_KEY = 'landing-lang'
 
@@ -215,12 +216,9 @@ function Nav() {
         </nav>
         <div className="flex items-center gap-3">
           <LangSwitch />
-          <Link
-            to="/login"
-            className="rounded-sm bg-library text-white text-sm font-medium px-4 py-2 hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
-          >
+          <LoginCta className="rounded-sm bg-library text-white text-sm font-medium px-4 py-2 hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library">
             {t.nav.login}
-          </Link>
+          </LoginCta>
         </div>
       </div>
     </header>
@@ -287,12 +285,9 @@ function Hero() {
         {t.hero.subtitle}
       </p>
       <div className="hero-in mt-8" style={{ animationDelay: '240ms' }}>
-        <Link
-          to="/login"
-          className="inline-block rounded-sm bg-library text-white font-medium px-6 py-3 hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
-        >
+        <LoginCta className="inline-block rounded-sm bg-library text-white font-medium px-6 py-3 hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library">
           {t.hero.cta}
-        </Link>
+        </LoginCta>
       </div>
 
       <div className="hero-in mt-16" style={{ animationDelay: '320ms' }}>
@@ -443,14 +438,31 @@ function FinalCta() {
     <section className="max-w-5xl mx-auto px-6 py-20 text-center">
       <Reveal>
         <h2 className="font-serif text-3xl font-semibold mb-4">{t.finalCtaTitle}</h2>
-        <Link
-          to="/login"
-          className="inline-block rounded-sm bg-library text-white font-medium px-6 py-3 hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
-        >
+        <LoginCta className="inline-block rounded-sm bg-library text-white font-medium px-6 py-3 hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library">
           {t.hero.cta}
-        </Link>
+        </LoginCta>
       </Reveal>
     </section>
+  )
+}
+
+// Le clic sur "Se connecter" ouvre la connexion avec un volet vertical
+// (glisse depuis le haut), pour se distinguer du volet horizontal utilisé
+// pour ouvrir une fiche livre.
+function LoginCta({ className, children }) {
+  const navigate = useNavigate()
+
+  function handleClick(e) {
+    if (e.defaultPrevented || e.button !== 0) return
+    if (e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) return
+    e.preventDefault()
+    navigateWithViewTransition(navigate, '/login', { direction: 'top' })
+  }
+
+  return (
+    <Link to="/login" onClick={handleClick} className={className}>
+      {children}
+    </Link>
   )
 }
 
