@@ -1,19 +1,11 @@
 import { useEffect, useState } from 'react'
-import {
-  acceptLink,
-  ensureFriendCode,
-  getMyLinks,
-  getMyProfile,
-  removeLink,
-  sendFriendRequest,
-} from '../lib/friendCode'
+import { acceptLink, getMyLinks, getMyProfile, removeLink, sendFriendRequest } from '../lib/friendCode'
 import { describeError } from '../lib/errors'
 import LoadingScreen from './LoadingScreen'
 
 export default function SharingPanel({ user }) {
-  const [profile, setProfile] = useState(undefined) // undefined = chargement, null = pas encore créé
+  const [profile, setProfile] = useState(undefined) // undefined = chargement, null = compte sans profil (créé avant le trigger d'inscription)
   const [links, setLinks] = useState(null)
-  const [displayNameInput, setDisplayNameInput] = useState('')
   const [codeInput, setCodeInput] = useState('')
   const [copied, setCopied] = useState(false)
   const [confirmingStop, setConfirmingStop] = useState(false)
@@ -42,13 +34,6 @@ export default function SharingPanel({ user }) {
     } finally {
       setWorking(false)
     }
-  }
-
-  function handleCreateCode(e) {
-    e.preventDefault()
-    const name = displayNameInput.trim()
-    if (!name) return
-    runAction(() => ensureFriendCode(user, name))
   }
 
   function handleCopyCode() {
@@ -80,26 +65,9 @@ export default function SharingPanel({ user }) {
       )}
 
       {!profile ? (
-        <form onSubmit={handleCreateCode} className="space-y-3">
-          <p className="text-sm text-ink/70">
-            Crée ton code ami pour pouvoir partager ta bibliothèque.
-          </p>
-          <input
-            type="text"
-            value={displayNameInput}
-            onChange={(e) => setDisplayNameInput(e.target.value)}
-            placeholder="Comment veux-tu qu'on t'appelle ?"
-            required
-            className="w-full rounded-sm border border-ink/20 bg-white px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-          />
-          <button
-            type="submit"
-            disabled={working}
-            className="rounded-sm bg-library text-white font-medium px-4 py-2 text-sm hover:bg-library/90 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
-          >
-            Créer mon code ami
-          </button>
-        </form>
+        <p className="text-sm text-ink/60">
+          Aucun profil trouvé pour ce compte.
+        </p>
       ) : (
         <>
           <div className="mb-4">

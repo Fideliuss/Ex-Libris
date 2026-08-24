@@ -1,21 +1,6 @@
 import { supabase } from './supabaseClient'
 
-// Codes lisibles à voix haute ou tapés à la main : on exclut les
-// caractères ambigus (0/O, 1/I/L).
-const CODE_CHARSET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
-const CODE_LENGTH = 6
 const UNIQUE_VIOLATION = '23505'
-
-// Math.random() n'est pas fait pour générer un identifiant qu'on veut
-// difficile à deviner : crypto donne une vraie source d'aléa.
-function generateCode() {
-  const bytes = crypto.getRandomValues(new Uint8Array(CODE_LENGTH))
-  let code = ''
-  for (let i = 0; i < CODE_LENGTH; i++) {
-    code += CODE_CHARSET[bytes[i] % CODE_CHARSET.length]
-  }
-  return code
-}
 
 export async function getMyProfile(userId) {
   const { data, error } = await supabase
@@ -25,31 +10,6 @@ export async function getMyProfile(userId) {
     .maybeSingle()
   if (error) throw error
   return data
-}
-
-// Crée le profil (et son code ami) à la première visite de la page Compte.
-// Quelques tentatives en cas de collision de code : l'espace est assez
-// grand pour que ça n'arrive presque jamais, mais le code reste unique en
-// base donc on retente plutôt que de faire confiance à un seul essai.
-export async function ensureFriendCode(user, displayName) {
-  const existing = await getMyProfile(user.id)
-  if (existing) return existing
-
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .insert({
-        user_id: user.id,
-        display_name: displayName,
-        email: user.email,
-        friend_code: generateCode(),
-      })
-      .select('user_id, display_name, email, friend_code')
-      .single()
-    if (!error) return data
-    if (error.code !== UNIQUE_VIOLATION) throw error
-  }
-  throw new Error('Impossible de générer un code ami, réessaie.')
 }
 
 // Les liens visibles par l'utilisateur : au plus un accepté (le modèle
