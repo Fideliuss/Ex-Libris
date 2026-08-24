@@ -6,10 +6,13 @@ const CODE_CHARSET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
 const CODE_LENGTH = 6
 const UNIQUE_VIOLATION = '23505'
 
+// Math.random() n'est pas fait pour générer un identifiant qu'on veut
+// difficile à deviner : crypto donne une vraie source d'aléa.
 function generateCode() {
+  const bytes = crypto.getRandomValues(new Uint8Array(CODE_LENGTH))
   let code = ''
   for (let i = 0; i < CODE_LENGTH; i++) {
-    code += CODE_CHARSET[Math.floor(Math.random() * CODE_CHARSET.length)]
+    code += CODE_CHARSET[bytes[i] % CODE_CHARSET.length]
   }
   return code
 }

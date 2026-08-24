@@ -92,6 +92,10 @@ as $$
   select user_id, display_name from profiles where friend_code = code;
 $$;
 
+-- Postgres accorde EXECUTE à PUBLIC par défaut à la création d'une
+-- fonction : sans ce revoke, n'importe qui pourrait résoudre un code ami
+-- en {user_id, display_name} sans être connecté.
+revoke execute on function find_user_by_code(text) from public;
 grant execute on function find_user_by_code(text) to authenticated;
 
 create table books (

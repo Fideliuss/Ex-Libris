@@ -89,6 +89,10 @@ as $$
   select user_id, display_name from profiles where friend_code = code;
 $$;
 
+-- Postgres accorde EXECUTE à PUBLIC par défaut à la création d'une
+-- fonction : sans ce revoke, n'importe qui pourrait résoudre un code ami
+-- en {user_id, display_name} sans être connecté.
+revoke execute on function find_user_by_code(text) from public;
 grant execute on function find_user_by_code(text) to authenticated;
 
 -- Remplace le partage codé en dur par le partage basé sur household_links.
@@ -124,13 +128,15 @@ create policy "Household members can view all household reading goals"
 
 -- Seed : reprend le lien Brayan <-> Bradley qui existait en dur, pour ne
 -- pas casser leur partage pendant le déploiement de cette migration.
+-- Codes générés aléatoirement (pas "BRAYAN1"/"BRADLEY1" : un code ami doit
+-- rester difficile à deviner, pas dérivé d'une info publique comme le nom).
 insert into profiles (user_id, display_name, email, friend_code)
-select '62c4fc66-007a-4018-bbf1-42c0990284c0', 'Brayan', email, 'BRAYAN1'
+select '62c4fc66-007a-4018-bbf1-42c0990284c0', 'Brayan', email, 'JTPMC5'
 from auth.users where id = '62c4fc66-007a-4018-bbf1-42c0990284c0'
 on conflict (user_id) do nothing;
 
 insert into profiles (user_id, display_name, email, friend_code)
-select '3d041fdc-b619-46a4-8fed-743cce2269f6', 'Bradley', email, 'BRADLEY1'
+select '3d041fdc-b619-46a4-8fed-743cce2269f6', 'Bradley', email, 'SAWT9Q'
 from auth.users where id = '3d041fdc-b619-46a4-8fed-743cce2269f6'
 on conflict (user_id) do nothing;
 
