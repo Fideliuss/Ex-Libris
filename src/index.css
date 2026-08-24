@@ -79,7 +79,8 @@ body {
    `data-transition-direction` sur <html>, posé par
    navigateWithViewTransition() juste avant de démarrer la transition :
    "forward" (par défaut, ex: ouvrir une fiche, tome suivant) glisse depuis
-   la droite ; "back" (ex: tome précédent) glisse depuis la gauche. */
+   la droite ; "back" (ex: tome précédent, retour à l'accueil) glisse depuis
+   la gauche ; "top" (ex: landing -> connexion) glisse depuis le haut. */
 @media (prefers-reduced-motion: no-preference) {
   ::view-transition-old(root),
   ::view-transition-new(root) {
@@ -87,10 +88,10 @@ body {
     animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  :root:not([data-transition-direction='back'])::view-transition-old(root) {
+  :root:not([data-transition-direction='back']):not([data-transition-direction='top'])::view-transition-old(root) {
     animation-name: volet-out;
   }
-  :root:not([data-transition-direction='back'])::view-transition-new(root) {
+  :root:not([data-transition-direction='back']):not([data-transition-direction='top'])::view-transition-new(root) {
     animation-name: volet-in;
   }
 
@@ -99,6 +100,13 @@ body {
   }
   :root[data-transition-direction='back']::view-transition-new(root) {
     animation-name: volet-in-reverse;
+  }
+
+  :root[data-transition-direction='top']::view-transition-old(root) {
+    animation-name: volet-out-top;
+  }
+  :root[data-transition-direction='top']::view-transition-new(root) {
+    animation-name: volet-in-top;
   }
 }
 
@@ -117,6 +125,18 @@ body {
 @keyframes volet-in-reverse {
   from {
     transform: translateX(-100%);
+  }
+}
+
+@keyframes volet-in-top {
+  from {
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes volet-out-top {
+  to {
+    transform: translateY(-15%);
   }
 }
 

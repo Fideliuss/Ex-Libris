@@ -10,6 +10,9 @@ import BulkActionBar from '../components/BulkActionBar'
 import HouseholdTabs from '../components/HouseholdTabs'
 import TabBar from '../components/TabBar'
 import LoadingScreen from '../components/LoadingScreen'
+import { STATUS_LABELS } from '../lib/statusLabels'
+
+const STATUS_ORDER = Object.keys(STATUS_LABELS)
 
 const SORT_OPTIONS = {
   recent: {
@@ -37,6 +40,38 @@ const SORT_OPTIONS = {
     label: 'Tome (croissant)',
     compare: (a, b) => (a.series_index ?? 0) - (b.series_index ?? 0),
   },
+  status: {
+    label: 'Statut',
+    compare: (a, b) =>
+      STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status),
+  },
+}
+
+// Les champs date_finished sont des "date" Postgres (pas d'heure) : les
+// parser avec `new Date(string)` les interprète en UTC et peut décaler d'un
+// jour selon le fuseau du navigateur. On construit la date en local.
+function parseDateOnly(str) {
+  const [y, m, d] = str.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
+function monthLabel(date) {
+  return new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(
+    date,
+  )
+}
+
+// Détermine l'en-tête de section pour un livre selon le tri actif (lettre,
+// mois, statut), ou `null` si ce tri ne se groupe pas naturellement (note,
+// tome) ou si le champ concerné est vide pour ce livre.
+function groupKeyFor(book, sortKey) {
+  if (sortKey === 'title') return book.title[0].toUpperCase()
+  if (sortKey === 'author') return book.author ? book.author[0].toUpperCase() : null
+  if (sortKey === 'recent') return monthLabel(new Date(book.created_at))
+  if (sortKey === 'finished')
+    return book.date_finished ? monthLabel(parseDateOnly(book.date_finished)) : null
+  if (sortKey === 'status') return STATUS_LABELS[book.status] ?? null
+  return null
 }
 
 export default function Collection() {
@@ -180,7 +215,8 @@ export default function Collection() {
     const query = search.trim().toLowerCase()
     return books.filter((book) => {
       if (query) {
-        const haystack = `${book.title} ${book.author ?? ''}`.toLowerCase()
+        const isbn = (book.isbn ?? '').replace(/[\s-]/g, '')
+        const haystack = `${book.title} ${book.author ?? ''} ${isbn}`.toLowerCase()
         if (!haystack.includes(query)) return false
       }
       if (
@@ -215,6 +251,22 @@ export default function Collection() {
 
   const visibleBooks =
     collectionTab === 'todo' ? sortedIncompleteBooks : sortedBooks
+
+  // Une entrée "header" avant chaque nouveau groupe (lettre/mois/statut),
+  // ou juste les livres si le tri actif ne se groupe pas (note, tome).
+  const gridItems = useMemo(() => {
+    const items = []
+    let lastKey
+    for (const book of visibleBooks) {
+      const key = groupKeyFor(book, sort)
+      if (key !== null && key !== lastKey) {
+        items.push({ type: 'header', renderKey: `h-${key}`, label: key })
+      }
+      items.push({ type: 'book', renderKey: book.id, book })
+      lastKey = key
+    }
+    return items
+  }, [visibleBooks, sort])
 
   const hasActiveFilters = Boolean(
     search ||
@@ -378,31 +430,33 @@ export default function Collection() {
           <img src="/favicon.svg" alt="" className="w-7 h-7" />
           <span className="font-serif text-xl font-semibold">Ex Libris</span>
         </Link>
-        <div className="flex flex-wrap items-center gap-2">
-          {partner && (
-            <HouseholdTabs
-              isMine={isMine}
-              onSelectMine={() => switchView('mine')}
-              onSelectPartner={() => switchView('partner')}
-              mineLabel="Toi"
-              partnerLabel={partner.label}
-              ariaLabel="Bibliothèque à afficher"
-              compact
-            />
-          )}
-          <Link
-            to="/import"
-            className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-          >
-            Importer
-          </Link>
-          <Link
-            to="/stats"
-            className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-          >
-            Statistiques
-          </Link>
-          <div className="relative group">
+        <div className="flex items-start gap-2 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+            {partner && (
+              <HouseholdTabs
+                isMine={isMine}
+                onSelectMine={() => switchView('mine')}
+                onSelectPartner={() => switchView('partner')}
+                mineLabel="Toi"
+                partnerLabel={partner.label}
+                ariaLabel="Bibliothèque à afficher"
+                compact
+              />
+            )}
+            <Link
+              to="/import"
+              className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+            >
+              Importer
+            </Link>
+            <Link
+              to="/stats"
+              className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+            >
+              Statistiques
+            </Link>
+          </div>
+          <div className="relative group shrink-0">
             <Link
               to="/account"
               title={user?.email}
@@ -597,16 +651,25 @@ export default function Collection() {
               </div>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {visibleBooks.map((book) => (
-                <BookCard
-                  key={book.id}
-                  book={book}
-                  selectable={selectionMode}
-                  selected={selectedIds.has(book.id)}
-                  onToggleSelect={toggleSelect}
-                  onStartSelection={isMine ? handleStartSelection : undefined}
-                />
-              ))}
+              {gridItems.map((item) =>
+                item.type === 'header' ? (
+                  <p
+                    key={item.renderKey}
+                    className="col-span-full font-mono text-xs uppercase tracking-widest text-ink/50 border-b border-ink/10 pb-1 mt-2 first:mt-0"
+                  >
+                    {item.label}
+                  </p>
+                ) : (
+                  <BookCard
+                    key={item.renderKey}
+                    book={item.book}
+                    selectable={selectionMode}
+                    selected={selectedIds.has(item.book.id)}
+                    onToggleSelect={toggleSelect}
+                    onStartSelection={isMine ? handleStartSelection : undefined}
+                  />
+                ),
+              )}
             </div>
           </>
         )}
@@ -630,9 +693,14 @@ export default function Collection() {
           <Link
             to="/books/new"
             aria-label="Ajouter un livre"
-            className="fixed bottom-6 right-6 flex items-center justify-center w-14 h-14 rounded-full bg-library text-white text-3xl leading-none shadow-lg hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+            className="fixed bottom-6 right-6 flex items-center justify-center gap-2 w-14 h-14 sm:w-auto sm:h-auto sm:px-5 sm:py-3 rounded-full bg-library text-white shadow-lg hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
           >
-            +
+            <span className="text-3xl sm:text-xl leading-none" aria-hidden="true">
+              +
+            </span>
+            <span className="hidden sm:inline text-sm font-medium">
+              Ajouter un livre
+            </span>
           </Link>
         )
       )}
