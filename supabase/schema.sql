@@ -64,13 +64,22 @@ create trigger books_set_updated_at
 -- livres de l'autre, mais ne peut modifier/supprimer que les siens. Tout
 -- utilisateur (foyer ou non) voit toujours ses propres livres, sinon un
 -- compte solo créé plus tard ne verrait jamais ce qu'il vient d'ajouter.
+-- Le deuxième "in" est essentiel : il restreint le partage aux LIGNES qui
+-- appartiennent au foyer, pas seulement à qui les demande — sans lui, un
+-- membre du foyer verrait les livres de n'importe quel compte solo tiers.
 create policy "Household members can view all household books"
   on books for select
   using (
     user_id = auth.uid()
-    or auth.uid() in (
-      '62c4fc66-007a-4018-bbf1-42c0990284c0',
-      '3d041fdc-b619-46a4-8fed-743cce2269f6'
+    or (
+      auth.uid() in (
+        '62c4fc66-007a-4018-bbf1-42c0990284c0',
+        '3d041fdc-b619-46a4-8fed-743cce2269f6'
+      )
+      and user_id in (
+        '62c4fc66-007a-4018-bbf1-42c0990284c0',
+        '3d041fdc-b619-46a4-8fed-743cce2269f6'
+      )
     )
   );
 
@@ -109,9 +118,15 @@ create policy "Household members can view all household reading goals"
   on reading_goals for select
   using (
     user_id = auth.uid()
-    or auth.uid() in (
-      '62c4fc66-007a-4018-bbf1-42c0990284c0',
-      '3d041fdc-b619-46a4-8fed-743cce2269f6'
+    or (
+      auth.uid() in (
+        '62c4fc66-007a-4018-bbf1-42c0990284c0',
+        '3d041fdc-b619-46a4-8fed-743cce2269f6'
+      )
+      and user_id in (
+        '62c4fc66-007a-4018-bbf1-42c0990284c0',
+        '3d041fdc-b619-46a4-8fed-743cce2269f6'
+      )
     )
   );
 
