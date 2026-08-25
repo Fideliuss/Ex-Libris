@@ -27,5 +27,5 @@ jobs:
       - run: >
           supabase start
           -x analytics -x edge-runtime -x functions -x imgproxy -x inbucket
-          -x kong -x meta -x realtime -x rest -x storage -x studio -x vector
+          -x meta -x storage -x studio -x vector
       - run: supabase test db supabase/tests/database

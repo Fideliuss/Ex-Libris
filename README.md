@@ -62,9 +62,10 @@ jusqu'ici, donc ça vaut le coup de les couvrir. Nécessite
 seule fois) :
 
 ```bash
-# Démarre uniquement Postgres (pas besoin de Studio/Storage/etc. pour pgTAP)
+# Coupe les services inutiles pour pgTAP (Studio/Storage/etc.). Garde kong/
+# rest/realtime : le health-check interne de `supabase start` échoue sinon.
 supabase start -x analytics -x edge-runtime -x functions -x imgproxy \
-  -x inbucket -x kong -x meta -x realtime -x rest -x storage -x studio -x vector
+  -x inbucket -x meta -x storage -x studio -x vector
 
 supabase test db supabase/tests/database
 
