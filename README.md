@@ -52,6 +52,31 @@ Netlify (plan gratuit) a un quota de crédits limité — chaque déploiement
   (a besoin d'HTTPS + d'un vrai appareil). Voir la section suivante si
   besoin de le tester avant de livrer.
 
+## Tests RLS (pgTAP)
+
+Les policies RLS (`books`, `household_links`, `profiles`, `find_user_by_code`)
+sont testées avec [pgTAP](https://pgtap.org/) via la CLI Supabase — c'est
+elles qui ont causé les deux bugs de sécurité les plus sérieux du projet
+jusqu'ici, donc ça vaut le coup de les couvrir. Nécessite
+[Docker Desktop](https://www.docker.com/products/docker-desktop/) (une
+seule fois) :
+
+```bash
+# Démarre uniquement Postgres (pas besoin de Studio/Storage/etc. pour pgTAP)
+supabase start -x analytics -x edge-runtime -x functions -x imgproxy \
+  -x inbucket -x kong -x meta -x realtime -x rest -x storage -x studio -x vector
+
+supabase test db supabase/tests/database
+
+supabase stop   # quand t'as fini, libère les conteneurs
+```
+
+Les fichiers de test vivent dans `supabase/tests/database/`. Le schéma
+utilisé pour les lancer est une copie de `supabase/schema.sql` dans
+`supabase/migrations/` (à garder synchronisée à la main à chaque
+changement de policy). Tourne aussi automatiquement sur chaque PR via
+`.github/workflows/build-check.yml` (job `rls-tests`).
+
 ## Workflow de contribution
 
 GitFlow simplifié, pour ne jamais déclencher un build Netlify (payant en
@@ -63,8 +88,9 @@ crédits) en dehors d'un vrai merge sur `main` :
   `feat:`, `fix:`, `chore:`, `docs:`, `refactor:` — indispensable pour que
   le versionnage automatique fonctionne.
 - Chaque `feature/xxx` termine par une pull request vers `develop`. La CI
-  (`.github/workflows/build-check.yml`) lance `npm ci && npm run build` sur
-  chaque PR et doit passer avant merge.
+  (`.github/workflows/build-check.yml`) lance `npm ci && npm run build` et
+  les tests pgTAP (job `rls-tests`, voir plus haut) sur chaque PR, et doit
+  passer avant merge.
 - `main` et `develop` sont protégées : push direct interdit, merge
   uniquement via PR avec la CI au vert.
 - Quand `develop` est stable, ouvrir une PR de `develop` vers `main`.

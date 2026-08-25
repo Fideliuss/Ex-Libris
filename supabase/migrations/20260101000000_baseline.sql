@@ -1,16 +1,8 @@
--- Ex Libris — schéma complet (état actuel)
---
--- Fichier consolidé : reflète l'état actuel complet de la base, pas
--- l'historique des ajouts successifs. À utiliser pour reconstruire la base
--- depuis zéro (Supabase Dashboard -> SQL Editor -> New query). Les anciens
--- fichiers incrémentaux (price.sql, wishlist.sql, description.sql,
--- series.sql, household-sharing.sql, household-scope-fix.sql,
--- friend-code-sharing.sql) ont été fusionnés ici et supprimés.
---
--- Une copie de ce fichier vit aussi dans migrations/20260101000000_baseline.sql
--- (Supabase CLI ne peut pas inclure un fichier externe) : c'est elle qui
--- reconstruit la base locale utilisée par `supabase test db`. Les deux
--- doivent rester synchronisés à la main.
+-- Copie de supabase/schema.sql pour que `supabase start`/`supabase test db`
+-- puisse reconstruire une base locale identique à la production. À tenir
+-- synchronisé à la main avec schema.sql (même principe que les fichiers
+-- incrémentaux du dossier supabase/ : pas d'automatisation, juste de la
+-- rigueur à chaque migration).
 
 create extension if not exists "pgcrypto";
 
