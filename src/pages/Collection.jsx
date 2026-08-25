@@ -14,6 +14,19 @@ import { STATUS_LABELS } from '../lib/statusLabels'
 
 const STATUS_ORDER = Object.keys(STATUS_LABELS)
 
+// Le champ "author" est du texte libre au format "Prénom Nom" (toutes les
+// sources de lookup ISBN sont normalisées ainsi), parfois plusieurs auteurs
+// séparés par une virgule. On trie par nom de famille plutôt que prénom :
+// c'est ce dont les gens se souviennent le plus souvent d'un auteur. Simple
+// heuristique (dernier mot du premier auteur listé) plutôt qu'un vrai
+// parsing de nom — suffisant pour la grande majorité des cas.
+function authorSortKey(author) {
+  if (!author) return ''
+  const firstAuthor = author.split(',')[0].trim()
+  const words = firstAuthor.split(/\s+/)
+  return words[words.length - 1] ?? ''
+}
+
 const SORT_OPTIONS = {
   recent: {
     label: 'Récemment ajoutés',
@@ -24,8 +37,9 @@ const SORT_OPTIONS = {
     compare: (a, b) => a.title.localeCompare(b.title, 'fr'),
   },
   author: {
-    label: 'Auteur (A→Z)',
-    compare: (a, b) => (a.author ?? '').localeCompare(b.author ?? '', 'fr'),
+    label: 'Auteur (nom, A→Z)',
+    compare: (a, b) =>
+      authorSortKey(a.author).localeCompare(authorSortKey(b.author), 'fr'),
   },
   rating: {
     label: 'Note (meilleure d’abord)',
@@ -66,7 +80,10 @@ function monthLabel(date) {
 // tome) ou si le champ concerné est vide pour ce livre.
 function groupKeyFor(book, sortKey) {
   if (sortKey === 'title') return book.title[0].toUpperCase()
-  if (sortKey === 'author') return book.author ? book.author[0].toUpperCase() : null
+  if (sortKey === 'author') {
+    const key = authorSortKey(book.author)
+    return key ? key[0].toUpperCase() : null
+  }
   if (sortKey === 'recent') return monthLabel(new Date(book.created_at))
   if (sortKey === 'finished')
     return book.date_finished ? monthLabel(parseDateOnly(book.date_finished)) : null
