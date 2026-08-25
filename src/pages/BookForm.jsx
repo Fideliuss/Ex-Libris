@@ -415,12 +415,23 @@ export default function BookForm() {
                   placeholder="https://..."
                   className={inputClass}
                 />
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <label className="cursor-pointer rounded-sm border border-ink/20 px-3 py-1.5 text-sm text-ink/70 hover:border-library hover:text-library focus-within:outline-none focus-within:ring-2 focus-within:ring-library">
                     {coverUploading ? 'Import…' : 'Importer une image'}
                     <input
                       type="file"
                       accept="image/*"
+                      className="sr-only"
+                      onChange={handleCoverUpload}
+                      disabled={coverUploading}
+                    />
+                  </label>
+                  <label className="cursor-pointer rounded-sm border border-ink/20 px-3 py-1.5 text-sm text-ink/70 hover:border-library hover:text-library focus-within:outline-none focus-within:ring-2 focus-within:ring-library">
+                    {coverUploading ? 'Import…' : 'Prendre une photo'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
                       className="sr-only"
                       onChange={handleCoverUpload}
                       disabled={coverUploading}
