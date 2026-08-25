@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getBook, getSeriesSiblings, updateBook } from '../lib/books'
 import { useAuth } from '../context/AuthContext'
-import { getMemberLabel } from '../lib/household'
+import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import {
   STATUS_BADGE_CLASS,
   STATUS_BORDER_CLASS,
@@ -20,6 +20,7 @@ export default function BookDetail() {
   const navigate = useNavigate()
   const goBack = useGoBack('/')
   const { user } = useAuth()
+  const { partner } = useHouseholdBooks()
   const [book, setBook] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -174,7 +175,7 @@ export default function BookDetail() {
             </button>
           ) : (
             <span className="shrink-0 font-mono text-xs uppercase tracking-widest text-brass">
-              Livre de {getMemberLabel(book.user_id) ?? 'l’autre bibliothèque'}
+              Livre de {partner?.label ?? 'l’autre bibliothèque'}
             </span>
           )}
         </div>
