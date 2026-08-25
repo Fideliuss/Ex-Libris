@@ -35,6 +35,7 @@ select throws_ok(
   $$ insert into household_links (requester_id, target_id)
      values ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001') $$,
   '23514',
+  null::text,
   'Impossible de créer un lien avec soi-même (contrainte household_links_no_self_link)'
 );
 
@@ -46,6 +47,7 @@ select throws_ok(
   $$ insert into household_links (requester_id, target_id)
      values ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001') $$,
   '23505',
+  null::text,
   'Une deuxième demande pour la même paire, dans l''autre sens, est rejetée'
 );
 

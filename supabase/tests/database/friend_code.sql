@@ -20,6 +20,9 @@ insert into household_links (requester_id, target_id, status) values
 -- sous-requête qu'on referait plus bas depuis le contexte d'Alice.
 create temporary table test_carol_code as
   select friend_code from profiles where user_id = '00000000-0000-0000-0000-000000000003';
+-- Créée en tant que postgres : sans ce grant, authenticated/anon (le rôle
+-- change plus bas, pas juste la revendication JWT) n'y aurait pas accès.
+grant select on test_carol_code to authenticated, anon;
 
 -- Se fait passer pour Alice.
 set local role authenticated;
