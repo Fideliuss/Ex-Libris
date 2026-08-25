@@ -57,13 +57,20 @@ select set_config(
   true
 );
 
+-- Une CTE modificatrice (update/delete ... returning) doit être au niveau
+-- racine de la requête, pas imbriquée comme argument de select is(...) :
+-- on la fait tourner seule via `create temporary table ... as with ...`.
+create temporary table test_bob_accepts as
+with attempt as (
+  update household_links set status = 'accepted'
+  where requester_id = '00000000-0000-0000-0000-000000000001'
+    and target_id = '00000000-0000-0000-0000-000000000002'
+  returning 1
+)
+select count(*)::int as n from attempt;
+
 select is(
-  (with attempt as (
-    update household_links set status = 'accepted'
-    where requester_id = '00000000-0000-0000-0000-000000000001'
-      and target_id = '00000000-0000-0000-0000-000000000002'
-    returning 1
-  ) select count(*)::int from attempt),
+  (select n from test_bob_accepts),
   1,
   'Bob (la cible) peut accepter la demande'
 );
@@ -81,24 +88,32 @@ select set_config(
   true
 );
 
+create temporary table test_alice_self_accept as
+with attempt as (
+  update household_links set status = 'accepted'
+  where requester_id = '00000000-0000-0000-0000-000000000001'
+    and target_id = '00000000-0000-0000-0000-000000000003'
+  returning 1
+)
+select count(*)::int as n from attempt;
+
 select is(
-  (with attempt as (
-    update household_links set status = 'accepted'
-    where requester_id = '00000000-0000-0000-0000-000000000001'
-      and target_id = '00000000-0000-0000-0000-000000000003'
-    returning 1
-  ) select count(*)::int from attempt),
+  (select n from test_alice_self_accept),
   0,
   'Alice (la demandeuse) ne peut pas accepter sa propre demande'
 );
 
+create temporary table test_alice_cancel_own as
+with attempt as (
+  delete from household_links
+  where requester_id = '00000000-0000-0000-0000-000000000001'
+    and target_id = '00000000-0000-0000-0000-000000000003'
+  returning 1
+)
+select count(*)::int as n from attempt;
+
 select is(
-  (with attempt as (
-    delete from household_links
-    where requester_id = '00000000-0000-0000-0000-000000000001'
-      and target_id = '00000000-0000-0000-0000-000000000003'
-    returning 1
-  ) select count(*)::int from attempt),
+  (select n from test_alice_cancel_own),
   1,
   'Alice peut annuler (supprimer) sa propre demande en attente'
 );
@@ -120,13 +135,17 @@ select ok(
   'Carol (tierce partie) ne voit pas le lien Alice<->Bob'
 );
 
+create temporary table test_carol_delete as
+with attempt as (
+  delete from household_links
+  where requester_id = '00000000-0000-0000-0000-000000000001'
+    and target_id = '00000000-0000-0000-0000-000000000002'
+  returning 1
+)
+select count(*)::int as n from attempt;
+
 select is(
-  (with attempt as (
-    delete from household_links
-    where requester_id = '00000000-0000-0000-0000-000000000001'
-      and target_id = '00000000-0000-0000-0000-000000000002'
-    returning 1
-  ) select count(*)::int from attempt),
+  (select n from test_carol_delete),
   0,
   'Carol (tierce partie) ne peut pas supprimer le lien Alice<->Bob'
 );

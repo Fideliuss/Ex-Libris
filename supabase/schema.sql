@@ -310,3 +310,19 @@ using (bucket_id = 'covers' and auth.uid()::text = (storage.foldername(name))[1]
 create policy "Users can delete their own covers"
 on storage.objects for delete
 using (bucket_id = 'covers' and auth.uid()::text = (storage.foldername(name))[1]);
+
+-- RLS filtre les LIGNES, mais encore faut-il que anon/authenticated aient
+-- le droit d'essayer l'opération en premier lieu (GRANT). Les projets
+-- Supabase existants l'ont eu automatiquement (ancien comportement par
+-- défaut, retiré le 2026-05-30) — un projet recréé de zéro aujourd'hui
+-- via ce fichier ne l'a plus sans ce bloc explicite. Volontairement pas de
+-- grant sur les fonctions ici : find_user_by_code/generate_friend_code ont
+-- déjà leur propre grant ciblé plus haut, plus restrictif.
+grant usage on schema public to anon, authenticated, service_role;
+grant all on all tables in schema public to anon, authenticated, service_role;
+grant all on all sequences in schema public to anon, authenticated, service_role;
+
+alter default privileges in schema public
+  grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema public
+  grant all on sequences to anon, authenticated, service_role;

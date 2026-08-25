@@ -50,22 +50,35 @@ select ok(
   'Alice ne voit PAS le livre de Carol (aucun lien)'
 );
 
+-- Une CTE modificatrice (update/delete ... returning) doit être au niveau
+-- racine de la requête : Postgres refuse qu'elle soit imbriquée comme
+-- argument d'un appel de fonction (ex: dans select is(...)). On la fait
+-- donc tourner seule via `create temporary table ... as with ...`, puis on
+-- lit le résultat dans l'assertion suivante.
+create temporary table test_alice_update_bob as
+with attempt as (
+  update books set title = 'piraté'
+  where id = '10000000-0000-0000-0000-000000000002'
+  returning 1
+)
+select count(*)::int as n from attempt;
+
 select is(
-  (with attempt as (
-    update books set title = 'piraté'
-    where id = '10000000-0000-0000-0000-000000000002'
-    returning 1
-  ) select count(*)::int from attempt),
+  (select n from test_alice_update_bob),
   0,
   'Alice ne peut pas modifier le livre de Bob malgré le partage en lecture'
 );
 
+create temporary table test_alice_delete_bob as
+with attempt as (
+  delete from books
+  where id = '10000000-0000-0000-0000-000000000002'
+  returning 1
+)
+select count(*)::int as n from attempt;
+
 select is(
-  (with attempt as (
-    delete from books
-    where id = '10000000-0000-0000-0000-000000000002'
-    returning 1
-  ) select count(*)::int from attempt),
+  (select n from test_alice_delete_bob),
   0,
   'Alice ne peut pas supprimer le livre de Bob malgré le partage en lecture'
 );
