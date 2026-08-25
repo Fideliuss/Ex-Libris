@@ -66,6 +66,7 @@ set local role anon;
 select throws_ok(
   $$ select * from find_user_by_code((select friend_code from test_carol_code)) $$,
   '42501',
+  null::text,
   'find_user_by_code est refusée pour un appelant anonyme (non connecté)'
 );
 
