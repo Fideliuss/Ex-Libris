@@ -1,0 +1,22 @@
+name: rls-tests
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/rls-tests.yml'
+
+jobs:
+  rls-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: supabase/setup-cli@v3
+        with:
+          version: latest
+      - run: >
+          supabase start
+          -x analytics -x edge-runtime -x functions -x imgproxy -x inbucket
+          -x meta -x storage -x studio -x vector
+      - run: supabase test db supabase/tests/database

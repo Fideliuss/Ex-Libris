@@ -76,8 +76,12 @@ Les fichiers de test vivent dans `supabase/tests/database/`. Le schéma
 utilisé pour les lancer (et pour reconstruire la vraie base depuis zéro le
 cas échéant) est `supabase/migrations/20260101000000_baseline.sql` —
 c'est le seul et unique fichier de référence, pas de copie à garder
-synchronisée. Tourne aussi automatiquement sur chaque PR via
-`.github/workflows/build-check.yml` (job `rls-tests`).
+synchronisée. Tourne aussi automatiquement via
+`.github/workflows/rls-tests.yml`, mais seulement sur les PR qui touchent
+à `supabase/` — inutile de payer ~2 min de démarrage Docker pour une PR
+qui ne change que du React. N'est pas un check obligatoire pour merger
+(seul `build` l'est), donc aucun risque qu'une PR reste bloquée si le
+workflow ne se déclenche pas.
 
 ## Workflow de contribution
 
@@ -90,9 +94,10 @@ crédits) en dehors d'un vrai merge sur `main` :
   `feat:`, `fix:`, `chore:`, `docs:`, `refactor:` — indispensable pour que
   le versionnage automatique fonctionne.
 - Chaque `feature/xxx` termine par une pull request vers `develop`. La CI
-  (`.github/workflows/build-check.yml`) lance `npm ci && npm run build` et
-  les tests pgTAP (job `rls-tests`, voir plus haut) sur chaque PR, et doit
-  passer avant merge.
+  (`.github/workflows/build-check.yml`) lance `npm ci && npm run build` sur
+  chaque PR et doit passer avant merge. Les tests pgTAP
+  (`.github/workflows/rls-tests.yml`, voir plus haut) tournent en plus sur
+  les PR qui touchent `supabase/`, à titre informatif.
 - `main` et `develop` sont protégées : push direct interdit, merge
   uniquement via PR avec la CI au vert.
 - Quand `develop` est stable, ouvrir une PR de `develop` vers `main`.
