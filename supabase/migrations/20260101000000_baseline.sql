@@ -1,8 +1,12 @@
--- Copie de supabase/schema.sql pour que `supabase start`/`supabase test db`
--- puisse reconstruire une base locale identique à la production. À tenir
--- synchronisé à la main avec schema.sql (même principe que les fichiers
--- incrémentaux du dossier supabase/ : pas d'automatisation, juste de la
--- rigueur à chaque migration).
+-- Ex Libris — schéma complet (état actuel)
+--
+-- Fichier consolidé : reflète l'état actuel complet de la base, pas
+-- l'historique des ajouts successifs. Deux usages :
+-- 1. C'est ce fichier que `supabase start`/`supabase test db` appliquent
+--    pour reconstruire une base locale identique à la production —
+--    aucune autre copie à tenir synchronisée.
+-- 2. À utiliser aussi pour reconstruire la vraie base depuis zéro
+--    (Supabase Dashboard -> SQL Editor -> New query) si besoin un jour.
 
 create extension if not exists "pgcrypto";
 

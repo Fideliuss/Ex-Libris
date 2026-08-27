@@ -73,9 +73,10 @@ supabase stop   # quand t'as fini, libère les conteneurs
 ```
 
 Les fichiers de test vivent dans `supabase/tests/database/`. Le schéma
-utilisé pour les lancer est une copie de `supabase/schema.sql` dans
-`supabase/migrations/` (à garder synchronisée à la main à chaque
-changement de policy). Tourne aussi automatiquement sur chaque PR via
+utilisé pour les lancer (et pour reconstruire la vraie base depuis zéro le
+cas échéant) est `supabase/migrations/20260101000000_baseline.sql` —
+c'est le seul et unique fichier de référence, pas de copie à garder
+synchronisée. Tourne aussi automatiquement sur chaque PR via
 `.github/workflows/build-check.yml` (job `rls-tests`).
 
 ## Workflow de contribution
