@@ -101,9 +101,12 @@ as $$
 $$;
 
 -- Postgres accorde EXECUTE à PUBLIC par défaut à la création d'une
--- fonction : sans ce revoke, n'importe qui pourrait résoudre un code ami
--- en {user_id, display_name} sans être connecté.
-revoke execute on function find_user_by_code(text) from public;
+-- fonction, ET Supabase accorde en plus directement ce droit à anon/
+-- authenticated/service_role via ses propres "default privileges" — un
+-- simple `revoke ... from public` ne suffit donc pas, il faut retirer
+-- explicitement le droit direct d'anon (déjà vérifié en base : anon avait
+-- toujours EXECUTE après le seul revoke de public).
+revoke execute on function find_user_by_code(text) from public, anon, authenticated, service_role;
 grant execute on function find_user_by_code(text) to authenticated;
 
 -- Crée le profil (nom + code ami) automatiquement à l'inscription, plutôt
@@ -129,7 +132,12 @@ begin
 end;
 $$;
 
-revoke execute on function generate_friend_code() from public;
+-- Même remarque que pour find_user_by_code : il faut retirer le droit
+-- direct d'anon/authenticated/service_role, pas juste celui de public.
+-- Le trigger plus bas peut quand même l'appeler : il tourne en security
+-- definer, donc en tant que postgres (propriétaire), sans avoir besoin
+-- d'un grant explicite sur ses propres fonctions.
+revoke execute on function generate_friend_code() from public, anon, authenticated, service_role;
 
 -- raw_user_meta_data contient soit first_name/last_name (notre formulaire
 -- d'inscription), soit given_name/family_name (fournis par Google en OAuth) ;
