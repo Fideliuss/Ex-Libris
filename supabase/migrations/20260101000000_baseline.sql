@@ -1,11 +1,12 @@
 -- Ex Libris — schéma complet (état actuel)
 --
 -- Fichier consolidé : reflète l'état actuel complet de la base, pas
--- l'historique des ajouts successifs. À utiliser pour reconstruire la base
--- depuis zéro (Supabase Dashboard -> SQL Editor -> New query). Les anciens
--- fichiers incrémentaux (price.sql, wishlist.sql, description.sql,
--- series.sql, household-sharing.sql, household-scope-fix.sql,
--- friend-code-sharing.sql) ont été fusionnés ici et supprimés.
+-- l'historique des ajouts successifs. Deux usages :
+-- 1. C'est ce fichier que `supabase start`/`supabase test db` appliquent
+--    pour reconstruire une base locale identique à la production —
+--    aucune autre copie à tenir synchronisée.
+-- 2. À utiliser aussi pour reconstruire la vraie base depuis zéro
+--    (Supabase Dashboard -> SQL Editor -> New query) si besoin un jour.
 
 create extension if not exists "pgcrypto";
 
@@ -96,9 +97,12 @@ as $$
 $$;
 
 -- Postgres accorde EXECUTE à PUBLIC par défaut à la création d'une
--- fonction : sans ce revoke, n'importe qui pourrait résoudre un code ami
--- en {user_id, display_name} sans être connecté.
-revoke execute on function find_user_by_code(text) from public;
+-- fonction, ET Supabase accorde en plus directement ce droit à anon/
+-- authenticated/service_role via ses propres "default privileges" — un
+-- simple `revoke ... from public` ne suffit donc pas, il faut retirer
+-- explicitement le droit direct d'anon (déjà vérifié en base : anon avait
+-- toujours EXECUTE après le seul revoke de public).
+revoke execute on function find_user_by_code(text) from public, anon, authenticated, service_role;
 grant execute on function find_user_by_code(text) to authenticated;
 
 -- Crée le profil (nom + code ami) automatiquement à l'inscription, plutôt
@@ -124,7 +128,12 @@ begin
 end;
 $$;
 
-revoke execute on function generate_friend_code() from public;
+-- Même remarque que pour find_user_by_code : il faut retirer le droit
+-- direct d'anon/authenticated/service_role, pas juste celui de public.
+-- Le trigger plus bas peut quand même l'appeler : il tourne en security
+-- definer, donc en tant que postgres (propriétaire), sans avoir besoin
+-- d'un grant explicite sur ses propres fonctions.
+revoke execute on function generate_friend_code() from public, anon, authenticated, service_role;
 
 -- raw_user_meta_data contient soit first_name/last_name (notre formulaire
 -- d'inscription), soit given_name/family_name (fournis par Google en OAuth) ;
@@ -305,3 +314,19 @@ using (bucket_id = 'covers' and auth.uid()::text = (storage.foldername(name))[1]
 create policy "Users can delete their own covers"
 on storage.objects for delete
 using (bucket_id = 'covers' and auth.uid()::text = (storage.foldername(name))[1]);
+
+-- RLS filtre les LIGNES, mais encore faut-il que anon/authenticated aient
+-- le droit d'essayer l'opération en premier lieu (GRANT). Les projets
+-- Supabase existants l'ont eu automatiquement (ancien comportement par
+-- défaut, retiré le 2026-05-30) — un projet recréé de zéro aujourd'hui
+-- via ce fichier ne l'a plus sans ce bloc explicite. Volontairement pas de
+-- grant sur les fonctions ici : find_user_by_code/generate_friend_code ont
+-- déjà leur propre grant ciblé plus haut, plus restrictif.
+grant usage on schema public to anon, authenticated, service_role;
+grant all on all tables in schema public to anon, authenticated, service_role;
+grant all on all sequences in schema public to anon, authenticated, service_role;
+
+alter default privileges in schema public
+  grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema public
+  grant all on sequences to anon, authenticated, service_role;

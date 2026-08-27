@@ -52,6 +52,37 @@ Netlify (plan gratuit) a un quota de crédits limité — chaque déploiement
   (a besoin d'HTTPS + d'un vrai appareil). Voir la section suivante si
   besoin de le tester avant de livrer.
 
+## Tests RLS (pgTAP)
+
+Les policies RLS (`books`, `household_links`, `profiles`, `find_user_by_code`)
+sont testées avec [pgTAP](https://pgtap.org/) via la CLI Supabase — c'est
+elles qui ont causé les deux bugs de sécurité les plus sérieux du projet
+jusqu'ici, donc ça vaut le coup de les couvrir. Nécessite
+[Docker Desktop](https://www.docker.com/products/docker-desktop/) (une
+seule fois) :
+
+```bash
+# Coupe les services inutiles pour pgTAP (Studio/Storage/etc.). Garde kong/
+# rest/realtime : le health-check interne de `supabase start` échoue sinon.
+supabase start -x analytics -x edge-runtime -x functions -x imgproxy \
+  -x inbucket -x meta -x storage -x studio -x vector
+
+supabase test db supabase/tests/database
+
+supabase stop   # quand t'as fini, libère les conteneurs
+```
+
+Les fichiers de test vivent dans `supabase/tests/database/`. Le schéma
+utilisé pour les lancer (et pour reconstruire la vraie base depuis zéro le
+cas échéant) est `supabase/migrations/20260101000000_baseline.sql` —
+c'est le seul et unique fichier de référence, pas de copie à garder
+synchronisée. Tourne aussi automatiquement via
+`.github/workflows/rls-tests.yml`, mais seulement sur les PR qui touchent
+à `supabase/` — inutile de payer ~2 min de démarrage Docker pour une PR
+qui ne change que du React. N'est pas un check obligatoire pour merger
+(seul `build` l'est), donc aucun risque qu'une PR reste bloquée si le
+workflow ne se déclenche pas.
+
 ## Workflow de contribution
 
 GitFlow simplifié, pour ne jamais déclencher un build Netlify (payant en
@@ -64,7 +95,9 @@ crédits) en dehors d'un vrai merge sur `main` :
   le versionnage automatique fonctionne.
 - Chaque `feature/xxx` termine par une pull request vers `develop`. La CI
   (`.github/workflows/build-check.yml`) lance `npm ci && npm run build` sur
-  chaque PR et doit passer avant merge.
+  chaque PR et doit passer avant merge. Les tests pgTAP
+  (`.github/workflows/rls-tests.yml`, voir plus haut) tournent en plus sur
+  les PR qui touchent `supabase/`, à titre informatif.
 - `main` et `develop` sont protégées : push direct interdit, merge
   uniquement via PR avec la CI au vert.
 - Quand `develop` est stable, ouvrir une PR de `develop` vers `main`.
