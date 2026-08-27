@@ -80,6 +80,25 @@ Netlify (plan gratuit) a un quota de crédits limité — chaque déploiement
 - Le seul cas qui échappe au test local : le scan caméra sur téléphone
   (a besoin d'HTTPS + d'un vrai appareil).
 
+## Tests unitaires (Vitest)
+
+```bash
+npm run test         # une passe
+npm run test:watch   # mode watch pendant le dev
+```
+
+Couvre les fonctions pures de `src/lib/` : parsing des imports Libib/My
+Library, extraction série/tome, tri des auteurs par nom de famille, calcul
+des points de lecture, génération du CSV d'export. Pas de mock Supabase —
+ces fonctions ne touchent ni le réseau ni le DOM, elles prennent des
+données en entrée et renvoient un résultat. `src/lib/authorSort.js` a été
+extrait de `Collection.jsx` uniquement pour ça : importer la page
+directement aurait entraîné l'initialisation du client Supabase (donc un
+échec en CI, où `.env` n'existe pas).
+
+Ne couvre pas le rendu ni les interactions des composants React — ça reste
+vérifié à la main en local avant chaque livraison.
+
 ## Tests RLS (pgTAP)
 
 Les policies RLS (`books`, `household_links`, `profiles`,
@@ -138,8 +157,9 @@ crédits) en dehors d'un vrai merge sur `main` :
   `feat:`, `fix:`, `chore:`, `docs:`, `refactor:` — indispensable pour que
   le versionnage automatique fonctionne.
 - Chaque `feature/xxx` termine par une pull request vers `develop`. La CI
-  (`.github/workflows/build-check.yml`) lance `npm ci && npm run build` sur
-  chaque PR et doit passer avant merge. Les tests pgTAP
+  (`.github/workflows/build-check.yml`) lance `npm ci`, `npm run lint`,
+  `npm run test` et `npm run build` sur chaque PR, et doit passer avant
+  merge. Les tests pgTAP
   (`.github/workflows/rls-tests.yml`, voir plus haut) tournent en plus sur
   les PR qui touchent `supabase/`, à titre informatif.
 - `main` et `develop` sont protégées : push direct interdit, merge
@@ -154,10 +174,15 @@ crédits) en dehors d'un vrai merge sur `main` :
   (pas l'ancienne "branch protection" classique, qui ne bloque pas
   vraiment les push directs quand 0 review est requise).
 
+## Licence
+
+Tous droits réservés — voir [`LICENSE`](LICENSE).
+
 ## État du projet
 
 Usage familial (2-3 comptes), pas pensé pour un déploiement public à
-grande échelle. Pas de tests automatisés côté React — seule la couche
-base de données (RLS) est couverte ; le reste se vérifie à la main avant
-chaque livraison. `xlsx` est installé depuis le build SheetJS officiel
-plutôt que le paquet npm, qui traîne deux CVE non corrigés.
+grande échelle. Les fonctions pures (`src/lib/`) et les policies RLS sont
+testées automatiquement ; le rendu et les interactions des composants
+React (formulaires, filtres, panneaux) se vérifient encore à la main
+avant chaque livraison. `xlsx` est installé depuis le build SheetJS
+officiel plutôt que le paquet npm, qui traîne deux CVE non corrigés.
