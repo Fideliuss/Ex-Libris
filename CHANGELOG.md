@@ -1,5 +1,9 @@
 # Changelog
 
+Historique figé : généré automatiquement par release-please jusqu'à la
+version 1.3.0, cet outil a été retiré ensuite. Pas de mise à jour
+automatique au-delà de cette entrée.
+
 ## [1.3.0](https://github.com/Fideliuss/ma-bibliotheque/compare/ma-bibliotheque-v1.2.0...ma-bibliotheque-v1.3.0) (2026-08-24)
 
 
