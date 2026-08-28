@@ -1,7 +1,5 @@
 import { Link } from 'react-router-dom'
 
-// Champs marqués [À COMPLÉTER] : à remplir avec tes vraies infos avant
-// publication — je n'invente pas d'identité/adresse à ta place.
 export default function LegalNotice() {
   return (
     <div className="min-h-svh p-6">
@@ -22,10 +20,12 @@ export default function LegalNotice() {
             <p>
               Ex Libris est un site édité à titre non professionnel par :
               <br />
-              <span className="font-mono">[NOM OU PSEUDONYME À COMPLÉTER]</span>
+              <span className="font-mono">Brayan Cuvelier</span>
               <br />
               Contact :{' '}
-              <span className="font-mono">[EMAIL DE CONTACT À COMPLÉTER]</span>
+              <span className="font-mono">
+                exlibris.contact.raven385@passmail.com
+              </span>
             </p>
           </Section>
 
@@ -76,7 +76,9 @@ export default function LegalNotice() {
           <Section title="Contact">
             <p>
               Pour toute question relative au site :{' '}
-              <span className="font-mono">[EMAIL DE CONTACT À COMPLÉTER]</span>
+              <span className="font-mono">
+                exlibris.contact.raven385@passmail.com
+              </span>
               .
             </p>
           </Section>

@@ -5,6 +5,7 @@ import { useGoBack } from '../lib/navigation'
 import SharingPanel from '../components/SharingPanel'
 import LoadingScreen from '../components/LoadingScreen'
 import ThemeToggle from '../components/ThemeToggle'
+import DeleteAccountSection from '../components/DeleteAccountSection'
 
 const ImportPanel = lazy(() => import('../components/ImportPanel'))
 const ExportPanel = lazy(() => import('../components/ExportPanel'))
@@ -85,6 +86,7 @@ export default function Account() {
             >
               Changer de mot de passe
             </Link>
+            <DeleteAccountSection />
           </section>
 
           <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">

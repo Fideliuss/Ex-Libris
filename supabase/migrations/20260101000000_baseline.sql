@@ -170,7 +170,7 @@ create trigger on_auth_user_created
 
 create table books (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid references auth.users(id) not null,
+  user_id uuid references auth.users(id) on delete cascade not null,
   isbn text,
   title text not null,
   author text,
@@ -255,7 +255,7 @@ create policy "Users can delete their own books"
 -- changer d'une année à l'autre). Même partage en lecture entre le foyer
 -- que pour les livres.
 create table reading_goals (
-  user_id uuid not null references auth.users(id),
+  user_id uuid not null references auth.users(id) on delete cascade,
   year int not null,
   goal numeric not null,
   updated_at timestamptz default now(),
@@ -330,3 +330,26 @@ alter default privileges in schema public
   grant all on tables to anon, authenticated, service_role;
 alter default privileges in schema public
   grant all on sequences to anon, authenticated, service_role;
+
+-- Suppression de compte en libre-service (droit à l'effacement). security
+-- definer : auth.users n'est pas modifiable par le rôle authenticated
+-- normalement. `where id = auth.uid()` garantit qu'on ne peut jamais
+-- supprimer que son propre compte, malgré ce contournement de RLS.
+-- profiles/household_links/books/reading_goals sont tous en
+-- `on delete cascade` vers auth.users, donc leur nettoyage est automatique
+-- une fois la ligne auth.users supprimée — seuls les fichiers de
+-- couverture dans le storage n'ont pas de contrainte FK et doivent être
+-- supprimés côté client avant d'appeler cette fonction.
+create or replace function delete_own_account()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  delete from auth.users where id = auth.uid();
+end;
+$$;
+
+revoke execute on function delete_own_account() from public, anon, service_role;
+grant execute on function delete_own_account() to authenticated;

@@ -67,6 +67,13 @@ export default function PrivacyPolicy() {
                 connecter via "Continuer avec Google".
               </li>
             </ul>
+            <p className="mt-2">
+              Ces prestataires peuvent héberger tout ou partie de leur
+              infrastructure hors de l'Union européenne. Ils s'engagent dans
+              leurs propres conditions à encadrer ces transferts par des
+              clauses contractuelles types reconnues par la Commission
+              européenne.
+            </p>
           </Section>
 
           <Section title="Services tiers appelés lors d'une recherche">
@@ -90,25 +97,68 @@ export default function PrivacyPolicy() {
 
           <Section title="Combien de temps ces données sont conservées">
             <p>
-              Tant que ton compte existe. Il n'y a pas encore de suppression
-              de compte en libre-service dans l'application ; pour supprimer
-              ton compte et tes données, contacte-nous à l'adresse ci-dessous.
+              Tant que ton compte existe. Tu peux le supprimer toi-même à
+              tout moment (Compte → Sécurité → Supprimer mon compte) : ça
+              efface définitivement et immédiatement tes livres, ton profil,
+              tes liens de partage et tes couvertures.
             </p>
           </Section>
 
           <Section title="Tes droits">
+            <p className="mb-2">
+              Conformément au RGPD, tu disposes des droits suivants sur tes
+              données :
+            </p>
+            <ul className="list-disc pl-5 space-y-1">
+              <li>
+                <strong>Accès et portabilité</strong> : exporter
+                l'intégralité de ta bibliothèque toi-même, à tout moment
+                (Compte → Bibliothèque → Exporter).
+              </li>
+              <li>
+                <strong>Effacement</strong> : supprimer ton compte et toutes
+                tes données toi-même, à tout moment (Compte → Sécurité →
+                Supprimer mon compte).
+              </li>
+              <li>
+                <strong>Rectification</strong> : corriger tes informations de
+                compte ou le contenu de ta bibliothèque directement dans
+                l'application.
+              </li>
+              <li>
+                <strong>Limitation et opposition</strong> : nous demander de
+                limiter ou de cesser un traitement particulier de tes
+                données, en nous contactant.
+              </li>
+              <li>
+                <strong>Réclamation</strong> : si tu estimes que tes droits
+                ne sont pas respectés, tu peux saisir la CNIL (
+                <a
+                  href="https://www.cnil.fr/fr/plaintes"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-library underline underline-offset-2 hover:text-library/80"
+                >
+                  cnil.fr/fr/plaintes
+                </a>
+                ).
+              </li>
+            </ul>
+          </Section>
+
+          <Section title="Âge minimum">
             <p>
-              Tu peux à tout moment : exporter l'intégralité de ta
-              bibliothèque toi-même (Compte → Bibliothèque → Exporter),
-              demander l'accès, la rectification ou la suppression de tes
-              données en nous contactant.
+              L'application n'est pas destinée aux personnes de moins de 16
+              ans.
             </p>
           </Section>
 
           <Section title="Contact">
             <p>
               Pour toute question ou demande concernant tes données :{' '}
-              <span className="font-mono">[EMAIL DE CONTACT À COMPLÉTER]</span>
+              <span className="font-mono">
+                exlibris.contact.raven385@passmail.com
+              </span>
               .
             </p>
           </Section>
