@@ -7,6 +7,9 @@
 
   --color-paper: #eae1cb;
   --color-card: #fbf7ed;
+  /* Surface la plus claire (champs de formulaire) : au-dessus de card/paper
+     en clair, remplace les `bg-white` en dur pour qu'ils suivent le thème. */
+  --color-surface: #ffffff;
   --color-ink: #1e2b3a;
   --color-library: #2f4a3c;
   --color-brass: #ad8a54;
@@ -16,6 +19,37 @@
      lu=vert (library). */
   --color-wishlist: #3b6e91;
   --color-reading: #b8860b;
+}
+
+/* Mode sombre : palette "bibliothèque de nuit" (brun/charbon chaud, pas un
+   noir/bleu froid) plutôt qu'une simple inversion. `ink` et `paper`
+   s'échangent leur rôle de luminosité ; les couleurs d'accent sont
+   éclaircies pour rester lisibles sur fond sombre. Suit la préférence
+   système par défaut ; [data-theme] (posé par useTheme.js) permet de
+   forcer un choix explicite dans les deux sens. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-paper: #161310;
+    --color-card: #211c15;
+    --color-surface: #2b2419;
+    --color-ink: #e8e0cf;
+    --color-library: #5c9678;
+    --color-brass: #c9a06c;
+    --color-stamp: #d1594c;
+    --color-wishlist: #6fa3c4;
+    --color-reading: #d9a418;
+  }
+}
+:root[data-theme='dark'] {
+  --color-paper: #161310;
+  --color-card: #211c15;
+  --color-surface: #2b2419;
+  --color-ink: #e8e0cf;
+  --color-library: #5c9678;
+  --color-brass: #c9a06c;
+  --color-stamp: #d1594c;
+  --color-wishlist: #6fa3c4;
+  --color-reading: #d9a418;
 }
 
 body {

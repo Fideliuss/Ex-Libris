@@ -635,7 +635,7 @@ export default function Collection() {
                     value={sort}
                     onChange={(e) => setSort(e.target.value)}
                     aria-label="Trier par"
-                    className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                    className="rounded-sm border border-ink/20 bg-surface px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
                   >
                     {Object.entries(SORT_OPTIONS).map(([key, { label }]) => (
                       <option key={key} value={key}>

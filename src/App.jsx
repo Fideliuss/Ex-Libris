@@ -15,6 +15,8 @@ const Account = lazy(() => import('./pages/Account'))
 const BookForm = lazy(() => import('./pages/BookForm'))
 const BookDetail = lazy(() => import('./pages/BookDetail'))
 const Stats = lazy(() => import('./pages/Stats'))
+const LegalNotice = lazy(() => import('./pages/LegalNotice'))
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 
 function App() {
   return (
@@ -24,6 +26,8 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/reset-password" element={<ResetPassword />} />
+          <Route path="/mentions-legales" element={<LegalNotice />} />
+          <Route path="/confidentialite" element={<PrivacyPolicy />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/account" element={<Account />} />
             <Route path="/books/new" element={<BookForm />} />

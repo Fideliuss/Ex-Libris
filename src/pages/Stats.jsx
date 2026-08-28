@@ -499,7 +499,7 @@ export default function Stats() {
                       value={period}
                       onChange={(e) => setPeriod(e.target.value)}
                       aria-label="Période"
-                      className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                      className="rounded-sm border border-ink/20 bg-surface px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
                     >
                       {Object.entries(PERIOD_OPTIONS).map(([key, label]) => (
                         <option key={key} value={key}>
@@ -514,14 +514,14 @@ export default function Stats() {
                           value={customFrom}
                           onChange={(e) => setCustomFrom(e.target.value)}
                           aria-label="Du"
-                          className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                          className="rounded-sm border border-ink/20 bg-surface px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
                         />
                         <input
                           type="date"
                           value={customTo}
                           onChange={(e) => setCustomTo(e.target.value)}
                           aria-label="Au"
-                          className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                          className="rounded-sm border border-ink/20 bg-surface px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
                         />
                       </>
                     )}
@@ -915,7 +915,7 @@ function ObjectiveCard({ viewedUserId, isMine, score, breakdown }) {
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             autoFocus
-            className="w-24 rounded-sm border border-ink/20 bg-white px-2 py-1 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+            className="w-24 rounded-sm border border-ink/20 bg-surface px-2 py-1 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
           />
           <button
             type="button"
@@ -1094,7 +1094,7 @@ function GoalHistorySection({ viewedUserId, isMine, books }) {
                           value={draft}
                           onChange={(e) => setDraft(e.target.value)}
                           autoFocus
-                          className="w-20 rounded-sm border border-ink/20 bg-white px-2 py-0.5 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                          className="w-20 rounded-sm border border-ink/20 bg-surface px-2 py-0.5 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
                         />
                         <button
                           type="button"

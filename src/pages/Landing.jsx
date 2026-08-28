@@ -81,6 +81,8 @@ const STRINGS = {
     ],
     finalCtaTitle: 'Prêt·e à ranger ta bibliothèque ?',
     footer: 'Ex Libris',
+    legalNotice: 'Mentions légales',
+    privacyPolicy: 'Confidentialité',
   },
   en: {
     nav: { features: 'Features', pricing: 'Pricing', login: 'Log in' },
@@ -158,6 +160,8 @@ const STRINGS = {
     ],
     finalCtaTitle: 'Ready to organize your library?',
     footer: 'Ex Libris',
+    legalNotice: 'Legal notice',
+    privacyPolicy: 'Privacy',
   },
 }
 
@@ -473,8 +477,17 @@ function Footer() {
   const t = useT()
   return (
     <footer className="border-t border-ink/10 py-8">
-      <div className="max-w-5xl mx-auto px-6 text-center text-xs text-ink/40">
-        {t.footer}
+      <div className="max-w-5xl mx-auto px-6 flex flex-col items-center gap-3 text-xs text-ink/40">
+        <div className="flex items-center gap-4">
+          <Link to="/mentions-legales" className="hover:text-ink/70">
+            {t.legalNotice}
+          </Link>
+          <span aria-hidden="true">·</span>
+          <Link to="/confidentialite" className="hover:text-ink/70">
+            {t.privacyPolicy}
+          </Link>
+        </div>
+        <p>{t.footer}</p>
       </div>
     </footer>
   )

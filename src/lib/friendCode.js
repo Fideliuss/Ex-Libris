@@ -5,11 +5,24 @@ const UNIQUE_VIOLATION = '23505'
 export async function getMyProfile(userId) {
   const { data, error } = await supabase
     .from('profiles')
-    .select('user_id, display_name, email, friend_code')
+    .select('user_id, display_name, first_name, last_name, email, friend_code')
     .eq('user_id', userId)
     .maybeSingle()
   if (error) throw error
   return data
+}
+
+// display_name suit le prénom, comme à l'inscription (handle_new_user_profile) :
+// c'est ce nom qui est montré au partenaire lié, donc il doit rester cohérent
+// avec ce que l'utilisateur vient de saisir.
+export async function updateMyProfile(userId, { firstName, lastName }) {
+  const fname = firstName.trim()
+  const lname = lastName.trim()
+  const { error } = await supabase
+    .from('profiles')
+    .update({ first_name: fname, last_name: lname || null, display_name: fname })
+    .eq('user_id', userId)
+  if (error) throw error
 }
 
 // Les liens visibles par l'utilisateur : au plus un accepté (le modèle

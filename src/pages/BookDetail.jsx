@@ -300,7 +300,7 @@ export default function BookDetail() {
                     onChange={(e) => handleStatusChange(e.target.value)}
                     disabled={statusSaving}
                     aria-label="Changer le statut"
-                    className={`font-mono text-xs uppercase border border-ink/20 rounded-full px-2 py-0.5 bg-white cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60 ${STATUS_BADGE_CLASS[book.status] ?? 'text-ink/50'}`}
+                    className={`font-mono text-xs uppercase border border-ink/20 rounded-full px-2 py-0.5 bg-surface cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60 ${STATUS_BADGE_CLASS[book.status] ?? 'text-ink/50'}`}
                   >
                     <option value="wishlist">Wishlist</option>
                     <option value="to-read">À lire</option>
