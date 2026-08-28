@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.3.0](https://github.com/Fideliuss/ma-bibliotheque/compare/ma-bibliotheque-v1.2.0...ma-bibliotheque-v1.3.0) (2026-08-24)
+
+
+### Features
+
+* add a "Continuer avec Google" sign-in button ([#60](https://github.com/Fideliuss/ma-bibliotheque/issues/60)) ([3e134ca](https://github.com/Fideliuss/ma-bibliotheque/commit/3e134ca4db1d0ce1397aa18994310e263ef9f28c))
+* label the add-book button on desktop, keep it compact on mobile ([#61](https://github.com/Fideliuss/ma-bibliotheque/issues/61)) ([4948066](https://github.com/Fideliuss/ma-bibliotheque/commit/4948066a917f552084f39a2792da8fd8a991109b))
+
+
+### Bug Fixes
+
+* keep the account badge anchored top-right on mobile ([#57](https://github.com/Fideliuss/ma-bibliotheque/issues/57)) ([105d82d](https://github.com/Fideliuss/ma-bibliotheque/commit/105d82d629aa24e82f6683b3a5f21e67f0cc32ef))
+
 ## [1.2.0](https://github.com/Fideliuss/ma-bibliotheque/compare/ma-bibliotheque-v1.1.1...ma-bibliotheque-v1.2.0) (2026-08-22)
 
 
