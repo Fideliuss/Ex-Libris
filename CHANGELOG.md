@@ -1,8 +1,30 @@
 # Changelog
 
-Historique figé : généré automatiquement par release-please jusqu'à la
-version 1.3.0, cet outil a été retiré ensuite. Pas de mise à jour
-automatique au-delà de cette entrée.
+Généré automatiquement par release-please jusqu'à la version 1.3.0 (outil
+retiré ensuite). Les entrées suivantes sont ajoutées à la main à chaque
+promotion `develop` -> `main`.
+
+## [1.4.0](https://github.com/Fideliuss/Ex-Libris/compare/ExLibris-v1.3.0...ExLibris-v1.4.0) (2026-08-28)
+
+
+### Features
+
+* legal pages, dark mode, and RGPD hardening ([#73](https://github.com/Fideliuss/Ex-Libris/issues/73)) ([5ed9c76](https://github.com/Fideliuss/Ex-Libris/commit/5ed9c766))
+* add direct cover photo capture and sort authors by last name ([#69](https://github.com/Fideliuss/Ex-Libris/issues/69)) ([6308e03](https://github.com/Fideliuss/Ex-Libris/commit/6308e03))
+* replace hardcoded household with a friend-code sharing system ([#68](https://github.com/Fideliuss/Ex-Libris/issues/68)) ([cf310ea](https://github.com/Fideliuss/Ex-Libris/commit/cf310ea))
+* replace household switch pills with a single dropdown badge ([#67](https://github.com/Fideliuss/Ex-Libris/issues/67)) ([64a7314](https://github.com/Fideliuss/Ex-Libris/commit/64a7314))
+* support importing from My Library (Excel) exports ([#64](https://github.com/Fideliuss/Ex-Libris/issues/64)) ([7865c56](https://github.com/Fideliuss/Ex-Libris/commit/7865c56))
+
+
+### Bug Fixes
+
+* scope household RLS to household rows, not just household requesters ([#66](https://github.com/Fideliuss/Ex-Libris/issues/66)) ([53ca567](https://github.com/Fideliuss/Ex-Libris/commit/53ca567))
+* stop showing a phantom household partner to solo accounts ([#65](https://github.com/Fideliuss/Ex-Libris/issues/65)) ([14864ae](https://github.com/Fideliuss/Ex-Libris/commit/14864ae))
+
+
+### Performance Improvements
+
+* lazy-load routes to clear the 500 KB bundle warning ([#72](https://github.com/Fideliuss/Ex-Libris/issues/72)) ([f1e2bfe](https://github.com/Fideliuss/Ex-Libris/commit/f1e2bfe))
 
 ## [1.3.0](https://github.com/Fideliuss/Ex-Libris/compare/ExLibris-v1.2.0...ExLibris-v1.3.0) (2026-08-24)
 
