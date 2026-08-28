@@ -110,6 +110,7 @@ export default function BookDetail() {
       navigateWithViewTransition(navigate, `/books/${sibling.id}`, {
         direction,
         replace: true,
+        preload: () => import('./BookDetail'),
       })
     },
     [navigate],

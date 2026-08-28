@@ -456,7 +456,10 @@ function LoginCta({ className, children }) {
     if (e.defaultPrevented || e.button !== 0) return
     if (e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) return
     e.preventDefault()
-    navigateWithViewTransition(navigate, '/login', { direction: 'top' })
+    navigateWithViewTransition(navigate, '/login', {
+      direction: 'top',
+      preload: () => import('./Login'),
+    })
   }
 
   return (
