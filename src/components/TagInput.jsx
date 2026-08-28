@@ -32,7 +32,7 @@ export default function TagInput({ value, onChange, suggestions = [] }) {
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-2 w-full rounded-sm border border-ink/20 bg-white px-3 py-2 focus-within:ring-2 focus-within:ring-library">
+      <div className="flex flex-wrap items-center gap-2 w-full rounded-sm border border-ink/20 bg-surface px-3 py-2 focus-within:ring-2 focus-within:ring-library">
         {value.map((tag) => (
           <span
             key={tag}

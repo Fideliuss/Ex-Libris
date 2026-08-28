@@ -14,13 +14,19 @@ export default function Login() {
     if (e.defaultPrevented || e.button !== 0) return
     if (e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) return
     e.preventDefault()
-    navigateWithViewTransition(navigate, '/', { direction: 'back' })
+    navigateWithViewTransition(navigate, '/', {
+      direction: 'back',
+      preload: () => import('./Home'),
+    })
   }
 
   const [mode, setMode] = useState('signin') // 'signin' | 'signup' | 'forgot'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [password2, setPassword2] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [acceptedPolicy, setAcceptedPolicy] = useState(false)
   const [error, setError] = useState(null)
   const [info, setInfo] = useState(null)
   const [submitting, setSubmitting] = useState(false)
@@ -63,8 +69,12 @@ export default function Login() {
       setError('Les mots de passe ne correspondent pas.')
       return
     }
+    if (!acceptedPolicy) {
+      setError('Tu dois accepter la politique de confidentialité pour créer un compte.')
+      return
+    }
     setSubmitting(true)
-    const { data, error } = await signUp(email, password)
+    const { data, error } = await signUp(email, password, { firstName, lastName })
     setSubmitting(false)
     if (error) {
       setError(describeSignUpError(error))
@@ -100,6 +110,9 @@ export default function Login() {
     setInfo(null)
     setPassword('')
     setPassword2('')
+    setFirstName('')
+    setLastName('')
+    setAcceptedPolicy(false)
   }
 
   return (
@@ -183,6 +196,17 @@ export default function Login() {
             >
               Continuer avec Google
             </button>
+            <p className="text-xs text-ink/40 text-center">
+              En continuant, tu acceptes notre{' '}
+              <Link
+                to="/confidentialite"
+                target="_blank"
+                className="underline underline-offset-2 hover:text-ink/60"
+              >
+                politique de confidentialité
+              </Link>
+              .
+            </p>
 
             <button
               type="button"
@@ -204,6 +228,42 @@ export default function Login() {
 
         {mode === 'signup' && (
           <form onSubmit={handleSignUp} className="space-y-4" noValidate>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label
+                  htmlFor="signup-first-name"
+                  className="block text-sm font-medium mb-1"
+                >
+                  Prénom
+                </label>
+                <input
+                  id="signup-first-name"
+                  type="text"
+                  autoComplete="given-name"
+                  required
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+              <div className="flex-1">
+                <label
+                  htmlFor="signup-last-name"
+                  className="block text-sm font-medium mb-1"
+                >
+                  Nom
+                </label>
+                <input
+                  id="signup-last-name"
+                  type="text"
+                  autoComplete="family-name"
+                  required
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+            </div>
             <div>
               <label
                 htmlFor="signup-email"
@@ -256,6 +316,26 @@ export default function Login() {
               />
             </div>
 
+            <label className="flex items-start gap-2 text-sm text-ink/70">
+              <input
+                type="checkbox"
+                checked={acceptedPolicy}
+                onChange={(e) => setAcceptedPolicy(e.target.checked)}
+                className="mt-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+              />
+              <span>
+                J'accepte la{' '}
+                <Link
+                  to="/confidentialite"
+                  target="_blank"
+                  className="text-library underline underline-offset-2 hover:text-library/80"
+                >
+                  politique de confidentialité
+                </Link>
+                .
+              </span>
+            </label>
+
             {error && (
               <p role="alert" className="text-sm text-stamp">
                 {error}
@@ -269,7 +349,7 @@ export default function Login() {
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !acceptedPolicy}
               className="w-full rounded-sm bg-library text-white font-medium py-2 text-sm hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
             >
               {submitting ? 'Création…' : 'Créer le compte'}

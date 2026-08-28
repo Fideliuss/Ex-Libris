@@ -7,10 +7,11 @@ import { describeError } from '../lib/errors'
 import BookCard from '../components/BookCard'
 import CollectionFilters from '../components/CollectionFilters'
 import BulkActionBar from '../components/BulkActionBar'
-import HouseholdTabs from '../components/HouseholdTabs'
+import HouseholdSwitchBadge from '../components/HouseholdSwitchBadge'
 import TabBar from '../components/TabBar'
 import LoadingScreen from '../components/LoadingScreen'
 import { STATUS_LABELS } from '../lib/statusLabels'
+import { authorSortKey } from '../lib/authorSort'
 
 const STATUS_ORDER = Object.keys(STATUS_LABELS)
 
@@ -24,8 +25,9 @@ const SORT_OPTIONS = {
     compare: (a, b) => a.title.localeCompare(b.title, 'fr'),
   },
   author: {
-    label: 'Auteur (A→Z)',
-    compare: (a, b) => (a.author ?? '').localeCompare(b.author ?? '', 'fr'),
+    label: 'Auteur (nom, A→Z)',
+    compare: (a, b) =>
+      authorSortKey(a.author).localeCompare(authorSortKey(b.author), 'fr'),
   },
   rating: {
     label: 'Note (meilleure d’abord)',
@@ -66,7 +68,10 @@ function monthLabel(date) {
 // tome) ou si le champ concerné est vide pour ce livre.
 function groupKeyFor(book, sortKey) {
   if (sortKey === 'title') return book.title[0].toUpperCase()
-  if (sortKey === 'author') return book.author ? book.author[0].toUpperCase() : null
+  if (sortKey === 'author') {
+    const key = authorSortKey(book.author)
+    return key ? key[0].toUpperCase() : null
+  }
   if (sortKey === 'recent') return monthLabel(new Date(book.created_at))
   if (sortKey === 'finished')
     return book.date_finished ? monthLabel(parseDateOnly(book.date_finished)) : null
@@ -433,22 +438,13 @@ export default function Collection() {
         <div className="flex items-start gap-2 w-full sm:w-auto">
           <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
             {partner && (
-              <HouseholdTabs
+              <HouseholdSwitchBadge
                 isMine={isMine}
                 onSelectMine={() => switchView('mine')}
                 onSelectPartner={() => switchView('partner')}
-                mineLabel="Toi"
                 partnerLabel={partner.label}
-                ariaLabel="Bibliothèque à afficher"
-                compact
               />
             )}
-            <Link
-              to="/import"
-              className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-            >
-              Importer
-            </Link>
             <Link
               to="/stats"
               className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
@@ -486,7 +482,7 @@ export default function Collection() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6">
+      <main key={isMine ? 'mine' : 'partner'} className="max-w-5xl mx-auto px-6 fade-in">
         {!loading && !error && books.length > 0 && (
           <TabBar
             tabs={[
@@ -639,7 +635,7 @@ export default function Collection() {
                     value={sort}
                     onChange={(e) => setSort(e.target.value)}
                     aria-label="Trier par"
-                    className="rounded-sm border border-ink/20 bg-white px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                    className="rounded-sm border border-ink/20 bg-surface px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
                   >
                     {Object.entries(SORT_OPTIONS).map(([key, { label }]) => (
                       <option key={key} value={key}>

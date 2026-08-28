@@ -1,12 +1,26 @@
 import { supabase } from './supabaseClient'
 
+// PostgREST plafonne une requête sans .range() à 1000 lignes par défaut :
+// au-delà, un .select('*') simple tronque silencieusement le résultat. On
+// pagine explicitement pour ramener vraiment tous les livres visibles,
+// quelle que soit la taille de la table.
+const LIST_PAGE_SIZE = 1000
+
 export async function listBooks() {
-  const { data, error } = await supabase
-    .from('books')
-    .select('*')
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return data
+  const rows = []
+  let from = 0
+  for (;;) {
+    const { data, error } = await supabase
+      .from('books')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(from, from + LIST_PAGE_SIZE - 1)
+    if (error) throw error
+    rows.push(...data)
+    if (data.length < LIST_PAGE_SIZE) break
+    from += LIST_PAGE_SIZE
+  }
+  return rows
 }
 
 export async function createBook(book) {

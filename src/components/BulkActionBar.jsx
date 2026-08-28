@@ -40,7 +40,7 @@ export default function BulkActionBar({
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(false)}
-                className="text-sm px-3 py-1.5 rounded-sm border border-ink/20 hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                className="text-sm px-3 py-1.5 rounded-sm border border-ink/20 hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
               >
                 Annuler
               </button>
@@ -61,7 +61,7 @@ export default function BulkActionBar({
               value={statusToApply}
               onChange={(e) => setStatusToApply(e.target.value)}
               aria-label="Nouveau statut"
-              className="rounded-sm border border-ink/20 bg-white px-2 py-1.5 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+              className="rounded-sm border border-ink/20 bg-surface px-2 py-1.5 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
             >
               <option value="wishlist">Wishlist</option>
               <option value="to-read">À lire</option>
@@ -81,7 +81,7 @@ export default function BulkActionBar({
               value={typeToApply}
               onChange={(e) => setTypeToApply(e.target.value)}
               aria-label="Nouveau type"
-              className="rounded-sm border border-ink/20 bg-white px-2 py-1.5 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+              className="rounded-sm border border-ink/20 bg-surface px-2 py-1.5 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
             >
               {Object.entries(BOOK_TYPES).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -104,7 +104,7 @@ export default function BulkActionBar({
               onChange={(e) => setTagDraft(e.target.value)}
               placeholder="Ajouter un tag…"
               aria-label="Tag à ajouter"
-              className="rounded-sm border border-ink/20 bg-white px-2 py-1.5 text-sm w-36 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+              className="rounded-sm border border-ink/20 bg-surface px-2 py-1.5 text-sm w-36 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
             />
             <button
               type="button"
