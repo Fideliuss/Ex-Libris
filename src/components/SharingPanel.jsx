@@ -184,7 +184,7 @@ export default function SharingPanel({ user }) {
                       value={codeInput}
                       onChange={(e) => setCodeInput(e.target.value)}
                       placeholder="ABC123"
-                      className="w-full rounded-sm border border-ink/20 bg-white px-3 py-2 text-sm uppercase focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                      className="w-full rounded-sm border border-ink/20 bg-surface px-3 py-2 text-sm uppercase focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
                     />
                   </div>
                   <button

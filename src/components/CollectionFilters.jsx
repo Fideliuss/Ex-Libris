@@ -3,7 +3,7 @@ import { BOOK_TYPES } from '../lib/bookTypes'
 import TagMultiSelect from './TagMultiSelect'
 
 const selectClass =
-  'w-full rounded-sm border border-ink/20 bg-white px-3 py-2 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library'
+  'w-full rounded-sm border border-ink/20 bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library'
 
 export default function CollectionFilters({
   search,
@@ -43,7 +43,7 @@ export default function CollectionFilters({
         onChange={(e) => onSearchChange(e.target.value)}
         placeholder="Rechercher par titre, auteur ou ISBN…"
         aria-label="Rechercher par titre, auteur ou ISBN"
-        className="w-full rounded-sm border border-ink/20 bg-white px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+        className="w-full rounded-sm border border-ink/20 bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
       />
 
       <div className="flex items-center gap-3">

@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useGoBack } from '../lib/navigation'
 import SharingPanel from '../components/SharingPanel'
 import LoadingScreen from '../components/LoadingScreen'
+import ThemeToggle from '../components/ThemeToggle'
 
 const ImportPanel = lazy(() => import('../components/ImportPanel'))
 const ExportPanel = lazy(() => import('../components/ExportPanel'))
@@ -65,6 +66,13 @@ export default function Account() {
                 </Suspense>
               </div>
             </div>
+          </section>
+
+          <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
+            <h2 className="font-mono text-xs uppercase tracking-widest text-ink/50 mb-4">
+              Apparence
+            </h2>
+            <ThemeToggle />
           </section>
 
           <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">

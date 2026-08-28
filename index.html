@@ -6,6 +6,27 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#eae1cb" />
+    <script>
+      // Pose data-theme avant le premier rendu pour éviter un flash du
+      // mauvais thème (le hook React ne s'applique qu'après hydratation).
+      // Copie minimale de la logique de useTheme.js — les deux doivent
+      // rester cohérentes si le stockage ou la palette changent.
+      (function () {
+        try {
+          var pref = localStorage.getItem('theme-preference')
+          if (pref === 'light' || pref === 'dark') {
+            document.documentElement.dataset.theme = pref
+          }
+          var isDark =
+            pref === 'dark' ||
+            (pref !== 'light' &&
+              window.matchMedia('(prefers-color-scheme: dark)').matches)
+          document
+            .querySelector('meta[name="theme-color"]')
+            .setAttribute('content', isDark ? '#161310' : '#eae1cb')
+        } catch (e) {}
+      })()
+    </script>
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
