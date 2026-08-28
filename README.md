@@ -1,6 +1,6 @@
 # Ex Libris
 
-![build-check](https://github.com/Fideliuss/ma-bibliotheque/actions/workflows/build-check.yml/badge.svg)
+![build-check](https://github.com/Fideliuss/Ex-Libris/actions/workflows/build-check.yml/badge.svg)
 
 PWA personnelle de gestion de bibliothèque (livres, BD, comics, mangas),
 née pour remplacer un tableur Excel qu'on se repassait à deux. Chacun garde
@@ -169,7 +169,7 @@ crédits) en dehors d'un vrai merge sur `main` :
   `main`, branch deploys et previews désactivés). Pas de versionnage
   automatique : `CHANGELOG.md` est un historique figé, `package.json`
   n'est plus bumpé.
-- Protection des branches via [Repository Rulesets](https://github.com/Fideliuss/ma-bibliotheque/rules)
+- Protection des branches via [Repository Rulesets](https://github.com/Fideliuss/Ex-Libris/rules)
   (pas l'ancienne "branch protection" classique, qui ne bloque pas
   vraiment les push directs quand 0 review est requise).
 
