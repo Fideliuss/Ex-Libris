@@ -24,7 +24,9 @@ export default function BookCard({
     if (e.defaultPrevented || e.button !== 0) return
     if (e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) return
     e.preventDefault()
-    navigateWithViewTransition(navigate, `/books/${book.id}`)
+    navigateWithViewTransition(navigate, `/books/${book.id}`, {
+      preload: () => import('../pages/BookDetail'),
+    })
   }
   // Un manga a quasi toujours le même titre que sa série (juste le tome qui
   // change) : afficher les deux répète la même chose deux fois. On montre

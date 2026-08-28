@@ -14,7 +14,10 @@ export default function Login() {
     if (e.defaultPrevented || e.button !== 0) return
     if (e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) return
     e.preventDefault()
-    navigateWithViewTransition(navigate, '/', { direction: 'back' })
+    navigateWithViewTransition(navigate, '/', {
+      direction: 'back',
+      preload: () => import('./Home'),
+    })
   }
 
   const [mode, setMode] = useState('signin') // 'signin' | 'signup' | 'forgot'

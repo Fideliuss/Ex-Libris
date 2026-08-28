@@ -1,29 +1,38 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
-import Login from './pages/Login'
-import ResetPassword from './pages/ResetPassword'
-import Home from './pages/Home'
-import Account from './pages/Account'
-import BookForm from './pages/BookForm'
-import BookDetail from './pages/BookDetail'
-import Stats from './pages/Stats'
+import LoadingScreen from './components/LoadingScreen'
+
+// Découpage par route : chaque page part dans son propre chunk, chargé au
+// premier accès à son URL plutôt que d'être bundlé pour tout le monde dans
+// le fichier principal (le service worker les précache ensuite en fond, donc
+// les visites suivantes restent instantanées).
+const Home = lazy(() => import('./pages/Home'))
+const Login = lazy(() => import('./pages/Login'))
+const ResetPassword = lazy(() => import('./pages/ResetPassword'))
+const Account = lazy(() => import('./pages/Account'))
+const BookForm = lazy(() => import('./pages/BookForm'))
+const BookDetail = lazy(() => import('./pages/BookDetail'))
+const Stats = lazy(() => import('./pages/Stats'))
 
 function App() {
   return (
     <AuthProvider>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route element={<ProtectedRoute />}>
-          <Route path="/account" element={<Account />} />
-          <Route path="/books/new" element={<BookForm />} />
-          <Route path="/books/:id" element={<BookDetail />} />
-          <Route path="/books/:id/edit" element={<BookForm />} />
-          <Route path="/stats" element={<Stats />} />
-        </Route>
-      </Routes>
+      <Suspense fallback={<LoadingScreen />}>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/account" element={<Account />} />
+            <Route path="/books/new" element={<BookForm />} />
+            <Route path="/books/:id" element={<BookDetail />} />
+            <Route path="/books/:id/edit" element={<BookForm />} />
+            <Route path="/stats" element={<Stats />} />
+          </Route>
+        </Routes>
+      </Suspense>
     </AuthProvider>
   )
 }
