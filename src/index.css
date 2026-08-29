@@ -1,7 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  --font-serif: 'Source Serif 4', Georgia, serif;
+  /* Serif décorative (Fraunces) : réservée au logo, aux titres de section
+     (h1/h2) et aux titres de fiches livres. Jamais pour du texte courant ou
+     des labels d'UI — c'est Inter (--font-sans) qui gère tout ça, avec une
+     échelle de graisse volontairement limitée : 400 (texte courant), 500
+     (labels/mise en avant légère), 600 (boutons/actions). */
+  --font-serif: 'Fraunces', Georgia, serif;
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
 
@@ -15,10 +20,20 @@
   --color-brass: #ad8a54;
   --color-stamp: #a2372e;
 
-  /* Signal de statut : wishlist=bleu, à lire=neutre (brass), en cours=jaune,
-     lu=vert (library). */
+  /* Signal de statut : wishlist=bleu, à lire=prune, en cours=terracotta,
+     lu=vert (library). Trois teintes volontairement écartées les unes des
+     autres (et de brass/stamp) pour rester identifiables en un coup d'œil. */
   --color-wishlist: #3b6e91;
-  --color-reading: #b8860b;
+  --color-reading: #8a5210;
+
+  /* Fonds pleins des badges de statut (texte blanc par-dessus) : valeurs
+     fixes, non réajustées en mode sombre. Contrairement aux tokens de texte
+     ci-dessus (éclaircis en sombre pour rester lisibles sur fond sombre),
+     un badge plein a besoin de rester assez sombre pour que le texte blanc
+     garde un contraste ≥ 4.5:1 quel que soit le thème — d'où des tokens
+     séparés plutôt que de réutiliser --color-library tel quel. */
+  --color-toread: #5c3a63;
+  --color-read: #2f4a3c;
 }
 
 /* Mode sombre : palette "bibliothèque de nuit" (brun/charbon chaud, pas un
@@ -37,7 +52,6 @@
     --color-brass: #c9a06c;
     --color-stamp: #d1594c;
     --color-wishlist: #6fa3c4;
-    --color-reading: #d9a418;
   }
 }
 :root[data-theme='dark'] {
@@ -49,7 +63,6 @@
   --color-brass: #c9a06c;
   --color-stamp: #d1594c;
   --color-wishlist: #6fa3c4;
-  --color-reading: #d9a418;
 }
 
 body {

@@ -295,39 +295,59 @@ function Hero() {
       </div>
 
       <div className="hero-in mt-16" style={{ animationDelay: '320ms' }}>
-        <ShelfMockup />
+        <ProductPreview />
       </div>
     </section>
   )
 }
 
-// Mur de couvertures illustratif (rectangles colorés), pour donner une idée
-// de la collection sans dépendre d'une vraie capture d'écran.
-function ShelfMockup() {
-  const spines = [
-    'bg-library',
-    'bg-brass',
-    'bg-wishlist',
-    'bg-reading',
-    'bg-stamp/70',
-    'bg-library/70',
-    'bg-brass/70',
-    'bg-wishlist/70',
-    'bg-reading/70',
-    'bg-library',
-    'bg-brass',
-    'bg-wishlist',
-  ]
+// Aperçu du produit plutôt que du design system : deux mini-cartes qui
+// reprennent le vrai vocabulaire visuel de BookCard (tampon "Lu", badge de
+// statut plein), sur des livres d'exemple statiques — jamais de vraie
+// donnée ni de logique de collection ici.
+function ProductPreview() {
   return (
-    <div className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6 max-w-md mx-auto">
-      <div className="flex flex-wrap gap-2 justify-center">
-        {spines.map((c, i) => (
-          <div
-            key={i}
-            className={`w-10 aspect-[2/3] rounded-sm ${c}`}
-            style={{ opacity: 0.85 }}
-          />
-        ))}
+    <div className="flex justify-center gap-5 flex-wrap">
+      <MiniBookCard
+        title="Fondation"
+        author="Isaac Asimov"
+        rotate="-rotate-3"
+        stamped
+      />
+      <MiniBookCard
+        title="Dune"
+        author="Frank Herbert"
+        rotate="rotate-2"
+        badge="En cours"
+        badgeClass="bg-reading"
+      />
+    </div>
+  )
+}
+
+function MiniBookCard({ title, author, rotate, stamped, badge, badgeClass }) {
+  return (
+    <div
+      className={`w-32 bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm overflow-hidden ${rotate}`}
+    >
+      <div className="relative aspect-2/3 bg-paper flex items-center justify-center px-2">
+        {stamped && (
+          <span className="absolute top-2 right-2 -rotate-6 border-2 border-library text-library font-mono text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-sm bg-card/90">
+            Lu
+          </span>
+        )}
+        <span className="font-serif text-ink/30 text-xs text-center">{title}</span>
+      </div>
+      <div className="p-2.5">
+        <p className="font-serif text-sm leading-snug truncate">{title}</p>
+        <p className="text-xs text-ink/60 truncate">{author}</p>
+        {badge && (
+          <span
+            className={`inline-block mt-1.5 font-mono text-[9px] uppercase rounded-full px-1.5 py-0.5 text-white ${badgeClass}`}
+          >
+            {badge}
+          </span>
+        )}
       </div>
     </div>
   )

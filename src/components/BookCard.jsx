@@ -141,7 +141,7 @@ export default function BookCard({
         <div className="flex items-center justify-between mt-2 min-h-[1.25rem]">
           {book.status !== 'read' && book.status !== 'wishlist' && (
             <span
-              className={`font-mono text-xs uppercase ${STATUS_BADGE_CLASS[book.status]}`}
+              className={`font-mono text-[10px] uppercase rounded-full px-2 py-0.5 ${STATUS_BADGE_CLASS[book.status]}`}
             >
               {STATUS_LABELS[book.status]}
             </span>

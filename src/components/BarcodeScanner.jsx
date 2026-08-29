@@ -78,7 +78,7 @@ export default function BarcodeScanner({ onDetected, onClose }) {
         className="bg-card rounded-sm shadow-lg max-w-sm w-full p-4"
       >
         <div className="flex items-center justify-between mb-3">
-          <p className="font-serif text-lg">Scanner un code-barres</p>
+          <p className="font-medium text-base">Scanner un code-barres</p>
           <button
             type="button"
             onClick={onClose}
