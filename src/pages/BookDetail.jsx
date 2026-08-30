@@ -28,7 +28,9 @@ const GAP_COLLAPSE_THRESHOLD = 3
 function buildTomeSlots(siblings) {
   const numbered = siblings.filter((s) => s.series_index != null)
   if (numbered.length === 0) return []
-  const ownedByIndex = new Map(numbered.map((s) => [s.series_index, s.id]))
+  const ownedByIndex = new Map(
+    numbered.map((s) => [s.series_index, { id: s.id, status: s.status }]),
+  )
   const indices = numbered.map((s) => s.series_index)
   const min = Math.min(...indices)
   const max = Math.max(...indices)
@@ -37,7 +39,8 @@ function buildTomeSlots(siblings) {
   let i = min
   while (i <= max) {
     if (ownedByIndex.has(i)) {
-      slots.push({ type: 'owned', index: i, id: ownedByIndex.get(i) })
+      const { id, status } = ownedByIndex.get(i)
+      slots.push({ type: 'owned', index: i, id, status })
       i += 1
       continue
     }
@@ -120,11 +123,11 @@ function TomeChips({ slots, currentIndex, onSelect }) {
             disabled={active}
             onClick={() => onSelect(slot)}
             aria-current={active ? 'true' : undefined}
-            title={`Tome ${slot.index}`}
-            className={`shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-mono focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:cursor-default ${
+            title={`Tome ${slot.index} — ${STATUS_LABELS[slot.status] ?? slot.status}`}
+            className={`shrink-0 w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-mono focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:cursor-default ${
               active
-                ? 'bg-library-fill text-white'
-                : 'border border-library/40 text-library hover:bg-library/10'
+                ? `${STATUS_BADGE_CLASS[slot.status] ?? 'bg-ink/70 text-white'} border-transparent`
+                : `${STATUS_BORDER_CLASS[slot.status] ?? 'border-ink/40'} text-ink/70 hover:bg-ink/5`
             }`}
           >
             {slot.index}
