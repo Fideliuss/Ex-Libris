@@ -93,6 +93,14 @@ export default function BookDetail() {
     }
   }, [book?.series, book?.user_id])
 
+  // Même critère que l'onglet « À compléter » de la collection (voir
+  // incompleteBooks dans Collection.jsx) : les champs qu'un scan ISBN réussi
+  // remplit normalement tout seul.
+  const missingCount = book
+    ? [!book.cover_url, !book.author, !book.publisher, !book.page_count, !book.description]
+        .filter(Boolean).length
+    : 0
+
   const visibleSiblings = book?.series ? seriesSiblings : []
   const siblingIndex = visibleSiblings.findIndex((s) => s.id === id)
   const prevSibling = siblingIndex > 0 ? visibleSiblings[siblingIndex - 1] : null
@@ -191,6 +199,19 @@ export default function BookDetail() {
             </p>
           )}
 
+          {missingCount > 0 && book.user_id === user?.id && (
+            <button
+              type="button"
+              onClick={() => navigate(`/books/${id}/edit`)}
+              className="block w-full text-left rounded-sm border border-dashed border-brass/50 bg-brass/5 px-3 py-2 text-sm text-ink/70 hover:border-brass hover:bg-brass/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+            >
+              <span className="font-medium text-brass">
+                {missingCount} champ{missingCount > 1 ? 's' : ''} à compléter
+              </span>{' '}
+              — cliquer pour éditer
+            </button>
+          )}
+
           <div className="flex gap-6 flex-col sm:flex-row mt-3">
             <div className="relative w-40 aspect-[2/3] shrink-0 rounded-sm border border-ink/10 bg-paper overflow-hidden mx-auto sm:mx-0">
               {book.status === 'read' && (
@@ -277,9 +298,9 @@ export default function BookDetail() {
                   Univers : {book.universe}
                 </p>
               )}
-              {book.author && (
-                <p className="text-ink/70 mt-1">{book.author}</p>
-              )}
+              <p className={`text-ink/70 mt-1 ${book.author ? '' : 'italic'}`}>
+                {book.author || 'Auteur non renseigné'}
+              </p>
               {(book.translator || book.illustrator) && (
                 <p className="text-xs text-ink/70 mt-0.5">
                   {book.translator && `Traduit par ${book.translator}`}
@@ -287,12 +308,12 @@ export default function BookDetail() {
                   {book.illustrator && `Illustré par ${book.illustrator}`}
                 </p>
               )}
-              {book.publisher && (
-                <p className="text-sm text-ink/70 mt-0.5">
-                  {book.publisher}
-                  {book.collection && ` · ${book.collection}`}
-                </p>
-              )}
+              <p className="text-sm text-ink/70 mt-0.5">
+                <span className={book.publisher ? '' : 'italic'}>
+                  {book.publisher || 'Éditeur non renseigné'}
+                </span>
+                {book.collection && ` · ${book.collection}`}
+              </p>
 
               <div className="flex flex-wrap items-center gap-2 mt-3">
                 {book.user_id === user?.id ? (
@@ -349,18 +370,23 @@ export default function BookDetail() {
             </div>
           </div>
 
-          {book.description && (
-            <div className="mt-6 pt-6 border-t border-ink/10">
-              <h2 className="font-serif text-lg mb-2">Résumé</h2>
-              <p className="text-sm text-ink/70 whitespace-pre-line">
-                {book.description}
-              </p>
-            </div>
-          )}
+          <div className="mt-6 pt-6 border-t border-ink/10">
+            <h2 className="font-serif text-lg mb-2">Résumé</h2>
+            <p
+              className={`text-sm text-ink/70 whitespace-pre-line ${book.description ? '' : 'italic'}`}
+            >
+              {book.description || 'Résumé non renseigné.'}
+            </p>
+          </div>
 
           <div className="mt-6 pt-6 border-t border-ink/10 grid grid-cols-2 sm:grid-cols-3 gap-4">
             <DetailField label="ISBN" value={book.isbn} mono />
-            <DetailField label="Pages" value={book.page_count} mono />
+            <DetailField
+              label="Pages"
+              value={book.page_count}
+              mono
+              placeholder="Non renseigné"
+            />
             <DetailField label="Date de début" value={formatDate(book.date_started)} />
             <DetailField label="Date de fin" value={formatDate(book.date_finished)} />
             <DetailField label="Date d'achat" value={formatDate(book.purchase_date)} />
@@ -409,12 +435,17 @@ export default function BookDetail() {
   )
 }
 
-function DetailField({ label, value, mono }) {
-  if (value === null || value === undefined || value === '') return null
+function DetailField({ label, value, mono, placeholder }) {
+  const isEmpty = value === null || value === undefined || value === ''
+  if (isEmpty && !placeholder) return null
   return (
     <div>
       <p className="text-xs text-ink/70">{label}</p>
-      <p className={`text-sm ${mono ? 'font-mono' : ''}`}>{value}</p>
+      <p
+        className={`text-sm ${isEmpty ? 'italic' : mono ? 'font-mono' : ''}`}
+      >
+        {isEmpty ? placeholder : value}
+      </p>
     </div>
   )
 }
