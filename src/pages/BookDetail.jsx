@@ -93,13 +93,18 @@ export default function BookDetail() {
     }
   }, [book?.series, book?.user_id])
 
-  // Même critère que l'onglet « À compléter » de la collection (voir
-  // incompleteBooks dans Collection.jsx) : les champs qu'un scan ISBN réussi
-  // remplit normalement tout seul.
-  const missingCount = book
-    ? [!book.cover_url, !book.author, !book.publisher, !book.page_count, !book.description]
-        .filter(Boolean).length
-    : 0
+  // Même critère que l'onglet « À compléter » de la collection et le
+  // formulaire d'édition (voir Collection.jsx / BookForm.jsx) : les champs
+  // qu'un scan ISBN réussi remplit normalement tout seul.
+  const missingFields = book
+    ? [
+        !book.cover_url && 'Couverture',
+        !book.author && 'Auteur',
+        !book.publisher && 'Éditeur',
+        !book.page_count && 'Pages',
+        !book.description && 'Résumé',
+      ].filter(Boolean)
+    : []
 
   const visibleSiblings = book?.series ? seriesSiblings : []
   const siblingIndex = visibleSiblings.findIndex((s) => s.id === id)
@@ -199,16 +204,17 @@ export default function BookDetail() {
             </p>
           )}
 
-          {missingCount > 0 && book.user_id === user?.id && (
+          {missingFields.length > 0 && book.user_id === user?.id && (
             <button
               type="button"
               onClick={() => navigate(`/books/${id}/edit`)}
               className="block w-full text-left rounded-sm border border-dashed border-brass/50 bg-brass/5 px-3 py-2 text-sm text-ink/70 hover:border-brass hover:bg-brass/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
             >
               <span className="font-medium text-brass">
-                {missingCount} champ{missingCount > 1 ? 's' : ''} à compléter
+                {missingFields.length} champ{missingFields.length > 1 ? 's' : ''} à
+                compléter :
               </span>{' '}
-              — cliquer pour éditer
+              {missingFields.join(', ')}
             </button>
           )}
 
