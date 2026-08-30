@@ -28,6 +28,7 @@ export default function Login() {
   const [lastName, setLastName] = useState('')
   const [acceptedPolicy, setAcceptedPolicy] = useState(false)
   const [error, setError] = useState(null)
+  const [clockSkew, setClockSkew] = useState(false)
   const [info, setInfo] = useState(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -39,10 +40,14 @@ export default function Login() {
   async function handleSignIn(e) {
     e.preventDefault()
     setError(null)
+    setClockSkew(false)
     setSubmitting(true)
     const { error } = await signIn(email, password)
     setSubmitting(false)
-    if (error) setError(describeSignInError(error))
+    if (error) {
+      setClockSkew(isClockSkewError(error))
+      setError(describeSignInError(error))
+    }
   }
 
   async function handleGoogleSignIn() {
@@ -172,6 +177,15 @@ export default function Login() {
               <p role="alert" className="text-sm text-stamp">
                 {error}
               </p>
+            )}
+            {clockSkew && (
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="w-full rounded-sm border border-stamp/40 text-stamp py-2 text-sm hover:bg-stamp/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+              >
+                Rafraîchir la page
+              </button>
             )}
 
             <button
@@ -422,6 +436,15 @@ export default function Login() {
   )
 }
 
+// Ecart d'horloge système côté client : le JWT semble "émis dans le futur"
+// par rapport à l'heure locale. Un simple rafraîchissement suffit en général
+// (nouvelle requête, nouvel horodatage), sans attendre que l'utilisateur
+// corrige l'horloge de sa machine.
+function isClockSkewError(error) {
+  const message = error.message ?? ''
+  return /issued.*(at|in).*future|jwt.*future/i.test(message)
+}
+
 function describeSignInError(error) {
   const code = error.code ?? ''
   const message = error.message ?? ''
@@ -431,6 +454,9 @@ function describeSignInError(error) {
   }
   if (code === 'invalid_credentials' || /invalid login credentials/i.test(message)) {
     return 'Email ou mot de passe incorrect.'
+  }
+  if (isClockSkewError(error)) {
+    return "Erreur temporaire de connexion. Rafraîchis la page et réessaie."
   }
   return `Connexion impossible : ${message || 'erreur inconnue'}.`
 }
