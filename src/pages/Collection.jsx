@@ -10,7 +10,11 @@ import BulkActionBar from '../components/BulkActionBar'
 import HouseholdSwitchBadge from '../components/HouseholdSwitchBadge'
 import TabBar from '../components/TabBar'
 import LoadingScreen from '../components/LoadingScreen'
-import { STATUS_LABELS } from '../lib/statusLabels'
+import {
+  STATUS_LABELS,
+  STATUS_BADGE_CLASS,
+  STATUS_BORDER_CLASS,
+} from '../lib/statusLabels'
 import { authorSortKey } from '../lib/authorSort'
 
 const STATUS_ORDER = Object.keys(STATUS_LABELS)
@@ -195,6 +199,12 @@ export default function Collection() {
       if (book.universe) set.add(book.universe)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [books])
+
+  const statusCounts = useMemo(() => {
+    const counts = {}
+    for (const book of books) counts[book.status] = (counts[book.status] ?? 0) + 1
+    return counts
   }, [books])
 
   // Livres sans couverture ou sans les champs qu'un scan ISBN réussi remplit
@@ -515,6 +525,22 @@ export default function Collection() {
         )}
 
         {!loading && !error && books.length > 0 && collectionTab === 'collection' && (
+          <div className="flex flex-wrap gap-2 mb-4" role="group" aria-label="Filtrer par statut">
+            {STATUS_ORDER.map((key) => (
+              <StatusChip
+                key={key}
+                active={status === key}
+                count={statusCounts[key] ?? 0}
+                label={STATUS_LABELS[key]}
+                onClick={() => setStatus(status === key ? '' : key)}
+                fillClass={STATUS_BADGE_CLASS[key]}
+                borderClass={STATUS_BORDER_CLASS[key]}
+              />
+            ))}
+          </div>
+        )}
+
+        {!loading && !error && books.length > 0 && collectionTab === 'collection' && (
           <CollectionFilters
             search={search}
             onSearchChange={setSearch}
@@ -536,7 +562,6 @@ export default function Collection() {
             type={type}
             onTypeChange={setType}
             status={status}
-            onStatusChange={setStatus}
             hasActiveFilters={hasActiveFilters}
             onReset={resetFilters}
           />
@@ -711,5 +736,25 @@ export default function Collection() {
         )
       )}
     </div>
+  )
+}
+
+function StatusChip({ active, count, label, onClick, fillClass, borderClass }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
+        active
+          ? fillClass
+          : `border ${borderClass} text-ink/70 hover:text-ink`
+      }`}
+    >
+      {label}
+      <span className={`font-mono ${active ? 'opacity-80' : 'text-ink/70'}`}>
+        {count}
+      </span>
+    </button>
   )
 }
