@@ -361,18 +361,18 @@ export default function BookForm() {
             <div className="flex gap-2 mt-2">
               <button
                 type="button"
+                onClick={() => handleLookup()}
+                disabled={lookupLoading}
+                className="flex-1 rounded-sm bg-library-fill text-white px-3 py-2 text-sm font-medium hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
+              >
+                {lookupLoading ? 'Recherche…' : 'Chercher'}
+              </button>
+              <button
+                type="button"
                 onClick={() => setScannerOpen(true)}
                 className="flex-1 rounded-sm border border-ink/20 text-ink/70 px-3 py-2 text-sm font-medium hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
               >
                 Scanner
-              </button>
-              <button
-                type="button"
-                onClick={() => handleLookup()}
-                disabled={lookupLoading}
-                className="flex-1 rounded-sm border border-library text-library px-3 py-2 text-sm font-medium hover:bg-library-fill hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60"
-              >
-                {lookupLoading ? 'Recherche…' : 'Chercher'}
               </button>
             </div>
             {lookupMessage && (
