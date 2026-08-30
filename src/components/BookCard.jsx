@@ -119,10 +119,10 @@ export default function BookCard({
           </>
         )}
         {book.author && (
-          <p className="text-sm text-ink/60 mt-0.5 truncate">{book.author}</p>
+          <p className="text-sm text-ink/70 mt-0.5 truncate">{book.author}</p>
         )}
         {book.publisher && (
-          <p className="text-xs text-ink/40 mt-0.5 truncate">
+          <p className="text-xs text-ink/70 mt-0.5 truncate">
             {book.publisher}
             {book.collection && ` · ${book.collection}`}
           </p>

@@ -18,7 +18,7 @@ export default function BookCoverPlaceholder({ title, author, volume }) {
             <span className="font-serif italic text-brass text-[11px]">Tome {volume}</span>
           )}
         </span>
-        <span className="font-sans text-[8px] tracking-[0.18em] uppercase text-ink/40">
+        <span className="font-sans text-[8px] tracking-[0.18em] uppercase text-ink/70">
           Ex Libris
         </span>
       </div>

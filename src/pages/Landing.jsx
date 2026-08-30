@@ -211,7 +211,7 @@ function Nav() {
           <img src="/favicon.svg" alt="" className="w-6 h-6" />
           <span className="font-serif text-lg font-semibold">Ex Libris</span>
         </a>
-        <nav className="hidden sm:flex items-center gap-6 text-sm text-ink/60">
+        <nav className="hidden sm:flex items-center gap-6 text-sm text-ink/70">
           <a href="#features" className="hover:text-ink">
             {t.nav.features}
           </a>
@@ -246,7 +246,7 @@ function LangSwitch() {
         className={`px-2 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
           lang === 'fr'
             ? 'bg-library text-white'
-            : 'text-ink/50 hover:text-ink'
+            : 'text-ink/70 hover:text-ink'
         }`}
       >
         FR
@@ -259,7 +259,7 @@ function LangSwitch() {
         className={`px-2 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
           lang === 'en'
             ? 'bg-library text-white'
-            : 'text-ink/50 hover:text-ink'
+            : 'text-ink/70 hover:text-ink'
         }`}
       >
         EN
@@ -290,7 +290,7 @@ function Hero() {
           {t.hero.titleLine2}
         </h1>
         <p
-          className="hero-in text-ink/60 text-lg mt-6 max-w-xl mx-auto"
+          className="hero-in text-ink/70 text-lg mt-6 max-w-xl mx-auto"
           style={{ animationDelay: '160ms' }}
         >
           {t.hero.subtitle}
@@ -434,7 +434,7 @@ function MiniBook({ title, author, status }) {
         </div>
         <div className="p-2">
           <p className="font-serif text-xs leading-snug truncate">{title}</p>
-          <p className="text-[10px] text-ink/60 truncate">{author}</p>
+          <p className="text-[10px] text-ink/70 truncate">{author}</p>
         </div>
       </div>
       <div className="w-1 shrink-0 book-pages" />
@@ -456,7 +456,7 @@ function Features() {
           <Reveal key={f.title} delay={i * 80}>
             <div className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6 h-full">
               <h3 className="font-serif text-lg mb-2">{f.title}</h3>
-              <p className="text-sm text-ink/60">{f.text}</p>
+              <p className="text-sm text-ink/70">{f.text}</p>
             </div>
           </Reveal>
         ))}
@@ -482,7 +482,7 @@ function HowItWorks() {
                 {i + 1}
               </div>
               <h3 className="font-serif text-lg mb-2">{s.title}</h3>
-              <p className="text-sm text-ink/60">{s.text}</p>
+              <p className="text-sm text-ink/70">{s.text}</p>
             </Reveal>
           ))}
         </div>
@@ -499,7 +499,7 @@ function Pricing() {
         <h2 className="font-serif text-3xl font-semibold text-center mb-3">
           {t.pricingTitle}
         </h2>
-        <p className="text-center text-sm text-ink/50 mb-12">{t.pricingNote}</p>
+        <p className="text-center text-sm text-ink/70 mb-12">{t.pricingNote}</p>
       </Reveal>
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {t.pricing.map((tier, i) => (
@@ -523,7 +523,7 @@ function Pricing() {
                 {tier.price}
               </p>
               <p
-                className={`text-sm mb-4 ${tier.highlighted ? 'text-white/80' : 'text-ink/60'}`}
+                className={`text-sm mb-4 ${tier.highlighted ? 'text-white/80' : 'text-ink/70'}`}
               >
                 {tier.tagline}
               </p>
@@ -586,7 +586,7 @@ function Footer() {
   const t = useT()
   return (
     <footer className="border-t border-ink/10 py-8">
-      <div className="max-w-5xl mx-auto px-6 flex flex-col items-center gap-3 text-xs text-ink/40">
+      <div className="max-w-5xl mx-auto px-6 flex flex-col items-center gap-3 text-xs text-ink/70">
         <div className="flex items-center gap-4">
           <Link to="/mentions-legales" className="hover:text-ink/70">
             {t.legalNotice}

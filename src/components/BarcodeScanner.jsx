@@ -83,7 +83,7 @@ export default function BarcodeScanner({ onDetected, onClose }) {
             type="button"
             onClick={onClose}
             aria-label="Fermer le scanner"
-            className="text-ink/50 hover:text-stamp text-2xl leading-none px-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+            className="text-ink/70 hover:text-stamp text-2xl leading-none px-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
           >
             ×
           </button>
@@ -105,12 +105,12 @@ export default function BarcodeScanner({ onDetected, onClose }) {
         ) : (
           <>
             {starting && (
-              <p className="font-mono text-xs text-ink/50 text-center mb-2">
+              <p className="font-mono text-xs text-ink/70 text-center mb-2">
                 Démarrage de la caméra…
               </p>
             )}
             <div id={VIEWPORT_ID} className="rounded-sm overflow-hidden" />
-            <p className="text-xs text-ink/50 text-center mt-2">
+            <p className="text-xs text-ink/70 text-center mt-2">
               Vise le code-barres EAN-13 au dos du livre.
             </p>
           </>

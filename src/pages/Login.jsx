@@ -120,7 +120,7 @@ export default function Login() {
       <Link
         to="/"
         onClick={handleBackToLanding}
-        className="flex items-center gap-2 text-sm text-ink/60 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+        className="flex items-center gap-2 text-sm text-ink/70 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
       >
         <span aria-hidden="true">←</span> Retour à l'accueil
       </Link>
@@ -182,7 +182,7 @@ export default function Login() {
               {submitting ? 'Connexion…' : 'Se connecter'}
             </button>
 
-            <div className="flex items-center gap-3 text-xs text-ink/40">
+            <div className="flex items-center gap-3 text-xs text-ink/70">
               <div className="flex-1 border-t border-ink/10" />
               ou
               <div className="flex-1 border-t border-ink/10" />
@@ -196,12 +196,12 @@ export default function Login() {
             >
               Continuer avec Google
             </button>
-            <p className="text-xs text-ink/40 text-center">
+            <p className="text-xs text-ink/70 text-center">
               En continuant, tu acceptes notre{' '}
               <Link
                 to="/confidentialite"
                 target="_blank"
-                className="underline underline-offset-2 hover:text-ink/60"
+                className="underline underline-offset-2 hover:text-ink/70"
               >
                 politique de confidentialité
               </Link>
@@ -211,7 +211,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => switchMode('forgot')}
-              className="w-full text-center text-sm text-ink/60 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+              className="w-full text-center text-sm text-ink/70 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
             >
               Mot de passe oublié ?
             </button>
@@ -219,7 +219,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => switchMode('signup')}
-              className="w-full text-center text-sm text-ink/60 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+              className="w-full text-center text-sm text-ink/70 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
             >
               Créer un compte
             </button>
@@ -358,7 +358,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => switchMode('signin')}
-              className="w-full text-center text-sm text-ink/60 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+              className="w-full text-center text-sm text-ink/70 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
             >
               Retour à la connexion
             </button>
@@ -411,7 +411,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => switchMode('signin')}
-              className="w-full text-center text-sm text-ink/60 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+              className="w-full text-center text-sm text-ink/70 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
             >
               Retour à la connexion
             </button>

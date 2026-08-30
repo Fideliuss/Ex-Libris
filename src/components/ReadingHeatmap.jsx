@@ -80,7 +80,7 @@ export default function ReadingHeatmap({ books }) {
             return (
               <span
                 key={i}
-                className="w-[11px] font-mono text-[9px] text-ink/40 shrink-0"
+                className="w-[11px] font-mono text-[9px] text-ink/70 shrink-0"
               >
                 {label?.label ?? ''}
               </span>
@@ -92,7 +92,7 @@ export default function ReadingHeatmap({ books }) {
             {DAY_LETTERS.map((letter, i) => (
               <span
                 key={i}
-                className="w-5 h-[11px] font-mono text-[9px] text-ink/40 leading-none flex items-center"
+                className="w-5 h-[11px] font-mono text-[9px] text-ink/70 leading-none flex items-center"
               >
                 {i % 2 === 1 ? letter : ''}
               </span>

@@ -74,7 +74,7 @@ export default function Account() {
           <button
             type="button"
             onClick={goBack}
-            className="text-sm text-ink/60 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+            className="text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
           >
             ← Retour à la collection
           </button>

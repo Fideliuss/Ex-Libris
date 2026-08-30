@@ -9,7 +9,7 @@ export default function PrivacyPolicy() {
       <div className="max-w-2xl mx-auto">
         <Link
           to="/"
-          className="text-sm text-ink/60 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+          className="text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
         >
           ← Retour à l'accueil
         </Link>
@@ -17,7 +17,7 @@ export default function PrivacyPolicy() {
         <h1 className="font-serif text-3xl font-semibold mt-6 mb-2">
           Politique de confidentialité
         </h1>
-        <p className="text-sm text-ink/50 mb-10">Dernière mise à jour : 2026</p>
+        <p className="text-sm text-ink/70 mb-10">Dernière mise à jour : 2026</p>
 
         <div className="space-y-8 text-sm text-ink/80 leading-relaxed">
           <Section title="Quelles données sont collectées">

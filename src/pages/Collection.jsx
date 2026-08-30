@@ -544,7 +544,7 @@ export default function Collection() {
             </p>
             {isMine ? (
               <>
-                <p className="text-sm text-ink/60 mb-6">
+                <p className="text-sm text-ink/70 mb-6">
                   Ajoute ton premier livre pour commencer à suivre tes
                   lectures.
                 </p>
@@ -556,7 +556,7 @@ export default function Collection() {
                 </Link>
               </>
             ) : (
-              <p className="text-sm text-ink/60">
+              <p className="text-sm text-ink/70">
                 Rien à afficher pour l'instant.
               </p>
             )}
@@ -564,7 +564,7 @@ export default function Collection() {
         ) : collectionTab === 'todo' && incompleteBooks.length === 0 ? (
           <div className="text-center py-16">
             <p className="font-serif text-xl mb-2">Tout est renseigné 🎉</p>
-            <p className="text-sm text-ink/60">
+            <p className="text-sm text-ink/70">
               Aucun livre à compléter pour l'instant.
             </p>
           </div>
@@ -573,7 +573,7 @@ export default function Collection() {
             <p className="font-serif text-xl mb-2">
               Aucun livre ne correspond
             </p>
-            <p className="text-sm text-ink/60 mb-6">
+            <p className="text-sm text-ink/70 mb-6">
               Essaie d'autres critères de recherche ou de filtres.
             </p>
             <button
@@ -589,7 +589,7 @@ export default function Collection() {
             <div className="flex items-center justify-between gap-3 mb-3">
               {selectionMode ? (
                 <div className="flex items-center gap-3">
-                  <p className="font-mono text-xs text-ink/50">
+                  <p className="font-mono text-xs text-ink/70">
                     {selectedIds.size} sélectionné{selectedIds.size > 1 ? 's' : ''}
                   </p>
                   <button
@@ -603,7 +603,7 @@ export default function Collection() {
                   </button>
                 </div>
               ) : (
-                <p className="font-mono text-xs text-ink/50">
+                <p className="font-mono text-xs text-ink/70">
                   {collectionTab === 'todo' ? (
                     <>
                       {visibleBooks.length} livre
@@ -625,7 +625,7 @@ export default function Collection() {
                     onClick={() =>
                       selectionMode ? exitSelectionMode() : setSelectionMode(true)
                     }
-                    className="text-xs text-ink/50 hover:text-library underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                    className="text-xs text-ink/70 hover:text-library underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
                   >
                     {selectionMode ? 'Annuler' : 'Sélectionner'}
                   </button>
@@ -651,7 +651,7 @@ export default function Collection() {
                 item.type === 'header' ? (
                   <p
                     key={item.renderKey}
-                    className="col-span-full font-mono text-xs uppercase tracking-widest text-ink/50 border-b border-ink/10 pb-1 mt-2 first:mt-0"
+                    className="col-span-full font-mono text-xs uppercase tracking-widest text-ink/70 border-b border-ink/10 pb-1 mt-2 first:mt-0"
                   >
                     {item.label}
                   </p>

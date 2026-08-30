@@ -65,13 +65,13 @@ export default function SharingPanel({ user }) {
       )}
 
       {!profile ? (
-        <p className="text-sm text-ink/60">
+        <p className="text-sm text-ink/70">
           Aucun profil trouvé pour ce compte.
         </p>
       ) : (
         <>
           <div className="mb-4">
-            <p className="font-mono text-xs uppercase tracking-widest text-ink/50 mb-1">
+            <p className="font-mono text-xs uppercase tracking-widest text-ink/70 mb-1">
               Ton code ami
             </p>
             <div className="flex items-center gap-2">
@@ -81,7 +81,7 @@ export default function SharingPanel({ user }) {
               <button
                 type="button"
                 onClick={handleCopyCode}
-                className="text-xs text-ink/50 hover:text-library underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                className="text-xs text-ink/70 hover:text-library underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
               >
                 {copied ? 'Copié !' : 'Copier'}
               </button>
@@ -102,7 +102,7 @@ export default function SharingPanel({ user }) {
                   <button
                     type="button"
                     onClick={() => setConfirmingStop(false)}
-                    className="text-xs text-ink/50 underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                    className="text-xs text-ink/70 underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
                   >
                     Annuler
                   </button>
@@ -119,7 +119,7 @@ export default function SharingPanel({ user }) {
                 <button
                   type="button"
                   onClick={() => setConfirmingStop(true)}
-                  className="text-xs text-ink/50 hover:text-stamp underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                  className="text-xs text-ink/70 hover:text-stamp underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
                 >
                   Arrêter le partage
                 </button>
@@ -139,7 +139,7 @@ export default function SharingPanel({ user }) {
                     type="button"
                     onClick={() => runAction(() => removeLink(links.outgoingPending.id))}
                     disabled={working}
-                    className="shrink-0 text-xs text-ink/50 hover:text-stamp underline underline-offset-2 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                    className="shrink-0 text-xs text-ink/70 hover:text-stamp underline underline-offset-2 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
                   >
                     Annuler
                   </button>
@@ -165,7 +165,7 @@ export default function SharingPanel({ user }) {
                       type="button"
                       onClick={() => runAction(() => removeLink(link.id))}
                       disabled={working}
-                      className="text-xs text-ink/50 hover:text-stamp underline underline-offset-2 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                      className="text-xs text-ink/70 hover:text-stamp underline underline-offset-2 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
                     >
                       Refuser
                     </button>
@@ -176,7 +176,7 @@ export default function SharingPanel({ user }) {
               {!links.outgoingPending && (
                 <form onSubmit={handleSendRequest} className="flex items-end gap-2">
                   <div className="flex-1">
-                    <label className="block font-mono text-xs uppercase tracking-widest text-ink/50 mb-1">
+                    <label className="block font-mono text-xs uppercase tracking-widest text-ink/70 mb-1">
                       Code d'un ami
                     </label>
                     <input
