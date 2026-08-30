@@ -355,16 +355,21 @@ const STATUS_ACCENT = {
 
 // 6 colonnes sur grand écran, moins sur les écrans étroits (chacune reste
 // assez large pour rester lisible) — vitesse de parallaxe différente par
-// colonne pour un effet moins mécanique qu'un simple binôme.
-const COLUMN_SPEEDS = [15, 38, 22, 45, 28, 40]
+// colonne pour un effet moins mécanique qu'un simple binôme. Un facteur du
+// scroll total de la page (pas juste de la section), pour que les deux
+// étagères (Hero/Features et Tarifs) bougent en continuité — l'une reprend
+// exactement où l'autre s'est arrêtée pendant le tunnel "Comment ça marche",
+// au lieu de repartir de zéro à chaque fondu d'apparition.
+const COLUMN_SPEEDS = [0.03, 0.08, 0.045, 0.095, 0.06, 0.085]
 const COLUMN_VISIBILITY = ['flex', 'flex', 'hidden md:flex', 'hidden md:flex', 'hidden lg:flex', 'hidden lg:flex']
 
 // Le fond reste fixe à l'écran (pas collé au scroll de la page) pendant que
 // Hero/Features/Pricing défilent par-dessus : c'est ça qui donne
 // l'impression que "seul le premier plan bouge". `rangeRef` (la section
-// logique, en flux normal) sert à savoir si on est dans sa plage de scroll
-// (on affiche/masque en fondu) et à calculer un tout petit décalage
-// résiduel — le fond n'est jamais parfaitement mort, juste presque. Un seul
+// logique, en flux normal) sert uniquement à savoir si on est dans sa plage
+// de scroll (on affiche/masque en fondu) — le décalage lui-même suit le
+// scroll absolu de la page entière, pas la progression locale de la
+// section, justement pour rester continu d'une étagère à l'autre. Un seul
 // listener pour toutes les colonnes ; le décalage est ignoré si
 // l'utilisateur préfère moins d'animations (le fondu d'apparition reste,
 // lui, ce n'est qu'un changement de visibilité).
@@ -384,10 +389,8 @@ function useFixedShelf(rangeRef, rootRef, colRefs, speeds) {
       root.style.opacity = inView ? '1' : '0'
       if (!inView || reducedMotion) return
 
-      const total = rect.height - window.innerHeight
-      const progress = total > 0 ? Math.min(1, Math.max(0, -rect.top / total)) : 0
       colRefs.current.forEach((col, i) => {
-        if (col) col.style.transform = `translateY(-${progress * speeds[i]}px)`
+        if (col) col.style.transform = `translateY(-${window.scrollY * speeds[i]}px)`
       })
     }
     function onChange() {
@@ -598,7 +601,7 @@ function Features() {
 function HowItWorks() {
   const t = useT()
   return (
-    <section className="relative z-10 bg-card/50 py-20">
+    <section className="relative z-10 bg-card py-20">
       <div className="max-w-5xl mx-auto px-6">
         <Reveal>
           <h2 className="font-serif text-3xl font-semibold text-center mb-12">
