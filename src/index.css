@@ -1,9 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-  --font-serif: 'Source Serif 4', Georgia, serif;
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  /* Serif décorative (Fraunces) : réservée au logo, aux titres de section
+     (h1/h2) et aux titres de fiches livres. Jamais pour du texte courant ou
+     des labels d'UI — c'est Inter (--font-sans) qui gère tout ça, avec une
+     échelle de graisse volontairement limitée : 400 (texte courant), 500
+     (labels/mise en avant légère), 600 (boutons/actions). */
+  --font-serif: 'Fraunces', Georgia, serif;
+  /* Test en cours : Public Sans à la place d'Inter — pas encore un choix
+     retenu pour le design system. */
+  --font-sans: 'Public Sans', system-ui, sans-serif;
+  /* Test en cours : Red Hat Mono à la place de JetBrains Mono sur tous les
+     labels/badges/petites capitales de l'app — dessinée pour de la vraie UI
+     (pas un éditeur de code), donc plus adaptée au petit corps que Courier
+     Prime. Pas encore un choix retenu pour le design system. */
+  --font-mono: 'Red Hat Mono', 'JetBrains Mono', ui-monospace, Consolas, monospace;
 
   --color-paper: #eae1cb;
   --color-card: #fbf7ed;
@@ -15,10 +26,25 @@
   --color-brass: #ad8a54;
   --color-stamp: #a2372e;
 
-  /* Signal de statut : wishlist=bleu, à lire=neutre (brass), en cours=jaune,
-     lu=vert (library). */
+  /* Signal de statut : wishlist=bleu, à lire=prune, en cours=terracotta,
+     lu=vert (library). Trois teintes volontairement écartées les unes des
+     autres (et de brass/stamp) pour rester identifiables en un coup d'œil. */
   --color-wishlist: #3b6e91;
-  --color-reading: #b8860b;
+  --color-reading: #8a5210;
+
+  /* Fonds pleins des badges de statut (texte blanc par-dessus) : valeurs
+     fixes, non réajustées en mode sombre. Contrairement aux tokens de texte
+     ci-dessus (éclaircis en sombre pour rester lisibles sur fond sombre),
+     un badge plein a besoin de rester assez sombre pour que le texte blanc
+     garde un contraste ≥ 4.5:1 quel que soit le thème — d'où des tokens
+     séparés plutôt que de réutiliser --color-library tel quel. */
+  --color-toread: #5c3a63;
+  --color-read: #2f4a3c;
+
+  /* Couverture "sans image" (BookCoverPlaceholder) : un livre reste un objet
+     physique, sa couleur ne doit pas s'inverser avec le thème — fixe dans
+     les deux cas, comme les tokens de badge ci-dessus. */
+  --color-cover: #f6f0e2;
 }
 
 /* Mode sombre : palette "bibliothèque de nuit" (brun/charbon chaud, pas un
@@ -37,7 +63,6 @@
     --color-brass: #c9a06c;
     --color-stamp: #d1594c;
     --color-wishlist: #6fa3c4;
-    --color-reading: #d9a418;
   }
 }
 :root[data-theme='dark'] {
@@ -49,11 +74,42 @@
   --color-brass: #c9a06c;
   --color-stamp: #d1594c;
   --color-wishlist: #6fa3c4;
-  --color-reading: #d9a418;
 }
 
 body {
   @apply bg-paper text-ink font-sans antialiased;
+}
+
+/* Aperçu produit du hero (landing) : fondu haut/bas pour que l'étagère ne
+   coupe pas net, et texture de "fil de pages" sur la tranche droite des
+   mini-livres. Couleur fixe (comme --color-cover), pas de teinte suivant le
+   thème. */
+.shelf-fade::before,
+.shelf-fade::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 72px;
+  z-index: 2;
+  pointer-events: none;
+}
+.shelf-fade::before {
+  top: 0;
+  background: linear-gradient(var(--color-paper), transparent);
+}
+.shelf-fade::after {
+  bottom: 0;
+  background: linear-gradient(transparent, var(--color-paper));
+}
+
+.book-pages {
+  background-color: var(--color-cover);
+  background-image: repeating-linear-gradient(
+    180deg,
+    rgba(30, 43, 58, 0.1) 0 1px,
+    transparent 1px 3px
+  );
 }
 
 @media (prefers-reduced-motion: no-preference) {

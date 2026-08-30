@@ -4,7 +4,7 @@ export default function LoadingScreen({ fullScreen = true, label = 'Chargementâ€
   const content = (
     <div className="flex flex-col items-center gap-3">
       <img src="/favicon.svg" alt="" className="w-10 h-10 animate-float" />
-      <p className="font-mono text-sm text-ink/60">{label}</p>
+      <p className="font-mono text-sm text-ink/70">{label}</p>
     </div>
   )
 

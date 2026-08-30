@@ -11,7 +11,7 @@ export default function TagMultiSelect({ tags, selected, onChange, label }) {
 
   return (
     <div className="flex flex-wrap gap-1.5 items-center">
-      <span className="text-xs text-ink/50 shrink-0">{label}</span>
+      <span className="text-xs text-ink/70 shrink-0">{label}</span>
       {tags.map((tag) => (
         <button
           key={tag}

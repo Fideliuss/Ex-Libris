@@ -7,6 +7,7 @@ import {
 import { BOOK_TYPES } from '../lib/bookTypes'
 import WishlistRibbon from './WishlistRibbon'
 import ReadingBookmark from './ReadingBookmark'
+import BookCoverPlaceholder from './BookCoverPlaceholder'
 import { navigateWithViewTransition } from '../lib/navigation'
 
 export default function BookCard({
@@ -79,9 +80,11 @@ export default function BookCard({
             className="w-full h-full object-contain"
           />
         ) : (
-          <span className="font-serif text-ink/30 text-sm px-4 text-center">
-            {book.title}
-          </span>
+          <BookCoverPlaceholder
+            title={book.title}
+            author={book.author}
+            volume={isMangaVolume ? book.series_index : null}
+          />
         )}
         {book.type !== 'book' && (
           <span className="absolute bottom-2 left-2 bg-library text-white font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-sm">
@@ -116,10 +119,10 @@ export default function BookCard({
           </>
         )}
         {book.author && (
-          <p className="text-sm text-ink/60 mt-0.5 truncate">{book.author}</p>
+          <p className="text-sm text-ink/70 mt-0.5 truncate">{book.author}</p>
         )}
         {book.publisher && (
-          <p className="text-xs text-ink/40 mt-0.5 truncate">
+          <p className="text-xs text-ink/70 mt-0.5 truncate">
             {book.publisher}
             {book.collection && ` · ${book.collection}`}
           </p>
@@ -141,7 +144,7 @@ export default function BookCard({
         <div className="flex items-center justify-between mt-2 min-h-[1.25rem]">
           {book.status !== 'read' && book.status !== 'wishlist' && (
             <span
-              className={`font-mono text-xs uppercase ${STATUS_BADGE_CLASS[book.status]}`}
+              className={`font-mono text-[10px] uppercase rounded-full px-2 py-0.5 ${STATUS_BADGE_CLASS[book.status]}`}
             >
               {STATUS_LABELS[book.status]}
             </span>

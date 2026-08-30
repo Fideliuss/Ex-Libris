@@ -14,6 +14,7 @@ import WishlistRibbon from '../components/WishlistRibbon'
 import { navigateWithViewTransition, useGoBack } from '../lib/navigation'
 import ReadingBookmark from '../components/ReadingBookmark'
 import LoadingScreen from '../components/LoadingScreen'
+import BookCoverPlaceholder from '../components/BookCoverPlaceholder'
 
 export default function BookDetail() {
   const { id } = useParams()
@@ -162,7 +163,7 @@ export default function BookDetail() {
           <button
             type="button"
             onClick={goBack}
-            className="text-sm text-ink/60 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+            className="text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
           >
             ← Retour à la collection
           </button>
@@ -185,7 +186,7 @@ export default function BookDetail() {
           className={`relative bg-card border-t-4 border-dashed rounded-sm shadow-sm p-6 ${STATUS_BORDER_CLASS[book.status]}`}
         >
           {book.created_at && (
-            <p className="absolute top-3 right-4 font-mono text-[10px] text-ink/30">
+            <p className="absolute top-3 right-4 font-mono text-[10px] text-ink/70">
               Ajouté le {formatDate(book.created_at.slice(0, 10))}
             </p>
           )}
@@ -213,11 +214,11 @@ export default function BookDetail() {
                   />
                 </button>
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="font-serif text-ink/30 text-sm px-4 text-center">
-                    {book.title}
-                  </span>
-                </div>
+                <BookCoverPlaceholder
+                  title={book.title}
+                  author={book.author}
+                  volume={book.type === 'manga' && book.series ? book.series_index : null}
+                />
               )}
             </div>
 
@@ -257,7 +258,7 @@ export default function BookDetail() {
                   >
                     ‹
                   </button>
-                  <span className="font-mono text-[11px] text-ink/40">
+                  <span className="font-mono text-[11px] text-ink/70">
                     {siblingIndex + 1} / {visibleSiblings.length}
                   </span>
                   <button
@@ -280,14 +281,14 @@ export default function BookDetail() {
                 <p className="text-ink/70 mt-1">{book.author}</p>
               )}
               {(book.translator || book.illustrator) && (
-                <p className="text-xs text-ink/50 mt-0.5">
+                <p className="text-xs text-ink/70 mt-0.5">
                   {book.translator && `Traduit par ${book.translator}`}
                   {book.translator && book.illustrator && ' · '}
                   {book.illustrator && `Illustré par ${book.illustrator}`}
                 </p>
               )}
               {book.publisher && (
-                <p className="text-sm text-ink/50 mt-0.5">
+                <p className="text-sm text-ink/70 mt-0.5">
                   {book.publisher}
                   {book.collection && ` · ${book.collection}`}
                 </p>
@@ -300,7 +301,7 @@ export default function BookDetail() {
                     onChange={(e) => handleStatusChange(e.target.value)}
                     disabled={statusSaving}
                     aria-label="Changer le statut"
-                    className={`font-mono text-xs uppercase border border-ink/20 rounded-full px-2 py-0.5 bg-surface cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60 ${STATUS_BADGE_CLASS[book.status] ?? 'text-ink/50'}`}
+                    className={`font-mono text-xs uppercase rounded-full px-2 py-0.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-library disabled:opacity-60 ${STATUS_BADGE_CLASS[book.status] ?? 'bg-ink/10 text-ink/70'}`}
                   >
                     <option value="wishlist">Wishlist</option>
                     <option value="to-read">À lire</option>
@@ -309,13 +310,13 @@ export default function BookDetail() {
                   </select>
                 ) : (
                   <span
-                    className={`font-mono text-xs uppercase border border-ink/20 rounded-full px-2 py-0.5 ${STATUS_BADGE_CLASS[book.status] ?? 'text-ink/50'}`}
+                    className={`font-mono text-xs uppercase rounded-full px-2 py-0.5 ${STATUS_BADGE_CLASS[book.status] ?? 'bg-ink/10 text-ink/70'}`}
                   >
                     {STATUS_LABELS[book.status] ?? book.status}
                   </span>
                 )}
                 {book.type !== 'book' && (
-                  <span className="font-mono text-xs uppercase text-ink/50 border border-ink/20 rounded-full px-2 py-0.5">
+                  <span className="font-mono text-xs uppercase text-ink/70 border border-ink/20 rounded-full px-2 py-0.5">
                     {BOOK_TYPES[book.type]}
                   </span>
                 )}
@@ -412,7 +413,7 @@ function DetailField({ label, value, mono }) {
   if (value === null || value === undefined || value === '') return null
   return (
     <div>
-      <p className="text-xs text-ink/50">{label}</p>
+      <p className="text-xs text-ink/70">{label}</p>
       <p className={`text-sm ${mono ? 'font-mono' : ''}`}>{value}</p>
     </div>
   )

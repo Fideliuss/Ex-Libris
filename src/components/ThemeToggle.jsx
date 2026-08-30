@@ -24,7 +24,7 @@ export default function ThemeToggle() {
           className={`px-3 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
             theme === value
               ? 'bg-library text-white'
-              : 'text-ink/60 hover:text-ink'
+              : 'text-ink/70 hover:text-ink'
           }`}
         >
           {label}

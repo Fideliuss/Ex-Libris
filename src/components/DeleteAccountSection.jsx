@@ -28,7 +28,7 @@ export default function DeleteAccountSection() {
   return (
     <div className="pt-4 border-t border-ink/10">
       <h3 className="text-sm font-medium text-stamp mb-2">Zone dangereuse</h3>
-      <p className="text-sm text-ink/60 mb-3">
+      <p className="text-sm text-ink/70 mb-3">
         Supprime définitivement ton compte et toutes tes données (livres,
         partage, couvertures). Cette action est irréversible.
       </p>
@@ -48,7 +48,7 @@ export default function DeleteAccountSection() {
             type="button"
             onClick={() => setConfirming(false)}
             disabled={working}
-            className="text-xs text-ink/50 underline underline-offset-2 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+            className="text-xs text-ink/70 underline underline-offset-2 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
           >
             Annuler
           </button>

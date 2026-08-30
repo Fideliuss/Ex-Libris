@@ -359,7 +359,7 @@ export default function Stats() {
         <button
           type="button"
           onClick={goBack}
-          className="text-sm text-ink/60 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+          className="text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
         >
           ← Retour à la collection
         </button>
@@ -386,7 +386,7 @@ export default function Stats() {
             Erreur : {error}
           </p>
         ) : books.length === 0 ? (
-          <p className="text-sm text-ink/60 text-center py-16">
+          <p className="text-sm text-ink/70 text-center py-16">
             {isMine
               ? "Ajoute des livres à ta collection pour voir apparaître tes statistiques."
               : `${partner?.label} n'a pas encore de livres.`}
@@ -414,7 +414,7 @@ export default function Stats() {
                     <h2 className="font-serif text-lg mb-1">
                       Statut de la collection
                     </h2>
-                    <p className="text-sm text-ink/50 mb-3">
+                    <p className="text-sm text-ink/70 mb-3">
                       {totalCount} livre{totalCount > 1 ? 's' : ''} au total
                     </p>
                     <StatusStackedBar segments={statusSegments} />
@@ -460,25 +460,25 @@ export default function Stats() {
                               />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center">
-                                <span className="font-serif text-ink/30 text-xs px-1 text-center">
+                                <span className="font-serif text-ink/70 text-xs px-1 text-center">
                                   {book.title}
                                 </span>
                               </div>
                             )}
                           </div>
                           <div className="min-w-0">
-                            <p className="font-mono text-[10px] uppercase tracking-widest text-ink/40">
+                            <p className="font-mono text-[10px] uppercase tracking-widest text-ink/70">
                               {label}
                             </p>
                             <p className="font-serif text-base truncate">
                               {book.title}
                             </p>
                             {book.author && (
-                              <p className="text-xs text-ink/60 truncate">
+                              <p className="text-xs text-ink/70 truncate">
                                 {book.author}
                               </p>
                             )}
-                            <p className="text-xs text-ink/40 mt-0.5">
+                            <p className="text-xs text-ink/70 mt-0.5">
                               Terminé le {formatDate(book.date_finished)}
                             </p>
                           </div>
@@ -532,13 +532,13 @@ export default function Stats() {
                   <h2 className="font-serif text-lg mb-4">Rythme &amp; notes</h2>
 
                   {finishedInPeriod.length === 0 ? (
-                    <p className="text-sm text-ink/50">
+                    <p className="text-sm text-ink/70">
                       Aucun livre fini sur cette période.
                     </p>
                   ) : (
                     <div className="grid sm:grid-cols-2 gap-6">
                       <div>
-                        <h3 className="font-mono text-xs uppercase tracking-widest text-ink/50 mb-3">
+                        <h3 className="font-mono text-xs uppercase tracking-widest text-ink/70 mb-3">
                           Rythme de lecture
                         </h3>
                         <div className="grid grid-cols-2 gap-3">
@@ -564,7 +564,7 @@ export default function Stats() {
                           />
                         </div>
                         {paceStats.fastest && (
-                          <p className="text-xs text-ink/50 mt-3">
+                          <p className="text-xs text-ink/70 mt-3">
                             Lecture éclair :{' '}
                             <span className="text-ink/70">
                               {paceStats.fastest.book.title}
@@ -575,7 +575,7 @@ export default function Stats() {
                         )}
                         {paceStats.slowest &&
                           paceStats.slowest !== paceStats.fastest && (
-                            <p className="text-xs text-ink/50 mt-1">
+                            <p className="text-xs text-ink/70 mt-1">
                               Lecture marathon :{' '}
                               <span className="text-ink/70">
                                 {paceStats.slowest.book.title}
@@ -586,7 +586,7 @@ export default function Stats() {
                       </div>
 
                       <div>
-                        <h3 className="font-mono text-xs uppercase tracking-widest text-ink/50 mb-3">
+                        <h3 className="font-mono text-xs uppercase tracking-widest text-ink/70 mb-3">
                           Notes
                           {avgRating != null &&
                             ` · moyenne ${avgRating.toFixed(1)} ★`}
@@ -601,7 +601,7 @@ export default function Stats() {
                   <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
                     <h2 className="font-serif text-lg mb-4">Couvertures</h2>
                     {coverWallBooks.length === 0 ? (
-                      <p className="text-sm text-ink/50">
+                      <p className="text-sm text-ink/70">
                         Aucune couverture pour les livres finis sur cette
                         période.
                       </p>
@@ -629,7 +629,7 @@ export default function Stats() {
                           ))}
                         </div>
                         {finishedInPeriod.length > coverWallBooks.length && (
-                          <p className="text-xs text-ink/40 mt-3">
+                          <p className="text-xs text-ink/70 mt-3">
                             + {finishedInPeriod.length - coverWallBooks.length}{' '}
                             livre
                             {finishedInPeriod.length - coverWallBooks.length > 1
@@ -670,7 +670,7 @@ export default function Stats() {
                 <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
                   <h2 className="font-serif text-lg mb-4">Par tag</h2>
                   {isMine && (
-                    <p className="text-xs text-ink/50 mb-3">
+                    <p className="text-xs text-ink/70 mb-3">
                       Un tag qui est en fait un nom de collection éditeur (ex:
                       "folio sf") ? Clique "→ Collection" pour le déplacer sur
                       tous les livres concernés.
@@ -682,7 +682,7 @@ export default function Stats() {
                     </p>
                   )}
                   {tagStats.length === 0 ? (
-                    <p className="text-sm text-ink/50">
+                    <p className="text-sm text-ink/70">
                       Aucun tag pour l'instant.
                     </p>
                   ) : (
@@ -693,7 +693,7 @@ export default function Stats() {
                             <span className="text-sm truncate">
                               {entry.tag}
                             </span>
-                            <span className="font-mono text-xs text-ink/60 shrink-0">
+                            <span className="font-mono text-xs text-ink/70 shrink-0">
                               {entry.count}
                               {entry.avgRating != null &&
                                 ` · ★ ${entry.avgRating.toFixed(1)}`}
@@ -725,7 +725,7 @@ export default function Stats() {
                 <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
                   <h2 className="font-serif text-lg mb-4">Par éditeur</h2>
                   {publisherStats.length === 0 ? (
-                    <p className="text-sm text-ink/50">
+                    <p className="text-sm text-ink/70">
                       Aucun éditeur renseigné pour l'instant.
                     </p>
                   ) : (
@@ -750,7 +750,7 @@ export default function Stats() {
                 <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
                   <h2 className="font-serif text-lg mb-4">Par collection</h2>
                   {collectionStats.length === 0 ? (
-                    <p className="text-sm text-ink/50">
+                    <p className="text-sm text-ink/70">
                       Aucune collection renseignée pour l'instant.
                     </p>
                   ) : (
@@ -777,7 +777,7 @@ export default function Stats() {
                 <section className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6">
                   <h2 className="font-serif text-lg mb-4">Par série</h2>
                   {seriesStats.length === 0 ? (
-                    <p className="text-sm text-ink/50">
+                    <p className="text-sm text-ink/70">
                       Aucune série renseignée pour l'instant.
                     </p>
                   ) : (
@@ -813,7 +813,7 @@ function StatTile({ label, value, accent }) {
       <p className={`font-mono text-2xl font-semibold ${accent ?? 'text-ink'}`}>
         {value}
       </p>
-      <p className="text-xs text-ink/60 mt-1">{label}</p>
+      <p className="text-xs text-ink/70 mt-1">{label}</p>
     </div>
   )
 }
@@ -905,7 +905,7 @@ function ObjectiveCard({ viewedUserId, isMine, score, breakdown }) {
           {loadError}
         </p>
       ) : goal == null ? (
-        <p className="text-sm text-ink/50">Chargement…</p>
+        <p className="text-sm text-ink/70">Chargement…</p>
       ) : editing ? (
         <div className="flex items-center gap-2">
           <input
@@ -928,7 +928,7 @@ function ObjectiveCard({ viewedUserId, isMine, score, breakdown }) {
           <button
             type="button"
             onClick={() => setEditing(false)}
-            className="text-xs text-ink/50 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+            className="text-xs text-ink/70 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
           >
             Annuler
           </button>
@@ -937,7 +937,7 @@ function ObjectiveCard({ viewedUserId, isMine, score, breakdown }) {
         <>
           <p className="font-mono text-3xl font-semibold text-library">
             {formatScore(score)}
-            <span className="text-lg text-ink/40 font-normal"> / {goal}</span>
+            <span className="text-lg text-ink/70 font-normal"> / {goal}</span>
           </p>
           <div className="h-3 w-full rounded-full bg-ink/5 overflow-hidden mt-3">
             <div
@@ -945,12 +945,12 @@ function ObjectiveCard({ viewedUserId, isMine, score, breakdown }) {
               style={{ width: `${pct}%` }}
             />
           </div>
-          <p className="text-xs text-ink/50 mt-2">
+          <p className="text-xs text-ink/70 mt-2">
             {pct}% de l'objectif · 1 livre = 1 pt, BD/Comics = 0,5 pt, Manga =
             1/3 pt
           </p>
           {breakdown.length > 0 && (
-            <ul className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-xs text-ink/60">
+            <ul className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-xs text-ink/70">
               {breakdown.map((entry) => (
                 <li key={entry.key}>
                   {entry.count} {entry.label.toLowerCase()}
@@ -1070,7 +1070,7 @@ function GoalHistorySection({ viewedUserId, isMine, books }) {
           {loadError}
         </p>
       ) : goals == null ? (
-        <p className="text-sm text-ink/50">Chargement…</p>
+        <p className="text-sm text-ink/70">Chargement…</p>
       ) : (
         <>
           <ul className="space-y-3">
@@ -1107,13 +1107,13 @@ function GoalHistorySection({ viewedUserId, isMine, books }) {
                         <button
                           type="button"
                           onClick={() => setEditingYear(null)}
-                          className="text-xs text-ink/50 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                          className="text-xs text-ink/70 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
                         >
                           Annuler
                         </button>
                       </div>
                     ) : (
-                      <span className="font-mono text-xs text-ink/60">
+                      <span className="font-mono text-xs text-ink/70">
                         {formatScore(row.score)}
                         {row.goal != null ? ` / ${row.goal}` : ''}
                       </span>
@@ -1177,7 +1177,7 @@ function PaginatedList({ items, children }) {
           >
             ← Précédent
           </button>
-          <span className="text-xs text-ink/40 font-mono">
+          <span className="text-xs text-ink/70 font-mono">
             {clampedPage + 1} / {pageCount}
           </span>
           <button
@@ -1268,7 +1268,7 @@ function RenameableStatRow({
         ) : (
           <span className="text-sm truncate">{name}</span>
         )}
-        <span className="font-mono text-xs text-ink/60 shrink-0">{count}</span>
+        <span className="font-mono text-xs text-ink/70 shrink-0">{count}</span>
       </div>
       <CountBar count={count} max={max} colorClass={colorClass} />
       {editing ? (
@@ -1300,7 +1300,7 @@ function RenameableStatRow({
             <button
               type="button"
               onClick={cancel}
-              className="text-xs text-ink/50 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+              className="text-xs text-ink/70 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
             >
               Annuler
             </button>

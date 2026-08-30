@@ -188,7 +188,7 @@ export default function ImportPanel() {
           </ul>
 
           {!hasWork ? (
-            <p className="text-sm text-ink/60">
+            <p className="text-sm text-ink/70">
               Rien à faire — ta collection est déjà à jour avec ce fichier.
             </p>
           ) : (
@@ -203,7 +203,7 @@ export default function ImportPanel() {
           <button
             type="button"
             onClick={() => setStep('idle')}
-            className="block text-sm text-ink/50 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+            className="block text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
           >
             Choisir un autre fichier
           </button>
@@ -211,7 +211,7 @@ export default function ImportPanel() {
       )}
 
       {step === 'importing' && (
-        <p className="font-mono text-sm text-ink/60 text-center py-4">
+        <p className="font-mono text-sm text-ink/70 text-center py-4">
           Import en cours…
         </p>
       )}

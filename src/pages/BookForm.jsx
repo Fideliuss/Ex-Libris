@@ -217,7 +217,7 @@ export default function BookForm() {
         <button
           type="button"
           onClick={goBack}
-          className="text-sm text-ink/60 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+          className="text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
         >
           {isEdit ? '← Retour à la fiche' : '← Retour à la collection'}
         </button>
@@ -383,7 +383,7 @@ export default function BookForm() {
                     ? 'text-stamp'
                     : lookupMessage.type === 'success'
                       ? 'text-library'
-                      : 'text-ink/60'
+                      : 'text-ink/70'
                 }`}
               >
                 {lookupMessage.text}
@@ -401,7 +401,7 @@ export default function BookForm() {
                     className="w-full h-full object-contain"
                   />
                 ) : (
-                  <span className="text-ink/30 text-xs text-center px-1">
+                  <span className="text-ink/70 text-xs text-center px-1">
                     Aucune couverture
                   </span>
                 )}
@@ -441,7 +441,7 @@ export default function BookForm() {
                     <button
                       type="button"
                       onClick={() => set('cover_url', '')}
-                      className="text-sm text-ink/50 hover:text-stamp underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                      className="text-sm text-ink/70 hover:text-stamp underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
                     >
                       Retirer
                     </button>
