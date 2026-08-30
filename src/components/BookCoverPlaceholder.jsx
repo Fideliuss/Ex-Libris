@@ -6,19 +6,19 @@
 export default function BookCoverPlaceholder({ title, author, volume }) {
   return (
     <div className="w-full h-full bg-cover flex items-center justify-center">
-      <div className="absolute inset-3 border-t border-b border-ink/80 flex flex-col items-center justify-between py-3">
-        <span className="font-sans text-[9px] tracking-[0.14em] uppercase text-ink/80 text-center px-1">
+      <div className="absolute inset-3 border-t border-b border-ink-on-cover/80 flex flex-col items-center justify-between py-3">
+        <span className="font-sans text-[9px] tracking-[0.14em] uppercase text-ink-on-cover/80 text-center px-1">
           {author}
         </span>
         <span className="flex flex-col items-center gap-1 px-1">
-          <span className="font-serif italic text-stamp text-xs leading-snug text-center line-clamp-3">
+          <span className="font-serif italic text-stamp-fill text-xs leading-snug text-center line-clamp-3">
             {title}
           </span>
           {volume != null && (
-            <span className="font-serif italic text-brass text-[11px]">Tome {volume}</span>
+            <span className="font-serif italic text-brass-on-cover text-[11px]">Tome {volume}</span>
           )}
         </span>
-        <span className="font-sans text-[8px] tracking-[0.18em] uppercase text-ink/70">
+        <span className="font-sans text-[8px] tracking-[0.18em] uppercase text-ink-on-cover/70">
           Ex Libris
         </span>
       </div>

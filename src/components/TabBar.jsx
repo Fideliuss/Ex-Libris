@@ -15,6 +15,7 @@ export default function TabBar({ tabs, active, onChange, ariaLabel }) {
           type="button"
           role="tab"
           aria-selected={active === tab.key}
+          title={tab.title}
           onClick={() => onChange(tab.key)}
           className={tabClass(active === tab.key)}
         >

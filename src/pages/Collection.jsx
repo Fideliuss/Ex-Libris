@@ -502,8 +502,10 @@ export default function Collection() {
                   key: 'todo',
                   label:
                     incompleteBooks.length > 0
-                      ? `À traiter (${incompleteBooks.length})`
-                      : 'À traiter',
+                      ? `À compléter (${incompleteBooks.length})`
+                      : 'À compléter',
+                  title:
+                    'Livres sans couverture, auteur, éditeur, pages ou résumé',
                 },
               ]}
               active={collectionTab}
@@ -645,7 +647,7 @@ export default function Collection() {
                   {collectionTab === 'todo' ? (
                     <>
                       {visibleBooks.length} livre
-                      {visibleBooks.length > 1 ? 's' : ''} à traiter
+                      {visibleBooks.length > 1 ? 's' : ''} à compléter
                     </>
                   ) : (
                     <>
