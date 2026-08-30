@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { navigateWithViewTransition } from '../lib/navigation'
+import BookCoverPlaceholder from '../components/BookCoverPlaceholder'
 
 const LANG_STORAGE_KEY = 'landing-lang'
 
@@ -301,54 +302,115 @@ function Hero() {
   )
 }
 
-// Aperçu du produit plutôt que du design system : deux mini-cartes qui
-// reprennent le vrai vocabulaire visuel de BookCard (tampon "Lu", badge de
-// statut plein), sur des livres d'exemple statiques — jamais de vraie
-// donnée ni de logique de collection ici.
+// Aperçu du produit plutôt que du design system : une étagère de livres
+// d'exemple statiques (jamais de vraie donnée ni de logique de collection
+// ici), qui reprend le vrai vocabulaire visuel de l'app — couverture
+// BookCoverPlaceholder, tampon "Lu", ruban "Wishlist", bordure colorée par
+// statut — avec une tranche et un fil de pages pour lire comme un objet
+// plutôt qu'une vignette plate.
+const PREVIEW_BOOKS = [
+  { title: 'Fondation', author: 'Isaac Asimov', status: 'read' },
+  { title: 'Dune', author: 'Frank Herbert', status: 'reading' },
+  { title: 'One Piece', author: 'Eiichiro Oda', status: 'read' },
+  { title: 'Watchmen', author: 'Alan Moore', status: 'read' },
+  { title: 'Le Petit Prince', author: 'A. de Saint-Exupéry', status: 'to-read' },
+  { title: 'Astérix chez les Pictes', author: 'Jean-Yves Ferri', status: 'wishlist' },
+  { title: 'Sapiens', author: 'Yuval Noah Harari', status: 'to-read' },
+  { title: 'Les Misérables', author: 'Victor Hugo', status: 'read' },
+]
+
+const STATUS_ACCENT = {
+  read: 'var(--color-library)',
+  reading: 'var(--color-reading)',
+  'to-read': 'var(--color-toread)',
+  wishlist: 'var(--color-wishlist)',
+}
+
+// Décale une colonne verticalement en fonction du scroll de la page (pas
+// une animation qui tourne seule) : `maxShift` est le déplacement maximum
+// (px) atteint quand le bloc a fini de traverser la fenêtre. Ignoré si
+// l'utilisateur préfère moins d'animations.
+function useScrollParallax(containerRef, colRef, maxShift) {
+  useEffect(() => {
+    const container = containerRef.current
+    const col = colRef.current
+    if (!container || !col) return
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+
+    let frame = null
+    function update() {
+      frame = null
+      const rect = container.getBoundingClientRect()
+      const total = rect.height + window.innerHeight
+      const scrolled = window.innerHeight - rect.top
+      const progress = Math.min(1, Math.max(0, scrolled / total))
+      col.style.transform = `translateY(-${progress * maxShift}px)`
+    }
+    function onScroll() {
+      if (frame === null) frame = requestAnimationFrame(update)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    update()
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      if (frame !== null) cancelAnimationFrame(frame)
+    }
+  }, [containerRef, colRef, maxShift])
+}
+
 function ProductPreview() {
+  const containerRef = useRef(null)
+  const col1Ref = useRef(null)
+  const col2Ref = useRef(null)
+  useScrollParallax(containerRef, col1Ref, 90)
+  useScrollParallax(containerRef, col2Ref, 170)
+
+  const col1 = Array(3).fill(PREVIEW_BOOKS.slice(0, 4)).flat()
+  const col2 = Array(3).fill(PREVIEW_BOOKS.slice(4, 8)).flat()
+
   return (
-    <div className="flex justify-center gap-5 flex-wrap">
-      <MiniBookCard
-        title="Fondation"
-        author="Isaac Asimov"
-        rotate="-rotate-3"
-        stamped
-      />
-      <MiniBookCard
-        title="Dune"
-        author="Frank Herbert"
-        rotate="rotate-2"
-        badge="En cours"
-        badgeClass="bg-reading"
-      />
+    <div ref={containerRef} className="shelf-fade relative h-[420px] rounded-lg bg-paper overflow-hidden">
+      <div className="flex gap-4 justify-center h-full px-4 pt-6">
+        <div ref={col1Ref} className="flex flex-col gap-4 w-36 shrink-0">
+          {col1.map((b, i) => (
+            <MiniBook key={i} {...b} />
+          ))}
+        </div>
+        <div ref={col2Ref} className="flex flex-col gap-4 w-36 shrink-0">
+          {col2.map((b, i) => (
+            <MiniBook key={i} {...b} />
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
 
-function MiniBookCard({ title, author, rotate, stamped, badge, badgeClass }) {
+function MiniBook({ title, author, status }) {
+  const accent = STATUS_ACCENT[status]
   return (
-    <div
-      className={`w-32 bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm overflow-hidden ${rotate}`}
-    >
-      <div className="relative aspect-2/3 bg-paper flex items-center justify-center px-2">
-        {stamped && (
-          <span className="absolute top-2 right-2 -rotate-6 border-2 border-library text-library font-mono text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-sm bg-card/90">
-            Lu
-          </span>
-        )}
-        <span className="font-serif text-ink/30 text-xs text-center">{title}</span>
+    <div className="flex shrink-0 rounded-sm overflow-hidden drop-shadow-lg">
+      <div className="w-2 shrink-0" style={{ background: accent, filter: 'brightness(0.72)' }} />
+      <div className="relative flex-1 min-w-0 border-t-4 bg-card" style={{ borderTopColor: accent }}>
+        <div className="relative aspect-2/3">
+          {status === 'read' && (
+            <span className="absolute top-1.5 right-1.5 -rotate-6 border border-library text-library font-mono text-[8px] font-bold uppercase px-1 py-px rounded-sm bg-cover/90 z-10">
+              Lu
+            </span>
+          )}
+          {status === 'wishlist' && (
+            <span className="absolute top-1.5 -left-7 w-24 -rotate-45 bg-wishlist text-white font-mono text-[7px] font-bold uppercase text-center py-px z-10">
+              Wishlist
+            </span>
+          )}
+          <BookCoverPlaceholder title={title} author={author} />
+        </div>
+        <div className="p-2">
+          <p className="font-serif text-xs leading-snug truncate">{title}</p>
+          <p className="text-[10px] text-ink/60 truncate">{author}</p>
+        </div>
       </div>
-      <div className="p-2.5">
-        <p className="font-serif text-sm leading-snug truncate">{title}</p>
-        <p className="text-xs text-ink/60 truncate">{author}</p>
-        {badge && (
-          <span
-            className={`inline-block mt-1.5 font-mono text-[9px] uppercase rounded-full px-1.5 py-0.5 text-white ${badgeClass}`}
-          >
-            {badge}
-          </span>
-        )}
-      </div>
+      <div className="w-1 shrink-0 book-pages" />
     </div>
   )
 }

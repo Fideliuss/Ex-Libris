@@ -14,6 +14,7 @@ import WishlistRibbon from '../components/WishlistRibbon'
 import { navigateWithViewTransition, useGoBack } from '../lib/navigation'
 import ReadingBookmark from '../components/ReadingBookmark'
 import LoadingScreen from '../components/LoadingScreen'
+import BookCoverPlaceholder from '../components/BookCoverPlaceholder'
 
 export default function BookDetail() {
   const { id } = useParams()
@@ -213,11 +214,7 @@ export default function BookDetail() {
                   />
                 </button>
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="font-serif text-ink/30 text-sm px-4 text-center">
-                    {book.title}
-                  </span>
-                </div>
+                <BookCoverPlaceholder title={book.title} author={book.author} />
               )}
             </div>
 

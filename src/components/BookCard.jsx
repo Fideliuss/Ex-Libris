@@ -7,6 +7,7 @@ import {
 import { BOOK_TYPES } from '../lib/bookTypes'
 import WishlistRibbon from './WishlistRibbon'
 import ReadingBookmark from './ReadingBookmark'
+import BookCoverPlaceholder from './BookCoverPlaceholder'
 import { navigateWithViewTransition } from '../lib/navigation'
 
 export default function BookCard({
@@ -79,9 +80,7 @@ export default function BookCard({
             className="w-full h-full object-contain"
           />
         ) : (
-          <span className="font-serif text-ink/30 text-sm px-4 text-center">
-            {book.title}
-          </span>
+          <BookCoverPlaceholder title={book.title} author={book.author} />
         )}
         {book.type !== 'book' && (
           <span className="absolute bottom-2 left-2 bg-library text-white font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-sm">

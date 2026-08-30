@@ -34,6 +34,11 @@
      séparés plutôt que de réutiliser --color-library tel quel. */
   --color-toread: #5c3a63;
   --color-read: #2f4a3c;
+
+  /* Couverture "sans image" (BookCoverPlaceholder) : un livre reste un objet
+     physique, sa couleur ne doit pas s'inverser avec le thème — fixe dans
+     les deux cas, comme les tokens de badge ci-dessus. */
+  --color-cover: #f6f0e2;
 }
 
 /* Mode sombre : palette "bibliothèque de nuit" (brun/charbon chaud, pas un
@@ -67,6 +72,38 @@
 
 body {
   @apply bg-paper text-ink font-sans antialiased;
+}
+
+/* Aperçu produit du hero (landing) : fondu haut/bas pour que l'étagère ne
+   coupe pas net, et texture de "fil de pages" sur la tranche droite des
+   mini-livres. Couleur fixe (comme --color-cover), pas de teinte suivant le
+   thème. */
+.shelf-fade::before,
+.shelf-fade::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 72px;
+  z-index: 2;
+  pointer-events: none;
+}
+.shelf-fade::before {
+  top: 0;
+  background: linear-gradient(var(--color-paper), transparent);
+}
+.shelf-fade::after {
+  bottom: 0;
+  background: linear-gradient(transparent, var(--color-paper));
+}
+
+.book-pages {
+  background-color: var(--color-cover);
+  background-image: repeating-linear-gradient(
+    180deg,
+    rgba(30, 43, 58, 0.1) 0 1px,
+    transparent 1px 3px
+  );
 }
 
 @media (prefers-reduced-motion: no-preference) {
