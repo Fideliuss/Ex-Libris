@@ -229,13 +229,19 @@ export default function BookDetail() {
     : []
 
   const visibleSiblings = book?.series ? seriesSiblings : []
+  const tomeSlots = buildTomeSlots(visibleSiblings)
+  // Sans series_index sur au moins un tome, l'ordre des siblings est
+  // arbitraire (celui de la base) : naviguer "précédent/suivant" dedans
+  // serait aussi trompeur que l'ancienne fraction "12/17", donc on
+  // désactive la navigation plutôt que de laisser croire à un ordre réel.
+  const hasOrder = tomeSlots.length > 0
   const siblingIndex = visibleSiblings.findIndex((s) => s.id === id)
-  const prevSibling = siblingIndex > 0 ? visibleSiblings[siblingIndex - 1] : null
+  const prevSibling =
+    hasOrder && siblingIndex > 0 ? visibleSiblings[siblingIndex - 1] : null
   const nextSibling =
-    siblingIndex >= 0 && siblingIndex < visibleSiblings.length - 1
+    hasOrder && siblingIndex >= 0 && siblingIndex < visibleSiblings.length - 1
       ? visibleSiblings[siblingIndex + 1]
       : null
-  const tomeSlots = buildTomeSlots(visibleSiblings)
 
   // replace: true pour ne pas empiler un tome par hop dans l'historique —
   // sinon "Retour à la collection" doit défaire toute la chaîne de tomes
@@ -404,35 +410,37 @@ export default function BookDetail() {
               )}
               {visibleSiblings.length > 1 && (
                 <div className="flex items-center gap-2 mt-1 max-w-full">
-                  <button
-                    type="button"
-                    onClick={() => goToSibling(prevSibling, 'back')}
-                    disabled={!prevSibling}
-                    aria-label="Tome précédent"
-                    className="shrink-0 text-sm text-library hover:text-library/80 disabled:text-ink/20 disabled:cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
-                  >
-                    ‹
-                  </button>
-                  {tomeSlots.length > 0 ? (
-                    <TomeChips
-                      slots={tomeSlots}
-                      currentIndex={book.series_index}
-                      onSelect={handleChipSelect}
-                    />
+                  {hasOrder ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => goToSibling(prevSibling, 'back')}
+                        disabled={!prevSibling}
+                        aria-label="Tome précédent"
+                        className="shrink-0 text-sm text-library hover:text-library/80 disabled:text-ink/20 disabled:cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                      >
+                        ‹
+                      </button>
+                      <TomeChips
+                        slots={tomeSlots}
+                        currentIndex={book.series_index}
+                        onSelect={handleChipSelect}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => goToSibling(nextSibling, 'forward')}
+                        disabled={!nextSibling}
+                        aria-label="Tome suivant"
+                        className="shrink-0 text-sm text-library hover:text-library/80 disabled:text-ink/20 disabled:cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                      >
+                        ›
+                      </button>
+                    </>
                   ) : (
                     <span className="font-mono text-[11px] text-ink/70">
-                      {siblingIndex + 1} / {visibleSiblings.length}
+                      {visibleSiblings.length} tomes possédés
                     </span>
                   )}
-                  <button
-                    type="button"
-                    onClick={() => goToSibling(nextSibling, 'forward')}
-                    disabled={!nextSibling}
-                    aria-label="Tome suivant"
-                    className="shrink-0 text-sm text-library hover:text-library/80 disabled:text-ink/20 disabled:cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
-                  >
-                    ›
-                  </button>
                 </div>
               )}
               {book.universe && (
