@@ -85,7 +85,7 @@ function TomeChips({ slots, currentIndex, onSelect }) {
       ref={scrollRef}
       role="group"
       aria-label="Tomes de la série"
-      className="flex items-center gap-1 overflow-x-auto min-w-0 flex-1 py-0.5"
+      className="flex items-center gap-1 overflow-x-auto min-w-0 flex-1 py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       {slots.map((slot) => {
         if (slot.type === 'ellipsis') {
