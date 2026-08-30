@@ -15,9 +15,7 @@ export default function BookCoverPlaceholder({ title, author, volume }) {
             {title}
           </span>
           {volume != null && (
-            <span className="font-mono text-[10px] font-semibold text-brass">
-              Tome {volume}
-            </span>
+            <span className="font-serif italic text-brass text-[11px]">Tome {volume}</span>
           )}
         </span>
         <span className="font-sans text-[8px] tracking-[0.18em] uppercase text-ink/40">

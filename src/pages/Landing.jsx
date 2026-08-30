@@ -268,12 +268,17 @@ function LangSwitch() {
   )
 }
 
+// Le rayonnage sert de fond plein écran (pas un bloc sous le texte) : le
+// texte du hero flotte par-dessus dans un panneau semi-transparent flouté,
+// comme posé sur l'étagère plutôt qu'empilé au-dessus.
 function Hero() {
   const t = useT()
   return (
-    <section id="top" className="pt-20 pb-24">
-      <div className="max-w-5xl mx-auto px-6 text-center">
-        <p className="hero-in font-yuyu text-xs tracking-widest text-library uppercase mb-4">
+    <section id="top" className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
+      <ProductPreview />
+
+      <div className="hero-in relative z-10 max-w-2xl mx-6 px-8 py-10 text-center bg-paper/85 backdrop-blur-sm rounded-2xl shadow-xl">
+        <p className="hero-in font-mono text-xs tracking-widest text-library uppercase mb-4">
           {t.hero.eyebrow}
         </p>
         <h1
@@ -295,10 +300,6 @@ function Hero() {
             {t.hero.cta}
           </LoginCta>
         </div>
-      </div>
-
-      <div className="hero-in mt-16" style={{ animationDelay: '320ms' }}>
-        <ProductPreview />
       </div>
     </section>
   )
@@ -382,13 +383,17 @@ function ProductPreview() {
   useShelfParallax(containerRef, colRefs, COLUMN_SPEEDS)
 
   const columns = COLUMN_SPEEDS.map((_, i) =>
-    Array(4)
+    Array(6)
       .fill(PREVIEW_BOOKS.filter((_, idx) => idx % COLUMN_SPEEDS.length === i))
       .flat(),
   )
 
   return (
-    <div ref={containerRef} className="shelf-fade relative w-full h-[480px] bg-paper overflow-hidden">
+    <div
+      ref={containerRef}
+      aria-hidden="true"
+      className="shelf-fade absolute inset-0 bg-paper overflow-hidden"
+    >
       <div className="flex gap-4 justify-center h-full px-4 pt-6">
         {columns.map((col, i) => (
           <div

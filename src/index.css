@@ -8,10 +8,12 @@
      (labels/mise en avant légère), 600 (boutons/actions). */
   --font-serif: 'Fraunces', Georgia, serif;
   --font-sans: 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
-  /* Test ponctuel (landing, accroche du hero uniquement) — pas encore un
-     choix retenu pour le design system. */
-  --font-yuyu: 'Yuyu', 'JetBrains Mono', ui-monospace, monospace;
+  /* Test en cours : Playwrite US Modern à la place de JetBrains Mono sur
+     tous les labels/badges/petites capitales de l'app — pas encore un choix
+     retenu pour le design system. Ne va que jusqu'au poids 400 (pas de
+     variante grasse native), donc les labels en font-bold/font-semibold
+     retombent sur le poids max disponible. */
+  --font-mono: 'Playwrite US Modern', 'JetBrains Mono', ui-monospace, Consolas, monospace;
 
   --color-paper: #eae1cb;
   --color-card: #fbf7ed;
