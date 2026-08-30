@@ -186,7 +186,7 @@ export default function BookForm() {
       purchase_date: book.purchase_date || null,
       series: book.series?.trim() || null,
       series_index: book.series_index === '' ? null : Number(book.series_index),
-      universe: book.type === 'comics' ? book.universe?.trim() || null : null,
+      universe: book.universe?.trim() || null,
     }
     try {
       if (isEdit) {
@@ -396,16 +396,14 @@ export default function BookForm() {
               </Field>
             </div>
 
-            {book.type === 'comics' && (
-              <Field label="Univers / Équipe">
-                <input
-                  value={book.universe ?? ''}
-                  onChange={(e) => set('universe', e.target.value)}
-                  placeholder="Avengers, X-Men…"
-                  className={inputClass}
-                />
-              </Field>
-            )}
+            <Field label="Univers">
+              <input
+                value={book.universe ?? ''}
+                onChange={(e) => set('universe', e.target.value)}
+                placeholder="Hercule Poirot, Avengers, X-Men…"
+                className={inputClass}
+              />
+            </Field>
 
             <Field label="Résumé">
               <textarea
@@ -667,6 +665,13 @@ function Field({ label, required, children }) {
 // réduire la densité visuelle sans rien cacher définitivement.
 function FormSection({ title, defaultOpen = false, children }) {
   const [open, setOpen] = useState(defaultOpen)
+  // grid-template-rows en classe Tailwind (grid-rows-[0fr]/[1fr]) ne se
+  // recalculait pas de façon fiable au toggle dans les tests : la même
+  // propriété posée en style inline fonctionne correctement, donc on passe
+  // par là plutôt que par une classe pour cette propriété précise.
+  const reduceMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
   return (
     <div className="border-t border-ink/10 pt-5">
       <button
@@ -680,7 +685,17 @@ function FormSection({ title, defaultOpen = false, children }) {
           {open ? '▴' : '▾'}
         </span>
       </button>
-      {open && <div className="space-y-5 mt-4">{children}</div>}
+      <div
+        className="grid"
+        style={{
+          gridTemplateRows: open ? '1fr' : '0fr',
+          transition: reduceMotion ? 'none' : 'grid-template-rows 300ms ease-out',
+        }}
+      >
+        <div className="overflow-hidden" inert={!open}>
+          <div className="space-y-5 pt-4">{children}</div>
+        </div>
+      </div>
     </div>
   )
 }
