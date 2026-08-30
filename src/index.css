@@ -9,6 +9,9 @@
   --font-serif: 'Fraunces', Georgia, serif;
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  /* Test ponctuel (landing, accroche du hero uniquement) — pas encore un
+     choix retenu pour le design system. */
+  --font-yuyu: 'Yuyu', 'JetBrains Mono', ui-monospace, monospace;
 
   --color-paper: #eae1cb;
   --color-card: #fbf7ed;

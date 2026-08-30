@@ -80,7 +80,11 @@ export default function BookCard({
             className="w-full h-full object-contain"
           />
         ) : (
-          <BookCoverPlaceholder title={book.title} author={book.author} />
+          <BookCoverPlaceholder
+            title={book.title}
+            author={book.author}
+            volume={isMangaVolume ? book.series_index : null}
+          />
         )}
         {book.type !== 'book' && (
           <span className="absolute bottom-2 left-2 bg-library text-white font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-sm">

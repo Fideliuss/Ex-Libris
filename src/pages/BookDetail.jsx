@@ -214,7 +214,11 @@ export default function BookDetail() {
                   />
                 </button>
               ) : (
-                <BookCoverPlaceholder title={book.title} author={book.author} />
+                <BookCoverPlaceholder
+                  title={book.title}
+                  author={book.author}
+                  volume={book.type === 'manga' && book.series ? book.series_index : null}
+                />
               )}
             </div>
 

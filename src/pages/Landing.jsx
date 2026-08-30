@@ -271,28 +271,30 @@ function LangSwitch() {
 function Hero() {
   const t = useT()
   return (
-    <section id="top" className="max-w-5xl mx-auto px-6 pt-20 pb-24 text-center">
-      <p className="hero-in font-mono text-xs tracking-widest text-library uppercase mb-4">
-        {t.hero.eyebrow}
-      </p>
-      <h1
-        className="hero-in font-serif text-4xl sm:text-6xl font-semibold leading-tight"
-        style={{ animationDelay: '80ms' }}
-      >
-        {t.hero.titleLine1}
-        <br />
-        {t.hero.titleLine2}
-      </h1>
-      <p
-        className="hero-in text-ink/60 text-lg mt-6 max-w-xl mx-auto"
-        style={{ animationDelay: '160ms' }}
-      >
-        {t.hero.subtitle}
-      </p>
-      <div className="hero-in mt-8" style={{ animationDelay: '240ms' }}>
-        <LoginCta className="inline-block rounded-sm bg-library text-white font-medium px-6 py-3 hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library">
-          {t.hero.cta}
-        </LoginCta>
+    <section id="top" className="pt-20 pb-24">
+      <div className="max-w-5xl mx-auto px-6 text-center">
+        <p className="hero-in font-yuyu text-xs tracking-widest text-library uppercase mb-4">
+          {t.hero.eyebrow}
+        </p>
+        <h1
+          className="hero-in font-serif text-4xl sm:text-6xl font-semibold leading-tight"
+          style={{ animationDelay: '80ms' }}
+        >
+          {t.hero.titleLine1}
+          <br />
+          {t.hero.titleLine2}
+        </h1>
+        <p
+          className="hero-in text-ink/60 text-lg mt-6 max-w-xl mx-auto"
+          style={{ animationDelay: '160ms' }}
+        >
+          {t.hero.subtitle}
+        </p>
+        <div className="hero-in mt-8" style={{ animationDelay: '240ms' }}>
+          <LoginCta className="inline-block rounded-sm bg-library text-white font-medium px-6 py-3 hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library">
+            {t.hero.cta}
+          </LoginCta>
+        </div>
       </div>
 
       <div className="hero-in mt-16" style={{ animationDelay: '320ms' }}>
@@ -317,6 +319,14 @@ const PREVIEW_BOOKS = [
   { title: 'Astérix chez les Pictes', author: 'Jean-Yves Ferri', status: 'wishlist' },
   { title: 'Sapiens', author: 'Yuval Noah Harari', status: 'to-read' },
   { title: 'Les Misérables', author: 'Victor Hugo', status: 'read' },
+  { title: 'Naruto', author: 'Masashi Kishimoto', status: 'reading' },
+  { title: 'V pour Vendetta', author: 'Alan Moore', status: 'wishlist' },
+  { title: '1984', author: 'George Orwell', status: 'read' },
+  { title: 'Le Comte de Monte-Cristo', author: 'Alexandre Dumas', status: 'to-read' },
+  { title: "L'Étranger", author: 'Albert Camus', status: 'read' },
+  { title: 'Le Trône de Fer', author: 'George R. R. Martin', status: 'wishlist' },
+  { title: 'Blacksad', author: 'Juan Díaz Canales', status: 'read' },
+  { title: "Le Chant d'Achille", author: 'Madeline Miller', status: 'reading' },
 ]
 
 const STATUS_ACCENT = {
@@ -326,15 +336,21 @@ const STATUS_ACCENT = {
   wishlist: 'var(--color-wishlist)',
 }
 
-// Décale une colonne verticalement en fonction du scroll de la page (pas
-// une animation qui tourne seule) : `maxShift` est le déplacement maximum
-// (px) atteint quand le bloc a fini de traverser la fenêtre. Ignoré si
-// l'utilisateur préfère moins d'animations.
-function useScrollParallax(containerRef, colRef, maxShift) {
+// 6 colonnes sur grand écran, moins sur les écrans étroits (chacune reste
+// assez large pour rester lisible) — vitesse de parallaxe différente par
+// colonne pour un effet moins mécanique qu'un simple binôme.
+const COLUMN_SPEEDS = [70, 190, 110, 250, 150, 220]
+const COLUMN_VISIBILITY = ['flex', 'flex', 'hidden md:flex', 'hidden md:flex', 'hidden lg:flex', 'hidden lg:flex']
+
+// Décale chaque colonne verticalement en fonction du scroll de la page (pas
+// une animation qui tourne seule), à sa propre vitesse (`speeds[i]` = le
+// déplacement max en px une fois le bloc entièrement traversé). Un seul
+// listener pour toutes les colonnes. Ignoré si l'utilisateur préfère moins
+// d'animations.
+function useShelfParallax(containerRef, colRefs, speeds) {
   useEffect(() => {
     const container = containerRef.current
-    const col = colRef.current
-    if (!container || !col) return
+    if (!container) return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
 
     let frame = null
@@ -344,7 +360,9 @@ function useScrollParallax(containerRef, colRef, maxShift) {
       const total = rect.height + window.innerHeight
       const scrolled = window.innerHeight - rect.top
       const progress = Math.min(1, Math.max(0, scrolled / total))
-      col.style.transform = `translateY(-${progress * maxShift}px)`
+      colRefs.current.forEach((col, i) => {
+        if (col) col.style.transform = `translateY(-${progress * speeds[i]}px)`
+      })
     }
     function onScroll() {
       if (frame === null) frame = requestAnimationFrame(update)
@@ -355,32 +373,36 @@ function useScrollParallax(containerRef, colRef, maxShift) {
       window.removeEventListener('scroll', onScroll)
       if (frame !== null) cancelAnimationFrame(frame)
     }
-  }, [containerRef, colRef, maxShift])
+  }, [containerRef, colRefs, speeds])
 }
 
 function ProductPreview() {
   const containerRef = useRef(null)
-  const col1Ref = useRef(null)
-  const col2Ref = useRef(null)
-  useScrollParallax(containerRef, col1Ref, 90)
-  useScrollParallax(containerRef, col2Ref, 170)
+  const colRefs = useRef([])
+  useShelfParallax(containerRef, colRefs, COLUMN_SPEEDS)
 
-  const col1 = Array(3).fill(PREVIEW_BOOKS.slice(0, 4)).flat()
-  const col2 = Array(3).fill(PREVIEW_BOOKS.slice(4, 8)).flat()
+  const columns = COLUMN_SPEEDS.map((_, i) =>
+    Array(4)
+      .fill(PREVIEW_BOOKS.filter((_, idx) => idx % COLUMN_SPEEDS.length === i))
+      .flat(),
+  )
 
   return (
-    <div ref={containerRef} className="shelf-fade relative h-[420px] rounded-lg bg-paper overflow-hidden">
+    <div ref={containerRef} className="shelf-fade relative w-full h-[480px] bg-paper overflow-hidden">
       <div className="flex gap-4 justify-center h-full px-4 pt-6">
-        <div ref={col1Ref} className="flex flex-col gap-4 w-36 shrink-0">
-          {col1.map((b, i) => (
-            <MiniBook key={i} {...b} />
-          ))}
-        </div>
-        <div ref={col2Ref} className="flex flex-col gap-4 w-36 shrink-0">
-          {col2.map((b, i) => (
-            <MiniBook key={i} {...b} />
-          ))}
-        </div>
+        {columns.map((col, i) => (
+          <div
+            key={i}
+            ref={(el) => {
+              colRefs.current[i] = el
+            }}
+            className={`flex-col gap-4 w-36 shrink-0 ${COLUMN_VISIBILITY[i]}`}
+          >
+            {col.map((b, j) => (
+              <MiniBook key={j} {...b} />
+            ))}
+          </div>
+        ))}
       </div>
     </div>
   )
