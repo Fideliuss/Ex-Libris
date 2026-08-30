@@ -191,8 +191,11 @@ export default function Landing() {
     <LanguageContext.Provider value={{ lang, setLang }}>
       <div className="min-h-svh">
         <Nav />
-        <Hero />
-        <Features />
+        <div className="relative overflow-hidden">
+          <ProductPreview />
+          <Hero />
+          <Features />
+        </div>
         <HowItWorks />
         <Pricing />
         <FinalCta />
@@ -268,16 +271,15 @@ function LangSwitch() {
   )
 }
 
-// Le rayonnage sert de fond plein écran (pas un bloc sous le texte) : le
-// texte du hero flotte par-dessus dans un panneau semi-transparent flouté,
-// comme posé sur l'étagère plutôt qu'empilé au-dessus.
+// Le rayonnage (ProductPreview) sert de fond plein écran commun à Hero et
+// Features — posé une fois par le parent, pas ici. Le texte du hero flotte
+// par-dessus dans un panneau semi-transparent flouté, comme posé sur
+// l'étagère plutôt qu'empilé au-dessus.
 function Hero() {
   const t = useT()
   return (
-    <section id="top" className="relative min-h-[90vh] flex items-center justify-center overflow-hidden">
-      <ProductPreview />
-
-      <div className="hero-in relative z-10 max-w-2xl mx-6 px-8 py-10 text-center bg-paper/85 backdrop-blur-sm rounded-2xl shadow-xl">
+    <section id="top" className="relative z-10 min-h-[70vh] flex items-center justify-center py-20">
+      <div className="hero-in max-w-2xl mx-6 px-8 py-10 text-center bg-paper/85 backdrop-blur-sm rounded-2xl shadow-xl">
         <p className="hero-in font-mono text-xs tracking-widest text-library uppercase mb-4">
           {t.hero.eyebrow}
         </p>
@@ -445,9 +447,9 @@ function MiniBook({ title, author, status }) {
 function Features() {
   const t = useT()
   return (
-    <section id="features" className="max-w-5xl mx-auto px-6 py-20">
-      <Reveal>
-        <h2 className="font-serif text-3xl font-semibold text-center mb-12">
+    <section id="features" className="relative z-10 max-w-5xl mx-auto px-6 py-20">
+      <Reveal className="flex justify-center mb-12">
+        <h2 className="font-serif text-3xl font-semibold text-center bg-paper/85 backdrop-blur-sm rounded-xl px-8 py-3 shadow-lg">
           {t.featuresTitle}
         </h2>
       </Reveal>
