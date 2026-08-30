@@ -10,10 +10,11 @@
   /* Test en cours : Public Sans à la place d'Inter — pas encore un choix
      retenu pour le design system. */
   --font-sans: 'Public Sans', system-ui, sans-serif;
-  /* Test en cours : Courier Prime à la place de JetBrains Mono sur tous les
-     labels/badges/petites capitales de l'app — pas encore un choix retenu
-     pour le design system. */
-  --font-mono: 'Courier Prime', 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  /* Test en cours : Red Hat Mono à la place de JetBrains Mono sur tous les
+     labels/badges/petites capitales de l'app — dessinée pour de la vraie UI
+     (pas un éditeur de code), donc plus adaptée au petit corps que Courier
+     Prime. Pas encore un choix retenu pour le design system. */
+  --font-mono: 'Red Hat Mono', 'JetBrains Mono', ui-monospace, Consolas, monospace;
 
   --color-paper: #eae1cb;
   --color-card: #fbf7ed;
