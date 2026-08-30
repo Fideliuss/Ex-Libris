@@ -64,12 +64,28 @@ function TomeChips({ slots, currentIndex, onSelect }) {
     el?.scrollIntoView({ behavior: 'instant', inline: 'center', block: 'nearest' })
   }, [currentIndex])
 
+  // Molette verticale -> défilement horizontal : sans ça, la rangée n'est
+  // scrollable qu'au doigt (mobile) ou en glissant la scrollbar — sur PC
+  // avec une souris classique, rien ne permettait d'atteindre les chips
+  // hors champ.
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    function onWheel(e) {
+      if (e.deltaY === 0 || el.scrollWidth <= el.clientWidth) return
+      e.preventDefault()
+      el.scrollLeft += e.deltaY
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [])
+
   return (
     <div
       ref={scrollRef}
       role="group"
       aria-label="Tomes de la série"
-      className="flex items-center gap-1 overflow-x-auto min-w-0 flex-1 py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      className="flex items-center gap-1 overflow-x-auto min-w-0 flex-1 py-0.5"
     >
       {slots.map((slot) => {
         if (slot.type === 'ellipsis') {
