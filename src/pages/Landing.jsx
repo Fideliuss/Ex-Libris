@@ -197,7 +197,10 @@ export default function Landing() {
           <Features />
         </div>
         <HowItWorks />
-        <Pricing />
+        <div className="relative">
+          <ProductPreview />
+          <Pricing />
+        </div>
         <FinalCta />
         <Footer />
       </div>
@@ -342,7 +345,7 @@ const STATUS_ACCENT = {
 // 6 colonnes sur grand écran, moins sur les écrans étroits (chacune reste
 // assez large pour rester lisible) — vitesse de parallaxe différente par
 // colonne pour un effet moins mécanique qu'un simple binôme.
-const COLUMN_SPEEDS = [70, 190, 110, 250, 150, 220]
+const COLUMN_SPEEDS = [25, 65, 40, 85, 55, 75]
 const COLUMN_VISIBILITY = ['flex', 'flex', 'hidden md:flex', 'hidden md:flex', 'hidden lg:flex', 'hidden lg:flex']
 
 // Décale chaque colonne verticalement en fonction du scroll de la page (pas
@@ -579,12 +582,12 @@ function HowItWorks() {
 function Pricing() {
   const t = useT()
   return (
-    <section id="pricing" className="max-w-5xl mx-auto px-6 py-20">
-      <Reveal>
-        <h2 className="font-serif text-3xl font-semibold text-center mb-3">
-          {t.pricingTitle}
-        </h2>
-        <p className="text-center text-sm text-ink/70 mb-12">{t.pricingNote}</p>
+    <section id="pricing" className="relative z-10 max-w-5xl mx-auto px-6 py-20">
+      <Reveal className="flex justify-center mb-12">
+        <div className="bg-paper/85 backdrop-blur-sm rounded-xl px-8 py-4 shadow-lg text-center">
+          <h2 className="font-serif text-3xl font-semibold">{t.pricingTitle}</h2>
+          <p className="text-sm text-ink/70 mt-1">{t.pricingNote}</p>
+        </div>
       </Reveal>
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {t.pricing.map((tier, i) => (
