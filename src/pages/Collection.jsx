@@ -484,21 +484,34 @@ export default function Collection() {
 
       <main key={isMine ? 'mine' : 'partner'} className="max-w-5xl mx-auto px-6 fade-in">
         {!loading && !error && books.length > 0 && (
-          <TabBar
-            tabs={[
-              { key: 'collection', label: 'Collection' },
-              {
-                key: 'todo',
-                label:
-                  incompleteBooks.length > 0
-                    ? `À traiter (${incompleteBooks.length})`
-                    : 'À traiter',
-              },
-            ]}
-            active={collectionTab}
-            onChange={setCollectionTab}
-            ariaLabel="Vue de la collection"
-          />
+          <div className="flex items-start justify-between gap-3">
+            <TabBar
+              tabs={[
+                { key: 'collection', label: 'Collection' },
+                {
+                  key: 'todo',
+                  label:
+                    incompleteBooks.length > 0
+                      ? `À traiter (${incompleteBooks.length})`
+                      : 'À traiter',
+                },
+              ]}
+              active={collectionTab}
+              onChange={setCollectionTab}
+              ariaLabel="Vue de la collection"
+            />
+            {isMine && (
+              <Link
+                to="/books/new"
+                className="hidden sm:inline-flex items-center gap-1.5 shrink-0 rounded-sm bg-library-fill text-white font-medium px-4 py-1.5 text-sm shadow-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+              >
+                <span className="text-base leading-none" aria-hidden="true">
+                  +
+                </span>
+                Ajouter un livre
+              </Link>
+            )}
+          </div>
         )}
 
         {!loading && !error && books.length > 0 && collectionTab === 'collection' && (
@@ -689,13 +702,10 @@ export default function Collection() {
           <Link
             to="/books/new"
             aria-label="Ajouter un livre"
-            className="fixed bottom-6 right-6 flex items-center justify-center gap-2 w-14 h-14 sm:w-auto sm:h-auto sm:px-5 sm:py-3 rounded-full bg-library-fill text-white shadow-lg hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+            className="sm:hidden fixed bottom-6 right-6 flex items-center justify-center w-14 h-14 rounded-full bg-library-fill text-white shadow-lg hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
           >
-            <span className="text-3xl sm:text-xl leading-none" aria-hidden="true">
+            <span className="text-3xl leading-none" aria-hidden="true">
               +
-            </span>
-            <span className="hidden sm:inline text-sm font-medium">
-              Ajouter un livre
             </span>
           </Link>
         )
