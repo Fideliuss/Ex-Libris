@@ -380,20 +380,38 @@ export default function BookDetail() {
           </div>
 
           <div className="mt-6 pt-6 border-t border-ink/10 grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <DetailField label="ISBN" value={book.isbn} mono />
+            <DetailField
+              label="ISBN"
+              value={book.isbn}
+              mono
+              placeholder="Non renseigné"
+            />
             <DetailField
               label="Pages"
               value={book.page_count}
               mono
               placeholder="Non renseigné"
             />
-            <DetailField label="Date de début" value={formatDate(book.date_started)} />
-            <DetailField label="Date de fin" value={formatDate(book.date_finished)} />
-            <DetailField label="Date d'achat" value={formatDate(book.purchase_date)} />
+            <DetailField
+              label="Date de début"
+              value={formatDate(book.date_started)}
+              placeholder="Non renseigné"
+            />
+            <DetailField
+              label="Date de fin"
+              value={formatDate(book.date_finished)}
+              placeholder="Non renseigné"
+            />
+            <DetailField
+              label="Date d'achat"
+              value={formatDate(book.purchase_date)}
+              placeholder="Non renseigné"
+            />
             <DetailField
               label="Prix"
               value={book.price != null ? `${Number(book.price).toFixed(2)} €` : null}
               mono
+              placeholder="Non renseigné"
             />
           </div>
 

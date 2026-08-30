@@ -61,6 +61,18 @@
      usage, pas juste "figé" comme les trois autres. */
   --color-brass-fill: #8e7145;
   --color-stamp-fill: #a2372e;
+
+  /* Texte sur --color-cover (couverture "sans image") : ce fond est fixe et
+     clair dans les deux thèmes, donc le texte dessus a le problème inverse
+     des tokens -fill ci-dessus — il doit rester FONCÉ même en mode sombre,
+     alors que --color-ink/brass s'éclaircissent pour rester lisibles sur le
+     fond sombre de la page. Sans ça, le texte devient quasi invisible sur
+     la couverture (1.16:1 pour --color-ink en sombre). --color-stamp-fill
+     convient déjà (5.92:1) ; brass a besoin d'un assombrissement propre à
+     ce fond clair (--color-brass-fill vise le contraste sur du blanc plein,
+     insuffisant ici à 4.02:1). */
+  --color-ink-on-cover: #1e2b3a;
+  --color-brass-on-cover: #836940;
 }
 
 /* Mode sombre : palette "bibliothèque de nuit" (brun/charbon chaud, pas un

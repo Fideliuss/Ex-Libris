@@ -92,6 +92,17 @@ export default function BookForm() {
     setBook((b) => ({ ...b, [field]: value }))
   }
 
+  // Même critère que l'onglet « À compléter » de la collection et le
+  // bandeau de la fiche livre (voir Collection.jsx / BookDetail.jsx) : les
+  // champs qu'un scan ISBN réussi remplit normalement tout seul.
+  const missingFields = [
+    !book.cover_url && 'Couverture',
+    !book.author && 'Auteur',
+    !book.publisher && 'Éditeur',
+    !book.page_count && 'Pages',
+    !book.description && 'Résumé',
+  ].filter(Boolean)
+
   async function handleLookup(isbnOverride) {
     const isbnToSearch = isbnOverride ?? book.isbn
     if (!isbnToSearch?.trim()) {
@@ -225,6 +236,20 @@ export default function BookForm() {
         <h1 className="font-serif text-2xl font-semibold mt-4 mb-6">
           {isEdit ? 'Modifier le livre' : 'Ajouter un livre'}
         </h1>
+
+        {missingFields.length > 0 ? (
+          <p className="mb-4 rounded-sm border border-dashed border-brass/50 bg-brass/5 px-3 py-2 text-sm text-ink/70">
+            <span className="font-medium text-brass">
+              {missingFields.length} champ{missingFields.length > 1 ? 's' : ''} à
+              compléter :
+            </span>{' '}
+            {missingFields.join(', ')}
+          </p>
+        ) : (
+          <p className="mb-4 rounded-sm border border-library/30 bg-library/5 px-3 py-2 text-sm text-library">
+            ✓ Fiche complète
+          </p>
+        )}
 
         <form
           onSubmit={handleSubmit}
