@@ -191,16 +191,14 @@ export default function Landing() {
     <LanguageContext.Provider value={{ lang, setLang }}>
       <div className="min-h-svh">
         <Nav />
-        <div className="relative">
-          <ProductPreview />
+        <ShelfSection>
           <Hero />
           <Features />
-        </div>
+        </ShelfSection>
         <HowItWorks />
-        <div className="relative">
-          <ProductPreview />
+        <ShelfSection>
           <Pricing />
-        </div>
+        </ShelfSection>
         <FinalCta />
         <Footer />
       </div>
@@ -270,6 +268,19 @@ function LangSwitch() {
       >
         EN
       </button>
+    </div>
+  )
+}
+
+// Fournit à ProductPreview une référence vers sa plage de scroll logique
+// (les enfants, en flux normal) : le fond lui-même est fixe à l'écran (voir
+// useFixedShelf), il ne peut pas connaître sa propre position de scroll.
+function ShelfSection({ children }) {
+  const rangeRef = useRef(null)
+  return (
+    <div ref={rangeRef} className="relative">
+      <ProductPreview rangeRef={rangeRef} />
+      {children}
     </div>
   )
 }
@@ -348,44 +359,57 @@ const STATUS_ACCENT = {
 const COLUMN_SPEEDS = [15, 38, 22, 45, 28, 40]
 const COLUMN_VISIBILITY = ['flex', 'flex', 'hidden md:flex', 'hidden md:flex', 'hidden lg:flex', 'hidden lg:flex']
 
-// Décale chaque colonne verticalement en fonction du scroll de la page (pas
-// une animation qui tourne seule), à sa propre vitesse (`speeds[i]` = le
-// déplacement max en px une fois le bloc entièrement traversé). Un seul
-// listener pour toutes les colonnes. Ignoré si l'utilisateur préfère moins
-// d'animations.
-function useShelfParallax(containerRef, colRefs, speeds) {
+// Le fond reste fixe à l'écran (pas collé au scroll de la page) pendant que
+// Hero/Features/Pricing défilent par-dessus : c'est ça qui donne
+// l'impression que "seul le premier plan bouge". `rangeRef` (la section
+// logique, en flux normal) sert à savoir si on est dans sa plage de scroll
+// (on affiche/masque en fondu) et à calculer un tout petit décalage
+// résiduel — le fond n'est jamais parfaitement mort, juste presque. Un seul
+// listener pour toutes les colonnes ; le décalage est ignoré si
+// l'utilisateur préfère moins d'animations (le fondu d'apparition reste,
+// lui, ce n'est qu'un changement de visibilité).
+function useFixedShelf(rangeRef, rootRef, colRefs, speeds) {
   useEffect(() => {
-    const container = containerRef.current
-    if (!container) return
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    const root = rootRef.current
+    if (!root) return
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
     let frame = null
     function update() {
       frame = null
-      const rect = container.getBoundingClientRect()
-      const total = rect.height + window.innerHeight
-      const scrolled = window.innerHeight - rect.top
-      const progress = Math.min(1, Math.max(0, scrolled / total))
+      const range = rangeRef.current
+      if (!range) return
+      const rect = range.getBoundingClientRect()
+      const inView = rect.bottom > 0 && rect.top < window.innerHeight
+      root.style.opacity = inView ? '1' : '0'
+      if (!inView || reducedMotion) return
+
+      const total = rect.height - window.innerHeight
+      const progress = total > 0 ? Math.min(1, Math.max(0, -rect.top / total)) : 0
       colRefs.current.forEach((col, i) => {
         if (col) col.style.transform = `translateY(-${progress * speeds[i]}px)`
       })
     }
-    function onScroll() {
+    function onChange() {
       if (frame === null) frame = requestAnimationFrame(update)
     }
-    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('scroll', onChange, { passive: true })
+    window.addEventListener('resize', onChange, { passive: true })
     update()
     return () => {
-      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('scroll', onChange)
+      window.removeEventListener('resize', onChange)
       if (frame !== null) cancelAnimationFrame(frame)
     }
-  }, [containerRef, colRefs, speeds])
+  }, [rangeRef, rootRef, colRefs, speeds])
 }
 
-function ProductPreview() {
-  const containerRef = useRef(null)
+// `rangeRef` : la section logique (en flux normal, fournie par le parent)
+// dont la plage de scroll pilote ce fond. Voir useFixedShelf ci-dessus.
+function ProductPreview({ rangeRef }) {
+  const rootRef = useRef(null)
   const colRefs = useRef([])
-  useShelfParallax(containerRef, colRefs, COLUMN_SPEEDS)
+  useFixedShelf(rangeRef, rootRef, colRefs, COLUMN_SPEEDS)
 
   const columns = COLUMN_SPEEDS.map((_, i) =>
     Array(14)
@@ -395,9 +419,9 @@ function ProductPreview() {
 
   return (
     <div
-      ref={containerRef}
+      ref={rootRef}
       aria-hidden="true"
-      className="shelf-fade absolute inset-0 bg-paper overflow-hidden"
+      className="shelf-fade fixed inset-0 z-0 bg-paper overflow-hidden opacity-0 transition-opacity duration-300"
     >
       <div className="flex gap-4 justify-center h-full px-4 pt-6">
         {columns.map((col, i) => (
@@ -574,7 +598,7 @@ function Features() {
 function HowItWorks() {
   const t = useT()
   return (
-    <section className="bg-card/50 py-20">
+    <section className="relative z-10 bg-card/50 py-20">
       <div className="max-w-5xl mx-auto px-6">
         <Reveal>
           <h2 className="font-serif text-3xl font-semibold text-center mb-12">
@@ -654,7 +678,7 @@ function Pricing() {
 function FinalCta() {
   const t = useT()
   return (
-    <section className="max-w-5xl mx-auto px-6 py-20 text-center">
+    <section className="relative z-10 max-w-5xl mx-auto px-6 py-20 text-center">
       <Reveal>
         <h2 className="font-serif text-3xl font-semibold mb-4">{t.finalCtaTitle}</h2>
         <LoginCta className="inline-block rounded-sm bg-library text-white font-medium px-6 py-3 hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library">
@@ -691,7 +715,7 @@ function LoginCta({ className, children }) {
 function Footer() {
   const t = useT()
   return (
-    <footer className="border-t border-ink/10 py-8">
+    <footer className="relative z-10 border-t border-ink/10 py-8 bg-paper">
       <div className="max-w-5xl mx-auto px-6 flex flex-col items-center gap-3 text-xs text-ink/70">
         <div className="flex items-center gap-4">
           <Link to="/mentions-legales" className="hover:text-ink/70">
