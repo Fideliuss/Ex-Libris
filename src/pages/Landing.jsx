@@ -196,9 +196,7 @@ export default function Landing() {
           <Features />
         </ShelfSection>
         <HowItWorks />
-        <ShelfSection>
-          <Pricing />
-        </ShelfSection>
+        <Pricing />
         <FinalCta />
         <Footer />
       </div>
@@ -627,12 +625,12 @@ function HowItWorks() {
 function Pricing() {
   const t = useT()
   return (
-    <section id="pricing" className="relative z-10 max-w-5xl mx-auto px-6 py-20">
-      <Reveal className="flex justify-center mb-12">
-        <div className="bg-paper/85 backdrop-blur-sm rounded-xl px-8 py-4 shadow-lg text-center">
-          <h2 className="font-serif text-3xl font-semibold">{t.pricingTitle}</h2>
-          <p className="text-sm text-ink/70 mt-1">{t.pricingNote}</p>
-        </div>
+    <section id="pricing" className="max-w-5xl mx-auto px-6 py-20">
+      <Reveal>
+        <h2 className="font-serif text-3xl font-semibold text-center mb-3">
+          {t.pricingTitle}
+        </h2>
+        <p className="text-center text-sm text-ink/70 mb-12">{t.pricingNote}</p>
       </Reveal>
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {t.pricing.map((tier, i) => (
