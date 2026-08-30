@@ -345,7 +345,7 @@ const STATUS_ACCENT = {
 // 6 colonnes sur grand écran, moins sur les écrans étroits (chacune reste
 // assez large pour rester lisible) — vitesse de parallaxe différente par
 // colonne pour un effet moins mécanique qu'un simple binôme.
-const COLUMN_SPEEDS = [6, 16, 10, 20, 13, 18]
+const COLUMN_SPEEDS = [15, 38, 22, 45, 28, 40]
 const COLUMN_VISIBILITY = ['flex', 'flex', 'hidden md:flex', 'hidden md:flex', 'hidden lg:flex', 'hidden lg:flex']
 
 // Décale chaque colonne verticalement en fonction du scroll de la page (pas
