@@ -48,7 +48,7 @@ export default function BulkActionBar({
                 type="button"
                 onClick={onDelete}
                 disabled={disabled}
-                className="text-sm px-3 py-1.5 rounded-sm bg-stamp text-white hover:bg-stamp/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp disabled:opacity-60"
+                className="text-sm px-3 py-1.5 rounded-sm bg-stamp-fill text-white hover:bg-stamp-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp disabled:opacity-60"
               >
                 Confirmer
               </button>
@@ -72,7 +72,7 @@ export default function BulkActionBar({
               type="button"
               onClick={() => onChangeStatus(statusToApply)}
               disabled={disabled}
-              className="text-sm px-3 py-1.5 rounded-sm border border-library text-library hover:bg-library hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60"
+              className="text-sm px-3 py-1.5 rounded-sm border border-library text-library hover:bg-library-fill hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60"
             >
               Appliquer le statut
             </button>
@@ -93,7 +93,7 @@ export default function BulkActionBar({
               type="button"
               onClick={() => onChangeType(typeToApply)}
               disabled={disabled}
-              className="text-sm px-3 py-1.5 rounded-sm border border-library text-library hover:bg-library hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60"
+              className="text-sm px-3 py-1.5 rounded-sm border border-library text-library hover:bg-library-fill hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60"
             >
               Appliquer le type
             </button>
@@ -113,7 +113,7 @@ export default function BulkActionBar({
                 setTagDraft('')
               }}
               disabled={disabled || !tagDraft.trim()}
-              className="text-sm px-3 py-1.5 rounded-sm border border-library text-library hover:bg-library hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60"
+              className="text-sm px-3 py-1.5 rounded-sm border border-library text-library hover:bg-library-fill hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60"
             >
               Ajouter le tag
             </button>
@@ -122,7 +122,7 @@ export default function BulkActionBar({
               type="button"
               onClick={() => setConfirmingDelete(true)}
               disabled={disabled}
-              className="text-sm px-3 py-1.5 rounded-sm border border-stamp/40 text-stamp hover:bg-stamp hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp disabled:opacity-60"
+              className="text-sm px-3 py-1.5 rounded-sm border border-stamp/40 text-stamp hover:bg-stamp-fill hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp disabled:opacity-60"
             >
               Supprimer
             </button>
@@ -151,7 +151,7 @@ export default function BulkActionBar({
                   setTagsToRemove([])
                 }}
                 disabled={disabled || tagsToRemove.length === 0}
-                className="text-sm px-3 py-1.5 rounded-sm border border-stamp/40 text-stamp hover:bg-stamp hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp disabled:opacity-60"
+                className="text-sm px-3 py-1.5 rounded-sm border border-stamp/40 text-stamp hover:bg-stamp-fill hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp disabled:opacity-60"
               >
                 Retirer le{tagsToRemove.length > 1 ? 's' : ''} tag{tagsToRemove.length > 1 ? 's' : ''}
               </button>

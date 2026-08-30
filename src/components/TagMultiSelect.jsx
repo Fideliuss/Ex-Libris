@@ -20,7 +20,7 @@ export default function TagMultiSelect({ tags, selected, onChange, label }) {
           aria-pressed={selected.includes(tag)}
           className={`text-xs px-2 py-1 rounded-full border focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
             selected.includes(tag)
-              ? 'bg-library text-white border-library'
+              ? 'bg-library-fill text-white border-library'
               : 'border-ink/20 text-ink/70 hover:border-library hover:text-library'
           }`}
         >

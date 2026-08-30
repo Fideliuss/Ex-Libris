@@ -45,6 +45,22 @@
      physique, sa couleur ne doit pas s'inverser avec le thème — fixe dans
      les deux cas, comme les tokens de badge ci-dessus. */
   --color-cover: #f6f0e2;
+
+  /* Variantes "fond plein" de library/wishlist/brass/stamp : mêmes teintes
+     que les tokens ci-dessus mais jamais éclaircies en sombre. --color-library
+     etc. doivent rester lisibles comme TEXTE sur fond neutre (donc éclaircis
+     en sombre) ; utilisées à la place en fond plein + texte blanc (boutons,
+     badges, onglet actif), ces versions éclaircies tombent sous 4.5:1 de
+     contraste avec du blanc. Mêmes valeurs que le mode clair, non redéfinies
+     dans les blocs sombre ci-dessous — même logique que --color-toread /
+     --color-read. */
+  --color-library-fill: #2f4a3c;
+  --color-wishlist-fill: #3b6e91;
+  /* Brass est trop clair même en mode clair pour du texte blanc en 14px
+     (3.21:1, sous les 4.5:1 requis) : assombri spécifiquement pour cet
+     usage, pas juste "figé" comme les trois autres. */
+  --color-brass-fill: #8e7145;
+  --color-stamp-fill: #a2372e;
 }
 
 /* Mode sombre : palette "bibliothèque de nuit" (brun/charbon chaud, pas un

@@ -18,7 +18,7 @@ export const STATUS_BORDER_CLASS = {
 // texte utilisés ailleurs dans l'UI — nécessaire pour rester lisible en
 // mode sombre (voir le commentaire dans index.css).
 export const STATUS_BADGE_CLASS = {
-  wishlist: 'bg-wishlist text-white',
+  wishlist: 'bg-wishlist-fill text-white',
   'to-read': 'bg-toread text-white',
   reading: 'bg-reading text-white',
   read: 'bg-read text-white',

@@ -79,7 +79,7 @@ export default function Account() {
             ← Retour à la collection
           </button>
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-library text-white font-mono text-sm flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-full bg-library-fill text-white font-mono text-sm flex items-center justify-center shrink-0">
               {user?.email?.[0]?.toUpperCase() ?? '?'}
             </div>
             <button
@@ -109,7 +109,7 @@ export default function Account() {
                 onClick={() => setTab(t.key)}
                 className={`shrink-0 text-left rounded-sm px-3 py-2 text-sm whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
                   tab === t.key
-                    ? 'bg-library text-white'
+                    ? 'bg-library-fill text-white'
                     : 'text-ink/70 hover:bg-card'
                 }`}
               >

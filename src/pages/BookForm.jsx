@@ -370,7 +370,7 @@ export default function BookForm() {
                 type="button"
                 onClick={() => handleLookup()}
                 disabled={lookupLoading}
-                className="flex-1 rounded-sm border border-library text-library px-3 py-2 text-sm font-medium hover:bg-library hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60"
+                className="flex-1 rounded-sm border border-library text-library px-3 py-2 text-sm font-medium hover:bg-library-fill hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60"
               >
                 {lookupLoading ? 'Recherche…' : 'Chercher'}
               </button>
@@ -554,7 +554,7 @@ export default function BookForm() {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 rounded-sm bg-library text-white font-medium py-2 text-sm hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
+              className="flex-1 rounded-sm bg-library-fill text-white font-medium py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
             >
               {saving ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Ajouter'}
             </button>
@@ -563,7 +563,7 @@ export default function BookForm() {
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(true)}
-                className="rounded-sm border border-stamp/40 text-stamp px-4 py-2 text-sm hover:bg-stamp hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp"
+                className="rounded-sm border border-stamp/40 text-stamp px-4 py-2 text-sm hover:bg-stamp-fill hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp"
               >
                 Supprimer
               </button>
@@ -587,7 +587,7 @@ export default function BookForm() {
                   type="button"
                   onClick={handleDelete}
                   disabled={saving}
-                  className="text-sm px-3 py-1.5 rounded-sm bg-stamp text-white hover:bg-stamp/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp disabled:opacity-60"
+                  className="text-sm px-3 py-1.5 rounded-sm bg-stamp-fill text-white hover:bg-stamp-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp disabled:opacity-60"
                 >
                   Confirmer
                 </button>

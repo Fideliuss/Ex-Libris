@@ -223,7 +223,7 @@ function Nav() {
         </nav>
         <div className="flex items-center gap-3">
           <LangSwitch />
-          <LoginCta className="rounded-sm bg-library text-white text-sm font-medium px-4 py-2 hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library">
+          <LoginCta className="rounded-sm bg-library-fill text-white text-sm font-medium px-4 py-2 hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library">
             {t.nav.login}
           </LoginCta>
         </div>
@@ -247,7 +247,7 @@ function LangSwitch() {
         title="Français"
         className={`px-2 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
           lang === 'fr'
-            ? 'bg-library text-white'
+            ? 'bg-library-fill text-white'
             : 'text-ink/70 hover:text-ink'
         }`}
       >
@@ -260,7 +260,7 @@ function LangSwitch() {
         title="English"
         className={`px-2 py-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
           lang === 'en'
-            ? 'bg-library text-white'
+            ? 'bg-library-fill text-white'
             : 'text-ink/70 hover:text-ink'
         }`}
       >
@@ -310,7 +310,7 @@ function Hero() {
           {t.hero.subtitle}
         </p>
         <div className="hero-in mt-8" style={{ animationDelay: '240ms' }}>
-          <LoginCta className="inline-block rounded-sm bg-library text-white font-medium px-6 py-3 hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library">
+          <LoginCta className="inline-block rounded-sm bg-library-fill text-white font-medium px-6 py-3 hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library">
             {t.hero.cta}
           </LoginCta>
         </div>
@@ -456,7 +456,7 @@ function MiniBook({ title, author, status }) {
             </span>
           )}
           {status === 'wishlist' && (
-            <span className="absolute top-1.5 -left-7 w-24 -rotate-45 bg-wishlist text-white font-mono text-[7px] font-bold uppercase text-center py-px z-10">
+            <span className="absolute top-1.5 -left-7 w-24 -rotate-45 bg-wishlist-fill text-white font-mono text-[7px] font-bold uppercase text-center py-px z-10">
               Wishlist
             </span>
           )}
@@ -542,7 +542,7 @@ function Features() {
                   role="tab"
                   aria-selected={active === i}
                   className={`shrink-0 text-left rounded-xl px-4 py-3 text-sm font-medium whitespace-nowrap sm:whitespace-normal ${
-                    active === i ? 'bg-library text-white' : 'text-ink/70'
+                    active === i ? 'bg-library-fill text-white' : 'text-ink/70'
                   }`}
                 >
                   {f.title}
@@ -555,7 +555,7 @@ function Features() {
                   aria-selected={active === i}
                   onClick={() => setActive(i)}
                   className={`shrink-0 text-left rounded-xl px-4 py-3 text-sm font-medium whitespace-nowrap sm:whitespace-normal focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
-                    active === i ? 'bg-library text-white' : 'text-ink/70 hover:bg-card'
+                    active === i ? 'bg-library-fill text-white' : 'text-ink/70 hover:bg-card'
                   }`}
                 >
                   {f.title}
@@ -609,7 +609,7 @@ function HowItWorks() {
         <div className="grid sm:grid-cols-3 gap-8">
           {t.steps.map((s, i) => (
             <Reveal key={s.title} delay={i * 100} className="text-center">
-              <div className="mx-auto w-10 h-10 rounded-full bg-library text-white font-mono flex items-center justify-center mb-4">
+              <div className="mx-auto w-10 h-10 rounded-full bg-library-fill text-white font-mono flex items-center justify-center mb-4">
                 {i + 1}
               </div>
               <h3 className="font-serif text-lg mb-2">{s.title}</h3>
@@ -638,12 +638,12 @@ function Pricing() {
             <div
               className={`relative rounded-sm p-6 h-full border-t-4 border-dashed shadow-sm ${
                 tier.highlighted
-                  ? 'bg-library text-white border-brass'
+                  ? 'bg-library-fill text-white border-brass'
                   : 'bg-card border-brass'
               }`}
             >
               {tier.badge && (
-                <span className="absolute -top-3 right-4 bg-brass text-white text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded-sm">
+                <span className="absolute -top-3 right-4 bg-brass-fill text-white text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded-sm">
                   {tier.badge}
                 </span>
               )}
@@ -682,7 +682,7 @@ function FinalCta() {
     <section className="relative z-10 max-w-5xl mx-auto px-6 py-20 text-center">
       <Reveal>
         <h2 className="font-serif text-3xl font-semibold mb-4">{t.finalCtaTitle}</h2>
-        <LoginCta className="inline-block rounded-sm bg-library text-white font-medium px-6 py-3 hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library">
+        <LoginCta className="inline-block rounded-sm bg-library-fill text-white font-medium px-6 py-3 hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library">
           {t.hero.cta}
         </LoginCta>
       </Reveal>

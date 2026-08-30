@@ -56,7 +56,7 @@ export default function DeleteAccountSection() {
             type="button"
             onClick={handleDelete}
             disabled={working}
-            className="rounded-sm bg-stamp text-white font-medium px-3 py-1.5 text-xs hover:bg-stamp/90 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp"
+            className="rounded-sm bg-stamp-fill text-white font-medium px-3 py-1.5 text-xs hover:bg-stamp-fill/90 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp"
           >
             {working ? 'Suppression…' : 'Oui, tout supprimer'}
           </button>
@@ -65,7 +65,7 @@ export default function DeleteAccountSection() {
         <button
           type="button"
           onClick={() => setConfirming(true)}
-          className="rounded-sm border border-stamp text-stamp font-medium px-3 py-1.5 text-sm hover:bg-stamp hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp"
+          className="rounded-sm border border-stamp text-stamp font-medium px-3 py-1.5 text-sm hover:bg-stamp-fill hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp"
         >
           Supprimer mon compte
         </button>

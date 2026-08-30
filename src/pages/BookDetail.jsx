@@ -171,7 +171,7 @@ export default function BookDetail() {
             <button
               type="button"
               onClick={() => navigate(`/books/${id}/edit`)}
-              className="shrink-0 rounded-sm bg-library text-white font-medium px-4 py-2 text-sm hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+              className="shrink-0 rounded-sm bg-library-fill text-white font-medium px-4 py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
             >
               Modifier
             </button>
@@ -339,7 +339,7 @@ export default function BookDetail() {
                   {book.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="bg-library text-white text-xs px-2 py-0.5 rounded-full"
+                      className="bg-library-fill text-white text-xs px-2 py-0.5 rounded-full"
                     >
                       {tag}
                     </span>

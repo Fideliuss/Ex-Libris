@@ -457,7 +457,7 @@ export default function Collection() {
               to="/account"
               title={user?.email}
               aria-label="Mon compte"
-              className="w-9 h-9 rounded-full bg-library text-white font-mono text-sm flex items-center justify-center hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-library focus-visible:ring-offset-2"
+              className="w-9 h-9 rounded-full bg-library-fill text-white font-mono text-sm flex items-center justify-center hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-library focus-visible:ring-offset-2"
             >
               {user?.email?.[0]?.toUpperCase() ?? '?'}
             </Link>
@@ -550,7 +550,7 @@ export default function Collection() {
                 </p>
                 <Link
                   to="/books/new"
-                  className="inline-block rounded-sm bg-library text-white font-medium px-4 py-2 text-sm hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+                  className="inline-block rounded-sm bg-library-fill text-white font-medium px-4 py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
                 >
                   Ajouter un livre
                 </Link>
@@ -689,7 +689,7 @@ export default function Collection() {
           <Link
             to="/books/new"
             aria-label="Ajouter un livre"
-            className="fixed bottom-6 right-6 flex items-center justify-center gap-2 w-14 h-14 sm:w-auto sm:h-auto sm:px-5 sm:py-3 rounded-full bg-library text-white shadow-lg hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+            className="fixed bottom-6 right-6 flex items-center justify-center gap-2 w-14 h-14 sm:w-auto sm:h-auto sm:px-5 sm:py-3 rounded-full bg-library-fill text-white shadow-lg hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
           >
             <span className="text-3xl sm:text-xl leading-none" aria-hidden="true">
               +
