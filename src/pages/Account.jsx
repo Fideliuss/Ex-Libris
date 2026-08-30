@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useGoBack } from '../lib/navigation'
@@ -47,11 +47,41 @@ function SecuritySection() {
   )
 }
 
+// Indique de quel côté la rangée d'onglets déborde encore, pour afficher un
+// dégradé de fondu uniquement là où il y a vraiment plus de contenu à
+// atteindre (pas un dégradé permanent qui laisserait croire à du contenu
+// caché même une fois arrivé au bout).
+function useEdgeFade(ref) {
+  const [fade, setFade] = useState({ left: false, right: false })
+
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    function update() {
+      setFade({
+        left: el.scrollLeft > 4,
+        right: el.scrollLeft < el.scrollWidth - el.clientWidth - 4,
+      })
+    }
+    update()
+    el.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    return () => {
+      el.removeEventListener('scroll', update)
+      window.removeEventListener('resize', update)
+    }
+  }, [ref])
+
+  return fade
+}
+
 export default function Account() {
   const { user, signOut } = useAuth()
   const goBack = useGoBack('/')
   const navigate = useNavigate()
   const [tab, setTab] = useState('info')
+  const navRef = useRef(null)
+  const edgeFade = useEdgeFade(navRef)
 
   async function handleSignOut() {
     await signOut()
@@ -95,28 +125,39 @@ export default function Account() {
         <h1 className="font-serif text-2xl font-semibold mb-6">Mon compte</h1>
 
         <div className="flex flex-col lg:flex-row gap-6">
-          <nav
-            role="tablist"
-            aria-label="Sections du compte"
-            className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0 lg:w-56 shrink-0"
-          >
-            {tabs.map((t) => (
-              <button
-                key={t.key}
-                type="button"
-                role="tab"
-                aria-selected={tab === t.key}
-                onClick={() => setTab(t.key)}
-                className={`shrink-0 text-left rounded-sm px-3 py-2 text-sm whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
-                  tab === t.key
-                    ? 'bg-library-fill text-white'
-                    : 'text-ink/70 hover:bg-card'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </nav>
+          <div className="relative lg:contents">
+            <nav
+              ref={navRef}
+              role="tablist"
+              aria-label="Sections du compte"
+              className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible pb-2 lg:pb-0 lg:w-56 shrink-0"
+            >
+              {tabs.map((t) => (
+                <button
+                  key={t.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === t.key}
+                  onClick={() => setTab(t.key)}
+                  className={`shrink-0 text-left rounded-sm px-3 py-2 text-sm whitespace-nowrap focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
+                    tab === t.key
+                      ? 'bg-library-fill text-white'
+                      : 'text-ink/70 hover:bg-card'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </nav>
+            <div
+              aria-hidden="true"
+              className={`lg:hidden pointer-events-none absolute top-0 bottom-2 left-0 w-8 bg-gradient-to-r from-paper to-transparent transition-opacity ${edgeFade.left ? 'opacity-100' : 'opacity-0'}`}
+            />
+            <div
+              aria-hidden="true"
+              className={`lg:hidden pointer-events-none absolute top-0 bottom-2 right-0 w-8 bg-gradient-to-l from-paper to-transparent transition-opacity ${edgeFade.right ? 'opacity-100' : 'opacity-0'}`}
+            />
+          </div>
 
           <div
             role="tabpanel"
