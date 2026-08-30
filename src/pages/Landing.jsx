@@ -345,7 +345,7 @@ const STATUS_ACCENT = {
 // 6 colonnes sur grand écran, moins sur les écrans étroits (chacune reste
 // assez large pour rester lisible) — vitesse de parallaxe différente par
 // colonne pour un effet moins mécanique qu'un simple binôme.
-const COLUMN_SPEEDS = [25, 65, 40, 85, 55, 75]
+const COLUMN_SPEEDS = [6, 16, 10, 20, 13, 18]
 const COLUMN_VISIBILITY = ['flex', 'flex', 'hidden md:flex', 'hidden md:flex', 'hidden lg:flex', 'hidden lg:flex']
 
 // Décale chaque colonne verticalement en fonction du scroll de la page (pas
@@ -505,20 +505,38 @@ function Features() {
             aria-label={t.featuresTitle}
             className="flex sm:flex-col gap-2 overflow-x-auto sm:overflow-visible pb-1 sm:pb-0 sm:w-56 shrink-0"
           >
-            {t.features.map((f, i) => (
-              <button
-                key={f.title}
-                type="button"
-                role="tab"
-                aria-selected={active === i}
-                onClick={() => setActive(i)}
-                className={`shrink-0 text-left rounded-xl px-4 py-3 text-sm font-medium whitespace-nowrap sm:whitespace-normal focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
-                  active === i ? 'bg-library text-white' : 'text-ink/70 hover:bg-card'
-                }`}
-              >
-                {f.title}
-              </button>
-            ))}
+            {t.features.map((f, i) =>
+              // En mode épinglé, le profil actif suit uniquement le scroll —
+              // un onglet cliquable désynchroniserait l'affichage de la
+              // position réelle et ferait "sauter" la page au prochain
+              // scroll. Reste cliquable dans le repli statique (pas de
+              // scroll-jacking à désynchroniser).
+              pinned ? (
+                <div
+                  key={f.title}
+                  role="tab"
+                  aria-selected={active === i}
+                  className={`shrink-0 text-left rounded-xl px-4 py-3 text-sm font-medium whitespace-nowrap sm:whitespace-normal ${
+                    active === i ? 'bg-library text-white' : 'text-ink/70'
+                  }`}
+                >
+                  {f.title}
+                </div>
+              ) : (
+                <button
+                  key={f.title}
+                  type="button"
+                  role="tab"
+                  aria-selected={active === i}
+                  onClick={() => setActive(i)}
+                  className={`shrink-0 text-left rounded-xl px-4 py-3 text-sm font-medium whitespace-nowrap sm:whitespace-normal focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
+                    active === i ? 'bg-library text-white' : 'text-ink/70 hover:bg-card'
+                  }`}
+                >
+                  {f.title}
+                </button>
+              ),
+            )}
           </div>
 
           <div role="tabpanel" className="flex-1 min-w-0 bg-card rounded-xl p-6 sm:p-10 flex items-center min-h-[160px]">
