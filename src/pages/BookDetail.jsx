@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getBook, getSeriesSiblings, updateBook } from '../lib/books'
 import { useAuth } from '../context/AuthContext'
@@ -15,6 +15,109 @@ import { navigateWithViewTransition, useGoBack } from '../lib/navigation'
 import ReadingBookmark from '../components/ReadingBookmark'
 import LoadingScreen from '../components/LoadingScreen'
 import BookCoverPlaceholder from '../components/BookCoverPlaceholder'
+
+// Au-delà de ce nombre de tomes manquants d'affilée, on compresse le trou en
+// une seule chip "···" plutôt que d'en afficher une par tome manquant — sans
+// ça, posséder les tomes 1 et 1000 d'une longue série générerait ~1000
+// chips grisées.
+const GAP_COLLAPSE_THRESHOLD = 3
+
+// Construit la rangée de chips [tome possédé | tome manquant | trou
+// compressé] entre le plus petit et le plus grand tome possédé — pas besoin
+// de connaître la taille réelle de la série, juste l'étendue de ce qu'on a.
+function buildTomeSlots(siblings) {
+  const numbered = siblings.filter((s) => s.series_index != null)
+  if (numbered.length === 0) return []
+  const ownedByIndex = new Map(numbered.map((s) => [s.series_index, s.id]))
+  const indices = numbered.map((s) => s.series_index)
+  const min = Math.min(...indices)
+  const max = Math.max(...indices)
+
+  const slots = []
+  let i = min
+  while (i <= max) {
+    if (ownedByIndex.has(i)) {
+      slots.push({ type: 'owned', index: i, id: ownedByIndex.get(i) })
+      i += 1
+      continue
+    }
+    let gapEnd = i
+    while (gapEnd <= max && !ownedByIndex.has(gapEnd)) gapEnd += 1
+    const gapLength = gapEnd - i
+    if (gapLength > GAP_COLLAPSE_THRESHOLD) {
+      slots.push({ type: 'ellipsis', key: `ellipsis-${i}`, from: i, to: gapEnd - 1 })
+    } else {
+      for (let j = i; j < gapEnd; j += 1) {
+        slots.push({ type: 'gap', index: j })
+      }
+    }
+    i = gapEnd
+  }
+  return slots
+}
+
+function TomeChips({ slots, currentIndex, onSelect }) {
+  const scrollRef = useRef(null)
+
+  useEffect(() => {
+    const el = scrollRef.current?.querySelector(`[data-tome="${currentIndex}"]`)
+    el?.scrollIntoView({ behavior: 'instant', inline: 'center', block: 'nearest' })
+  }, [currentIndex])
+
+  return (
+    <div
+      ref={scrollRef}
+      role="group"
+      aria-label="Tomes de la série"
+      className="flex items-center gap-1 overflow-x-auto min-w-0 flex-1 py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
+      {slots.map((slot) => {
+        if (slot.type === 'ellipsis') {
+          return (
+            <span
+              key={slot.key}
+              aria-hidden="true"
+              title={`Tomes ${slot.from} à ${slot.to} non possédés`}
+              className="shrink-0 w-6 h-6 flex items-center justify-center text-xs text-ink/70"
+            >
+              ···
+            </span>
+          )
+        }
+        if (slot.type === 'gap') {
+          return (
+            <span
+              key={`gap-${slot.index}`}
+              title={`Tome ${slot.index} non possédé`}
+              className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full border border-dashed border-ink/20 text-[10px] font-mono text-ink/70"
+            >
+              {slot.index}
+            </span>
+          )
+        }
+        const active = slot.index === currentIndex
+        return (
+          <button
+            key={slot.id}
+            type="button"
+            data-tome={slot.index}
+            disabled={active}
+            onClick={() => onSelect(slot)}
+            aria-current={active ? 'true' : undefined}
+            title={`Tome ${slot.index}`}
+            className={`shrink-0 w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-mono focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:cursor-default ${
+              active
+                ? 'bg-library-fill text-white'
+                : 'border border-library/40 text-library hover:bg-library/10'
+            }`}
+          >
+            {slot.index}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
 
 export default function BookDetail() {
   const { id } = useParams()
@@ -113,6 +216,7 @@ export default function BookDetail() {
     siblingIndex >= 0 && siblingIndex < visibleSiblings.length - 1
       ? visibleSiblings[siblingIndex + 1]
       : null
+  const tomeSlots = buildTomeSlots(visibleSiblings)
 
   // replace: true pour ne pas empiler un tome par hop dans l'historique —
   // sinon "Retour à la collection" doit défaire toute la chaîne de tomes
@@ -129,6 +233,11 @@ export default function BookDetail() {
     },
     [navigate],
   )
+
+  function handleChipSelect(slot) {
+    const direction = slot.index < book.series_index ? 'back' : 'forward'
+    goToSibling({ id: slot.id }, direction)
+  }
 
   // Flèches du clavier : navigue vers le tome précédent/suivant, sauf si le
   // focus est dans un champ de formulaire (select du statut, etc.) ou que la
@@ -275,25 +384,33 @@ export default function BookDetail() {
                 </>
               )}
               {visibleSiblings.length > 1 && (
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-1 max-w-full">
                   <button
                     type="button"
                     onClick={() => goToSibling(prevSibling, 'back')}
                     disabled={!prevSibling}
                     aria-label="Tome précédent"
-                    className="text-sm text-library hover:text-library/80 disabled:text-ink/20 disabled:cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                    className="shrink-0 text-sm text-library hover:text-library/80 disabled:text-ink/20 disabled:cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
                   >
                     ‹
                   </button>
-                  <span className="font-mono text-[11px] text-ink/70">
-                    {siblingIndex + 1} / {visibleSiblings.length}
-                  </span>
+                  {tomeSlots.length > 0 ? (
+                    <TomeChips
+                      slots={tomeSlots}
+                      currentIndex={book.series_index}
+                      onSelect={handleChipSelect}
+                    />
+                  ) : (
+                    <span className="font-mono text-[11px] text-ink/70">
+                      {siblingIndex + 1} / {visibleSiblings.length}
+                    </span>
+                  )}
                   <button
                     type="button"
                     onClick={() => goToSibling(nextSibling, 'forward')}
                     disabled={!nextSibling}
                     aria-label="Tome suivant"
-                    className="text-sm text-library hover:text-library/80 disabled:text-ink/20 disabled:cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                    className="shrink-0 text-sm text-library hover:text-library/80 disabled:text-ink/20 disabled:cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
                   >
                     ›
                   </button>
