@@ -97,7 +97,7 @@ export default function BarcodeScanner({ onDetected, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-sm bg-library text-white font-medium px-4 py-2 text-sm hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+              className="rounded-sm bg-library-fill text-white font-medium px-4 py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
             >
               Saisir l'ISBN manuellement
             </button>

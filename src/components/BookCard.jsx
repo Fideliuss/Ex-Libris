@@ -51,7 +51,7 @@ export default function BookCard({
           aria-hidden="true"
           className={`absolute top-2 left-2 z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center text-xs font-bold ${
             selected
-              ? 'bg-library border-library text-white'
+              ? 'bg-library-fill border-library text-white'
               : 'bg-card/90 border-ink/30 text-transparent'
           }`}
         >
@@ -87,7 +87,7 @@ export default function BookCard({
           />
         )}
         {book.type !== 'book' && (
-          <span className="absolute bottom-2 left-2 bg-library text-white font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-sm">
+          <span className="absolute bottom-2 left-2 bg-library-fill text-white font-mono text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-sm">
             {BOOK_TYPES[book.type]}
           </span>
         )}
@@ -133,7 +133,7 @@ export default function BookCard({
             {book.tags.map((tag) => (
               <span
                 key={tag}
-                className="bg-library text-white text-xs px-2 py-0.5 rounded-full"
+                className="bg-library-fill text-white text-xs px-2 py-0.5 rounded-full"
               >
                 {tag}
               </span>

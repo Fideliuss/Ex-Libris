@@ -1,7 +1,7 @@
 function tabClass(active) {
   return `rounded-full px-4 py-1.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
     active
-      ? 'bg-library text-white'
+      ? 'bg-library-fill text-white'
       : 'border border-ink/20 text-ink/70 hover:border-library hover:text-library'
   }`
 }
