@@ -26,7 +26,6 @@ export default function CollectionFilters({
   type,
   onTypeChange,
   status,
-  onStatusChange,
   hasActiveFilters,
   onReset,
 }) {
@@ -138,7 +137,7 @@ export default function CollectionFilters({
             )}
           </FilterSection>
 
-          <FilterSection label="Type &amp; statut">
+          <FilterSection label="Type">
             <select
               value={type}
               onChange={(e) => onTypeChange(e.target.value)}
@@ -151,19 +150,6 @@ export default function CollectionFilters({
                   {label}
                 </option>
               ))}
-            </select>
-
-            <select
-              value={status}
-              onChange={(e) => onStatusChange(e.target.value)}
-              aria-label="Filtrer par statut"
-              className={selectClass}
-            >
-              <option value="">Tous les statuts</option>
-              <option value="wishlist">Wishlist</option>
-              <option value="to-read">À lire</option>
-              <option value="reading">En cours</option>
-              <option value="read">Lu</option>
             </select>
           </FilterSection>
         </div>
