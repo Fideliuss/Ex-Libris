@@ -385,7 +385,7 @@ function ProductPreview() {
   useShelfParallax(containerRef, colRefs, COLUMN_SPEEDS)
 
   const columns = COLUMN_SPEEDS.map((_, i) =>
-    Array(6)
+    Array(14)
       .fill(PREVIEW_BOOKS.filter((_, idx) => idx % COLUMN_SPEEDS.length === i))
       .flat(),
   )
@@ -447,13 +447,48 @@ function MiniBook({ title, author, status }) {
 // Onglets par profil de lecteur plutôt qu'une grille de fonctionnalités :
 // le visiteur se reconnaît dans un profil, la fonctionnalité derrière
 // devient la conséquence de qui il est, pas un argument de vente abstrait.
+// Défile d'un profil à l'autre pendant que la page reste "épinglée" (pattern
+// scroll-jacking), puis relâche pour continuer normalement une fois les 4
+// profils vus. Désactivé si l'utilisateur préfère moins d'animations : dans
+// ce cas la section reprend sa hauteur normale, les onglets restent
+// cliquables à la main.
 function Features() {
   const t = useT()
   const [active, setActive] = useState(0)
-  const current = t.features[active]
+  const [pinned, setPinned] = useState(true)
+  const wrapperRef = useRef(null)
+  const count = t.features.length
 
-  return (
-    <section id="features" className="relative z-10 max-w-5xl mx-auto px-6 py-20">
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setPinned(false)
+      return
+    }
+    const wrapper = wrapperRef.current
+    if (!wrapper) return
+
+    let frame = null
+    function update() {
+      frame = null
+      const rect = wrapper.getBoundingClientRect()
+      const total = rect.height - window.innerHeight
+      const scrolled = -rect.top
+      const progress = total > 0 ? Math.min(1, Math.max(0, scrolled / total)) : 0
+      setActive(Math.min(count - 1, Math.floor(progress * count)))
+    }
+    function onScroll() {
+      if (frame === null) frame = requestAnimationFrame(update)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    update()
+    return () => {
+      window.removeEventListener('scroll', onScroll)
+      if (frame !== null) cancelAnimationFrame(frame)
+    }
+  }, [count])
+
+  const panel = (
+    <>
       <Reveal className="flex justify-center mb-12">
         <h2 className="font-serif text-3xl font-semibold text-center bg-paper/85 backdrop-blur-sm rounded-xl px-8 py-3 shadow-lg">
           {t.featuresTitle}
@@ -485,11 +520,32 @@ function Features() {
 
           <div role="tabpanel" className="flex-1 min-w-0 bg-card rounded-xl p-6 sm:p-10 flex items-center min-h-[160px]">
             <p key={active} className="fade-in font-serif text-lg sm:text-xl leading-relaxed">
-              {current.text}
+              {t.features[active].text}
             </p>
           </div>
         </div>
       </Reveal>
+    </>
+  )
+
+  if (!pinned) {
+    return (
+      <section id="features" className="relative z-10 max-w-5xl mx-auto px-6 py-20">
+        {panel}
+      </section>
+    )
+  }
+
+  return (
+    <section
+      id="features"
+      ref={wrapperRef}
+      className="relative z-10"
+      style={{ height: `${count * 70}vh` }}
+    >
+      <div className="sticky top-16 h-[calc(100vh-4rem)] flex items-center justify-center px-6">
+        <div className="max-w-5xl w-full">{panel}</div>
+      </div>
     </section>
   )
 }
