@@ -7,7 +7,9 @@
      échelle de graisse volontairement limitée : 400 (texte courant), 500
      (labels/mise en avant légère), 600 (boutons/actions). */
   --font-serif: 'Fraunces', Georgia, serif;
-  --font-sans: 'Inter', system-ui, sans-serif;
+  /* Test en cours : Public Sans à la place d'Inter — pas encore un choix
+     retenu pour le design system. */
+  --font-sans: 'Public Sans', system-ui, sans-serif;
   /* Test en cours : Courier Prime à la place de JetBrains Mono sur tous les
      labels/badges/petites capitales de l'app — pas encore un choix retenu
      pour le design system. */
