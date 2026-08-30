@@ -16,23 +16,23 @@ const STRINGS = {
         'Scanne, classe, suis tes objectifs de lecture et partage le tout avec ton foyer.',
       cta: 'Se connecter',
     },
-    featuresTitle: 'Fonctionnalités',
+    featuresTitle: 'Tu es plutôt...',
     features: [
       {
-        title: 'Ajoute en un scan',
-        text: 'Scanne le code-barres ISBN et la fiche se remplit toute seule (Google Books, OpenLibrary, BNF en secours).',
+        title: 'Le collectionneur pressé',
+        text: 'Tu rentres avec dix nouveaux livres ? Scanne le code-barres et la fiche se remplit toute seule — auteur, éditeur, résumé, en quelques secondes.',
       },
       {
-        title: 'Toute ta collection, triée',
-        text: 'Livres, BD, comics, mangas : statut, tags, séries, éditeurs et collections, tout au même endroit.',
+        title: 'Le lecteur organisé',
+        text: 'Livres, BD, comics, mangas : chacun garde sa place. Statuts, tags, séries, éditeurs — ta collection reste rangée même quand elle explose.',
       },
       {
-        title: 'Objectifs & statistiques',
-        text: "Un objectif de lecture par an, un système de points, un calendrier de lecture et l'historique des années passées.",
+        title: 'Qui vise un objectif',
+        text: "Un objectif de lecture par an, un système de points, un calendrier. Tu sais où tu en es sans avoir à compter toi-même.",
       },
       {
-        title: 'À deux, en toute simplicité',
-        text: 'Partage ta bibliothèque avec ton foyer : chacun garde ses livres, mais vous voyez tout à deux.',
+        title: 'Qui partage à deux',
+        text: 'Toi et ton binôme gardez chacun vos livres, mais vous voyez tout côte à côte — sans jamais les mélanger.',
       },
     ],
     howTitle: 'Comment ça marche',
@@ -95,23 +95,23 @@ const STRINGS = {
         'Scan, sort, track your reading goals and share it all with your household.',
       cta: 'Log in',
     },
-    featuresTitle: 'Features',
+    featuresTitle: "You're the type who...",
     features: [
       {
-        title: 'Add with a scan',
-        text: 'Scan the ISBN barcode and the entry fills itself in (Google Books, OpenLibrary, BNF as fallback).',
+        title: 'The rushed collector',
+        text: 'Coming home with ten new books? Scan the barcode and the entry fills itself in — author, publisher, summary, in seconds.',
       },
       {
-        title: 'Your whole collection, sorted',
-        text: 'Books, comics, manga: status, tags, series, publishers and collections, all in one place.',
+        title: 'The organized reader',
+        text: 'Books, comics, manga: everything keeps its place. Status, tags, series, publishers — your collection stays tidy even as it grows.',
       },
       {
-        title: 'Goals & statistics',
-        text: 'A yearly reading goal, a points system, a reading calendar and the full history of past years.',
+        title: 'Chasing a goal',
+        text: 'A yearly reading goal, a points system, a calendar. You always know where you stand, without counting it yourself.',
       },
       {
-        title: 'Simple sharing, together',
-        text: 'Share your library with your household: everyone keeps their own books, but you see it all together.',
+        title: 'Sharing as a pair',
+        text: 'You and your partner each keep your own books, but see it all side by side — never mixed up.',
       },
     ],
     howTitle: 'How it works',
@@ -444,8 +444,14 @@ function MiniBook({ title, author, status }) {
   )
 }
 
+// Onglets par profil de lecteur plutôt qu'une grille de fonctionnalités :
+// le visiteur se reconnaît dans un profil, la fonctionnalité derrière
+// devient la conséquence de qui il est, pas un argument de vente abstrait.
 function Features() {
   const t = useT()
+  const [active, setActive] = useState(0)
+  const current = t.features[active]
+
   return (
     <section id="features" className="relative z-10 max-w-5xl mx-auto px-6 py-20">
       <Reveal className="flex justify-center mb-12">
@@ -453,16 +459,37 @@ function Features() {
           {t.featuresTitle}
         </h2>
       </Reveal>
-      <div className="grid sm:grid-cols-2 gap-6">
-        {t.features.map((f, i) => (
-          <Reveal key={f.title} delay={i * 80}>
-            <div className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6 h-full">
-              <h3 className="font-serif text-lg mb-2">{f.title}</h3>
-              <p className="text-sm text-ink/70">{f.text}</p>
-            </div>
-          </Reveal>
-        ))}
-      </div>
+
+      <Reveal>
+        <div className="bg-paper/85 backdrop-blur-sm rounded-2xl shadow-xl p-3 sm:p-4 flex flex-col sm:flex-row gap-3 sm:gap-6">
+          <div
+            role="tablist"
+            aria-label={t.featuresTitle}
+            className="flex sm:flex-col gap-2 overflow-x-auto sm:overflow-visible pb-1 sm:pb-0 sm:w-56 shrink-0"
+          >
+            {t.features.map((f, i) => (
+              <button
+                key={f.title}
+                type="button"
+                role="tab"
+                aria-selected={active === i}
+                onClick={() => setActive(i)}
+                className={`shrink-0 text-left rounded-xl px-4 py-3 text-sm font-medium whitespace-nowrap sm:whitespace-normal focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
+                  active === i ? 'bg-library text-white' : 'text-ink/70 hover:bg-card'
+                }`}
+              >
+                {f.title}
+              </button>
+            ))}
+          </div>
+
+          <div role="tabpanel" className="flex-1 min-w-0 bg-card rounded-xl p-6 sm:p-10 flex items-center min-h-[160px]">
+            <p key={active} className="fade-in font-serif text-lg sm:text-xl leading-relaxed">
+              {current.text}
+            </p>
+          </div>
+        </div>
+      </Reveal>
     </section>
   )
 }
