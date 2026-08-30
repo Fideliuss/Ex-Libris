@@ -17,14 +17,14 @@ import LoadingScreen from '../components/LoadingScreen'
 import BookCoverPlaceholder from '../components/BookCoverPlaceholder'
 
 // Au-delà de ce nombre de tomes manquants d'affilée, on compresse le trou en
-// une seule chip "···" plutôt que d'en afficher une par tome manquant — sans
-// ça, posséder les tomes 1 et 1000 d'une longue série générerait ~1000
+// une seule chip "···" plutôt que d'en afficher une par tome manquant :
+// sans ça, posséder les tomes 1 et 1000 d'une longue série générerait ~1000
 // chips grisées.
 const GAP_COLLAPSE_THRESHOLD = 3
 
 // Construit la rangée de chips [tome possédé | tome manquant | trou
-// compressé] entre le plus petit et le plus grand tome possédé — pas besoin
-// de connaître la taille réelle de la série, juste l'étendue de ce qu'on a.
+// compressé] entre le plus petit et le plus grand tome possédé (pas besoin
+// de connaître la taille réelle de la série, juste l'étendue de ce qu'on a).
 function buildTomeSlots(siblings) {
   const numbered = siblings.filter((s) => s.series_index != null)
   if (numbered.length === 0) return []
@@ -68,7 +68,7 @@ function TomeChips({ slots, currentIndex, onSelect }) {
   }, [currentIndex])
 
   // Molette verticale -> défilement horizontal : sans ça, la rangée n'est
-  // scrollable qu'au doigt (mobile) ou en glissant la scrollbar — sur PC
+  // scrollable qu'au doigt (mobile) ou en glissant la scrollbar. Sur PC
   // avec une souris classique, rien ne permettait d'atteindre les chips
   // hors champ.
   useEffect(() => {
@@ -123,7 +123,7 @@ function TomeChips({ slots, currentIndex, onSelect }) {
             disabled={active}
             onClick={() => onSelect(slot)}
             aria-current={active ? 'true' : undefined}
-            title={`Tome ${slot.index} — ${STATUS_LABELS[slot.status] ?? slot.status}`}
+            title={`Tome ${slot.index} (${STATUS_LABELS[slot.status] ?? slot.status})`}
             className={`shrink-0 w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-mono focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:cursor-default ${
               active
                 ? `${STATUS_BADGE_CLASS[slot.status] ?? 'bg-ink/70 text-white'} border-transparent`
