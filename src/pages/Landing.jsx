@@ -191,7 +191,7 @@ export default function Landing() {
     <LanguageContext.Provider value={{ lang, setLang }}>
       <div className="min-h-svh">
         <Nav />
-        <div className="relative overflow-hidden">
+        <div className="relative">
           <ProductPreview />
           <Hero />
           <Features />
