@@ -1,4 +1,4 @@
-import { EDITION_TYPES } from '../lib/editionTypes'
+import { EDITION_GROUPS, EDITION_TYPES } from '../lib/editionTypes'
 
 const checkboxClass =
   'rounded-sm border-ink/30 text-library-fill focus:outline-none focus-visible:ring-2 focus-visible:ring-library'
@@ -30,21 +30,28 @@ export default function EditionCheckboxes({ value = [], onChange }) {
   }
 
   return (
-    <div className="space-y-2">
-      <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-        {EDITION_TYPES.map((type) => (
-          <label key={type} className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={value.includes(type)}
-              onChange={() => toggle(type)}
-              className={checkboxClass}
-            />
-            {type}
-          </label>
-        ))}
-      </div>
-      <div className="flex items-center gap-2">
+    <div className="space-y-3">
+      {EDITION_GROUPS.map((group) => (
+        <div key={group.label}>
+          <p className="font-mono text-xs uppercase tracking-widest text-ink/70 mb-1.5">
+            {group.label}
+          </p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+            {group.types.map((type) => (
+              <label key={type} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={value.includes(type)}
+                  onChange={() => toggle(type)}
+                  className={checkboxClass}
+                />
+                {type}
+              </label>
+            ))}
+          </div>
+        </div>
+      ))}
+      <div className="flex items-center gap-2 pt-1 border-t border-ink/10">
         <label className="flex items-center gap-2 text-sm shrink-0">
           <input
             type="checkbox"
