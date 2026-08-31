@@ -5,6 +5,7 @@ import {
   deleteBook,
   getBook,
   listAllCollections,
+  listAllEditions,
   listAllTags,
   updateBook,
 } from '../lib/books'
@@ -28,6 +29,7 @@ const emptyBook = {
   illustrator: '',
   publisher: '',
   collection: '',
+  edition: '',
   isbn: '',
   cover_url: '',
   description: '',
@@ -55,6 +57,7 @@ export default function BookForm() {
   const [book, setBook] = useState(emptyBook)
   const [existingTags, setExistingTags] = useState([])
   const [existingCollections, setExistingCollections] = useState([])
+  const [existingEditions, setExistingEditions] = useState([])
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -68,6 +71,7 @@ export default function BookForm() {
   useEffect(() => {
     listAllTags().then(setExistingTags).catch(() => {})
     listAllCollections().then(setExistingCollections).catch(() => {})
+    listAllEditions().then(setExistingEditions).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -373,6 +377,21 @@ export default function BookForm() {
               <datalist id="collection-suggestions">
                 {existingCollections.map((c) => (
                   <option key={c} value={c} />
+                ))}
+              </datalist>
+            </Field>
+
+            <Field label="Édition">
+              <input
+                value={book.edition ?? ''}
+                onChange={(e) => set('edition', e.target.value)}
+                placeholder="Poche, Grand format, Illustrée, Collector…"
+                list="edition-suggestions"
+                className={inputClass}
+              />
+              <datalist id="edition-suggestions">
+                {existingEditions.map((e) => (
+                  <option key={e} value={e} />
                 ))}
               </datalist>
             </Field>

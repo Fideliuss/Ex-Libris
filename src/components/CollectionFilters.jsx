@@ -17,6 +17,9 @@ export default function CollectionFilters({
   collection,
   onCollectionChange,
   collections,
+  edition,
+  onEditionChange,
+  editions,
   series,
   onSeriesChange,
   seriesList,
@@ -30,7 +33,7 @@ export default function CollectionFilters({
   onReset,
 }) {
   const activeCount =
-    [publisher, collection, series, universe, type, status].filter(Boolean)
+    [publisher, collection, edition, series, universe, type, status].filter(Boolean)
       .length + (selectedTags.length > 0 ? 1 : 0)
   const [expanded, setExpanded] = useState(() => hasActiveFilters)
 
@@ -102,6 +105,20 @@ export default function CollectionFilters({
               {collections.map((c) => (
                 <option key={c} value={c}>
                   {c}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={edition}
+              onChange={(e) => onEditionChange(e.target.value)}
+              aria-label="Filtrer par édition"
+              className={selectClass}
+            >
+              <option value="">Toutes les éditions</option>
+              {editions.map((e) => (
+                <option key={e} value={e}>
+                  {e}
                 </option>
               ))}
             </select>

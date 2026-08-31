@@ -131,6 +131,20 @@ export async function listAllCollections() {
   return [...collections].sort((a, b) => a.localeCompare(b, 'fr'))
 }
 
+export async function listAllEditions() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data, error } = await supabase
+    .from('books')
+    .select('edition')
+    .eq('user_id', user.id)
+    .not('edition', 'is', null)
+  if (error) throw error
+  const editions = new Set(data.map((row) => row.edition).filter(Boolean))
+  return [...editions].sort((a, b) => a.localeCompare(b, 'fr'))
+}
+
 // Migration : un tag utilisé comme nom de collection éditeur (ex: "folio sf")
 // devient la valeur du champ `collection` sur tous les livres concernés, et
 // est retiré de leurs tags. Retourne le nombre de livres modifiés.

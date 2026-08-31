@@ -103,6 +103,7 @@ export default function Collection() {
   const selectedTags = searchParams.getAll('tag')
   const publisher = searchParams.get('publisher') ?? ''
   const collection = searchParams.get('collection') ?? ''
+  const edition = searchParams.get('edition') ?? ''
   const series = searchParams.get('series') ?? ''
   const universe = searchParams.get('universe') ?? ''
   const type = searchParams.get('type') ?? ''
@@ -125,6 +126,7 @@ export default function Collection() {
   const setSearch = (value) => setParam('q', value)
   const setPublisher = (value) => setParam('publisher', value)
   const setCollection = (value) => setParam('collection', value)
+  const setEdition = (value) => setParam('edition', value)
   const setUniverse = (value) => setParam('universe', value)
   const setType = (value) => setParam('type', value)
   const setStatus = (value) => setParam('status', value)
@@ -185,6 +187,14 @@ export default function Collection() {
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
   }, [books])
 
+  const editions = useMemo(() => {
+    const set = new Set()
+    for (const book of books) {
+      if (book.edition) set.add(book.edition)
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [books])
+
   const seriesList = useMemo(() => {
     const set = new Set()
     for (const book of books) {
@@ -241,6 +251,7 @@ export default function Collection() {
         return false
       if (publisher && book.publisher !== publisher) return false
       if (collection && book.collection !== collection) return false
+      if (edition && book.edition !== edition) return false
       if (series && book.series !== series) return false
       if (universe && book.universe !== universe) return false
       if (type && book.type !== type) return false
@@ -253,6 +264,7 @@ export default function Collection() {
     selectedTags,
     publisher,
     collection,
+    edition,
     series,
     universe,
     type,
@@ -288,6 +300,7 @@ export default function Collection() {
       selectedTags.length > 0 ||
       publisher ||
       collection ||
+      edition ||
       series ||
       universe ||
       type ||
@@ -303,6 +316,7 @@ export default function Collection() {
           'tag',
           'publisher',
           'collection',
+          'edition',
           'series',
           'universe',
           'type',
@@ -555,6 +569,9 @@ export default function Collection() {
             collection={collection}
             onCollectionChange={setCollection}
             collections={collections}
+            edition={edition}
+            onEditionChange={setEdition}
+            editions={editions}
             series={series}
             onSeriesChange={handleSeriesChange}
             seriesList={seriesList}
