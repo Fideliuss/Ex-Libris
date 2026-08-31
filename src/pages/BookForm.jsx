@@ -304,8 +304,6 @@ export default function BookForm() {
             )}
           </Field>
 
-          <LivePreviewCard book={book} />
-
           <Field label="Titre" required>
             <input
               required
@@ -630,6 +628,8 @@ export default function BookForm() {
         </form>
       </div>
 
+      <LivePreviewCard book={book} />
+
       {scannerOpen && (
         <Suspense
           fallback={
@@ -660,12 +660,15 @@ function LivePreviewCard({ book }) {
   // fallback local (comportement propre à cet aperçu, pas à la vraie carte).
   const previewBook = { ...book, title: book.title || 'Titre à renseigner' }
   return (
-    <div className="max-w-[220px]">
+    // Flottant plutôt qu'inséré dans le flux du formulaire (encombrant sur
+    // un long formulaire vertical), et réservé au desktop : pas de place
+    // pour ça à côté du formulaire sur un écran étroit.
+    <div className="hidden lg:block fixed top-24 right-6 w-44 z-20">
       <p className="font-mono text-xs tracking-widest text-library uppercase mb-2">
         Aperçu
       </p>
       <div
-        className={`relative bg-card border-t-4 border-dashed rounded-sm shadow-sm overflow-hidden ${STATUS_BORDER_CLASS[book.status]}`}
+        className={`relative bg-card border-t-4 border-dashed rounded-sm shadow-lg overflow-hidden ${STATUS_BORDER_CLASS[book.status]}`}
       >
         <BookCardVisual book={previewBook} />
       </div>
