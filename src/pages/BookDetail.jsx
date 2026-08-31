@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getBook, getSeriesSiblings, updateBook } from '../lib/books'
+import { sortEditions } from '../lib/editionTypes'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import {
@@ -466,7 +467,7 @@ export default function BookDetail() {
               </p>
               {book.edition?.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1.5">
-                  {book.edition.map((e) => (
+                  {sortEditions(book.edition).map((e) => (
                     <span
                       key={e}
                       className="text-xs px-2 py-0.5 rounded-full border border-brass/40 text-brass"

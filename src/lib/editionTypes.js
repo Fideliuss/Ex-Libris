@@ -20,3 +20,16 @@ export const EDITION_GROUPS = [
 ]
 
 export const EDITION_TYPES = EDITION_GROUPS.flatMap((group) => group.types)
+
+// Un livre coche ses éditions dans l'ordre où l'utilisateur clique, pas dans
+// l'ordre des groupes : on retrie systématiquement (Format avant Édition
+// spéciale) avant affichage. Les valeurs "Autre" (hors liste) passent en
+// dernier.
+export function sortEditions(values) {
+  return [...values].sort((a, b) => {
+    const ai = EDITION_TYPES.indexOf(a)
+    const bi = EDITION_TYPES.indexOf(b)
+    return (ai === -1 ? EDITION_TYPES.length : ai) -
+      (bi === -1 ? EDITION_TYPES.length : bi)
+  })
+}
