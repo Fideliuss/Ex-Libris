@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { STATUS_BADGE_CLASS, STATUS_LABELS } from '../lib/statusLabels'
 import BookCoverPlaceholder from './BookCoverPlaceholder'
 
@@ -239,14 +239,37 @@ function StepContent({ step, firstName }) {
   )
 }
 
+// Durée de la transition de sortie (ms), à garder cohérente avec la classe
+// duration-200 posée plus bas sur le voile et la carte.
+const CLOSE_TRANSITION_MS = 200
+
 export default function OnboardingModal({ step, onStepChange, onSkip, onFinish, firstName }) {
+  const [closing, setClosing] = useState(false)
+
+  // Ferme avec une transition de sortie (fondu + léger scale) plutôt qu'une
+  // disparition instantanée : on démonte le modal (via `action`, qui vient du
+  // parent) seulement une fois le fondu joué, sauf préférence de mouvement
+  // réduit où l'on ferme directement.
+  function requestClose(action) {
+    if (closing) return
+    const reduceMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (reduceMotion) {
+      action()
+      return
+    }
+    setClosing(true)
+    setTimeout(action, CLOSE_TRANSITION_MS)
+  }
+
   useEffect(() => {
     function handleKeyDown(e) {
-      if (e.key === 'Escape') onSkip()
+      if (e.key === 'Escape') requestClose(onSkip)
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onSkip])
+  }, [onSkip, closing])
 
   const isLast = step === TOTAL_STEPS - 1
 
@@ -255,8 +278,10 @@ export default function OnboardingModal({ step, onStepChange, onSkip, onFinish, 
       role="dialog"
       aria-modal="true"
       aria-label="Tutoriel Ex Libris"
-      onClick={onSkip}
-      className="fixed inset-0 z-50 overflow-hidden bg-ink flex items-center justify-center p-6"
+      onClick={() => requestClose(onSkip)}
+      className={`fixed inset-0 z-50 overflow-hidden bg-ink flex items-center justify-center p-6 transition-opacity duration-200 ${
+        closing ? 'opacity-0' : 'opacity-100'
+      }`}
     >
       <div className="absolute inset-0 flex gap-5 justify-center" aria-hidden="true">
         {COLUMNS.map((col, i) => (
@@ -267,11 +292,13 @@ export default function OnboardingModal({ step, onStepChange, onSkip, onFinish, 
 
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-[420px] bg-card border-t-4 border-dashed border-brass rounded-sm shadow-xl p-8 sm:p-9"
+        className={`relative w-full max-w-[420px] bg-card border-t-4 border-dashed border-brass rounded-sm shadow-xl p-8 sm:p-9 transition-all duration-200 ${
+          closing ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
+        }`}
       >
         <button
           type="button"
-          onClick={onSkip}
+          onClick={() => requestClose(onSkip)}
           className="absolute top-4 right-4 text-sm text-ink/50 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm p-1"
         >
           Passer
@@ -315,7 +342,7 @@ export default function OnboardingModal({ step, onStepChange, onSkip, onFinish, 
           </button>
           <button
             type="button"
-            onClick={isLast ? onFinish : () => onStepChange(step + 1)}
+            onClick={isLast ? () => requestClose(onFinish) : () => onStepChange(step + 1)}
             className="rounded-sm bg-library-fill text-white font-medium px-5 py-2.5 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
           >
             {isLast ? 'Commencer' : 'Suivant'}
