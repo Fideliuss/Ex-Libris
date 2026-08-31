@@ -317,3 +317,36 @@ body {
     transform: translateY(0);
   }
 }
+
+/* Changement d'écran du tutoriel : glissement latéral directionnel (droite
+   en avançant, gauche en reculant), même déplacement de 24px que .reveal /
+   .hero-in pour rester dans la même grammaire de mouvement que le reste de
+   l'app plutôt que d'inventer une nouvelle amplitude. */
+@media (prefers-reduced-motion: no-preference) {
+  .slide-in-right {
+    animation: slide-in-right 0.3s ease-out both;
+  }
+  .slide-in-left {
+    animation: slide-in-left 0.3s ease-out both;
+  }
+}
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

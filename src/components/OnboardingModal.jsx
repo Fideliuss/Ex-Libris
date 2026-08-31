@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { STATUS_BADGE_CLASS, STATUS_LABELS } from '../lib/statusLabels'
 import BookCoverPlaceholder from './BookCoverPlaceholder'
 
@@ -246,22 +246,36 @@ const CLOSE_TRANSITION_MS = 200
 export default function OnboardingModal({ step, onStepChange, onSkip, onFinish, firstName }) {
   const [closing, setClosing] = useState(false)
 
+  // `step` est piloté par le parent (TutorialContext) : on déduit le sens du
+  // glissement en comparant à l'étape précédente. Mise à jour pendant le
+  // rendu plutôt que dans un effet (pattern React recommandé pour dériver un
+  // état à partir d'un changement de prop), pas de lecture de ref au rendu.
+  const [prevStep, setPrevStep] = useState(step)
+  const [direction, setDirection] = useState('forward')
+  if (step !== prevStep) {
+    setPrevStep(step)
+    setDirection(step > prevStep ? 'forward' : 'back')
+  }
+
   // Ferme avec une transition de sortie (fondu + léger scale) plutôt qu'une
   // disparition instantanée : on démonte le modal (via `action`, qui vient du
   // parent) seulement une fois le fondu joué, sauf préférence de mouvement
   // réduit où l'on ferme directement.
-  function requestClose(action) {
-    if (closing) return
-    const reduceMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (reduceMotion) {
-      action()
-      return
-    }
-    setClosing(true)
-    setTimeout(action, CLOSE_TRANSITION_MS)
-  }
+  const requestClose = useCallback(
+    (action) => {
+      if (closing) return
+      const reduceMotion =
+        typeof window !== 'undefined' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      if (reduceMotion) {
+        action()
+        return
+      }
+      setClosing(true)
+      setTimeout(action, CLOSE_TRANSITION_MS)
+    },
+    [closing],
+  )
 
   useEffect(() => {
     function handleKeyDown(e) {
@@ -269,7 +283,7 @@ export default function OnboardingModal({ step, onStepChange, onSkip, onFinish, 
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onSkip, closing])
+  }, [onSkip, closing, requestClose])
 
   const isLast = step === TOTAL_STEPS - 1
 
@@ -292,7 +306,7 @@ export default function OnboardingModal({ step, onStepChange, onSkip, onFinish, 
 
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`relative w-full max-w-[420px] bg-card border-t-4 border-dashed border-brass rounded-sm shadow-xl p-8 sm:p-9 transition-all duration-200 ${
+        className={`relative w-full max-w-[420px] max-h-[85vh] overflow-y-auto bg-card border-t-4 border-dashed border-brass rounded-sm shadow-xl p-8 sm:p-9 transition-all duration-200 ${
           closing ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
         }`}
       >
@@ -327,7 +341,10 @@ export default function OnboardingModal({ step, onStepChange, onSkip, onFinish, 
           ))}
         </div>
 
-        <div key={step} className="fade-in">
+        <div
+          key={step}
+          className={direction === 'forward' ? 'slide-in-right' : 'slide-in-left'}
+        >
           <StepContent step={step} firstName={firstName} />
         </div>
 
