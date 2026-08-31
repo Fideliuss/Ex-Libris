@@ -1,48 +1,64 @@
 import { useEffect } from 'react'
 import { STATUS_BADGE_CLASS, STATUS_LABELS } from '../lib/statusLabels'
+import BookCoverPlaceholder from './BookCoverPlaceholder'
 
 const TOTAL_STEPS = 5
 
-// Fond décoratif : colonnes de blocs colorés qui défilent en boucle continue
-// derrière le modal (pas de scroll réel dans un modal, donc pas le même
-// mécanisme que le mur de couvertures de la landing). Chaque colonne a sa
-// propre durée/sens, posés en style inline (voir le commentaire sur les
-// keyframes dans index.css pour pourquoi pas une classe Tailwind).
-const BLOCK_HEIGHTS = [84, 68, 92, 60, 76, 88, 64, 80, 72]
-const BLOCK_COLORS = [
-  'bg-cover',
-  'bg-library-fill',
-  'bg-wishlist-fill',
-  'bg-brass-fill',
-  'bg-stamp-fill',
-  'bg-toread',
+// Fond décoratif : colonnes de vraies couvertures (même composant que
+// partout ailleurs dans l'app) qui défilent en boucle continue derrière le
+// modal (pas de scroll réel dans un modal, donc pas le même mécanisme que le
+// mur de couvertures de la landing). Chaque colonne a sa propre durée/sens,
+// posés en style inline (voir le commentaire sur les keyframes dans
+// index.css pour pourquoi pas une classe Tailwind).
+const SAMPLE_BOOKS = [
+  { title: 'Fondation', author: 'Isaac Asimov' },
+  { title: 'Dune', author: 'Frank Herbert' },
+  { title: '1984', author: 'George Orwell' },
+  { title: 'Sapiens', author: 'Yuval Noah Harari' },
+  { title: "L'Étranger", author: 'Albert Camus' },
+  { title: 'Les Misérables', author: 'Victor Hugo' },
+  { title: 'Le Petit Prince', author: 'A. de Saint-Exupéry' },
+  { title: 'One Piece', author: 'Eiichiro Oda', volume: 42 },
+  { title: 'Naruto', author: 'Masashi Kishimoto', volume: 7 },
+  { title: 'Watchmen', author: 'Alan Moore' },
 ]
+const COLUMN_BOOK_COUNT = 5
 const COLUMNS = [
   { duration: 36, direction: 'up', offset: 0 },
-  { duration: 30, direction: 'down', offset: 2 },
-  { duration: 44, direction: 'up', offset: 4 },
+  { duration: 30, direction: 'down', offset: 3 },
+  { duration: 44, direction: 'up', offset: 6 },
   { duration: 26, direction: 'down', offset: 1 },
-  { duration: 34, direction: 'up', offset: 3 },
+  { duration: 34, direction: 'up', offset: 8 },
+  { duration: 40, direction: 'down', offset: 4 },
+  { duration: 24, direction: 'up', offset: 2 },
 ]
 
 function CoverColumn({ duration, direction, offset }) {
   const reduceMotion =
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  const blocks = BLOCK_HEIGHTS.map((height, i) => ({
-    height,
-    color: BLOCK_COLORS[(i + offset) % BLOCK_COLORS.length],
-  }))
-  const doubled = [...blocks, ...blocks]
+  const books = [...Array(COLUMN_BOOK_COUNT)].map(
+    (_, i) => SAMPLE_BOOKS[(i + offset) % SAMPLE_BOOKS.length],
+  )
+  const doubled = [...books, ...books]
   return (
     <div
-      className="w-14 shrink-0 flex flex-col gap-2.5"
+      className="w-20 shrink-0 flex flex-col gap-3"
       style={{
         animation: reduceMotion ? 'none' : `scroll-${direction} ${duration}s linear infinite`,
       }}
     >
-      {doubled.map((b, i) => (
-        <div key={i} className={`rounded-sm ${b.color}`} style={{ height: b.height }} />
+      {doubled.map((book, i) => (
+        <div
+          key={i}
+          className="relative w-full aspect-[2/3] rounded-sm overflow-hidden shadow-sm shrink-0"
+        >
+          <BookCoverPlaceholder
+            title={book.title}
+            author={book.author}
+            volume={book.volume ?? null}
+          />
+        </div>
       ))}
     </div>
   )
@@ -259,10 +275,9 @@ export default function OnboardingModal({ step, onStepChange, onSkip, onFinish, 
         <button
           type="button"
           onClick={onSkip}
-          aria-label="Fermer"
-          className="absolute top-3.5 right-4 text-ink/50 hover:text-ink text-2xl leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm p-1"
+          className="absolute top-4 right-4 text-sm text-ink/50 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm p-1"
         >
-          ×
+          Passer
         </button>
 
         <div
@@ -288,36 +303,27 @@ export default function OnboardingModal({ step, onStepChange, onSkip, onFinish, 
           ))}
         </div>
 
-        <StepContent step={step} firstName={firstName} />
+        <div key={step} className="fade-in">
+          <StepContent step={step} firstName={firstName} />
+        </div>
 
-        {isLast ? (
-          <div className="flex justify-center mt-7">
-            <button
-              type="button"
-              onClick={onFinish}
-              className="rounded-sm bg-library-fill text-white font-medium px-7 py-2.5 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
-            >
-              Commencer
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between gap-3 mt-7">
-            <button
-              type="button"
-              onClick={onSkip}
-              className="text-sm text-ink/70 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm py-2"
-            >
-              Passer
-            </button>
-            <button
-              type="button"
-              onClick={() => onStepChange(step + 1)}
-              className="rounded-sm bg-library-fill text-white font-medium px-5 py-2.5 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
-            >
-              Suivant
-            </button>
-          </div>
-        )}
+        <div className="flex items-center justify-between gap-3 mt-7">
+          <button
+            type="button"
+            onClick={() => onStepChange(step - 1)}
+            disabled={step === 0}
+            className="text-sm text-ink/70 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm py-2 disabled:invisible"
+          >
+            Précédent
+          </button>
+          <button
+            type="button"
+            onClick={isLast ? onFinish : () => onStepChange(step + 1)}
+            className="rounded-sm bg-library-fill text-white font-medium px-5 py-2.5 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+          >
+            {isLast ? 'Commencer' : 'Suivant'}
+          </button>
+        </div>
       </div>
     </div>
   )
