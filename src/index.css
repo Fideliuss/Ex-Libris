@@ -295,3 +295,58 @@ body {
     transform: translateY(-8px);
   }
 }
+
+/* Colonnes de couvertures en arrière-plan du tutoriel d'onboarding : défilement
+   en boucle continue (pas lié au scroll, il n'y en a pas dans un modal), posé
+   en JS via style inline plutôt qu'une classe Tailwind puisque chaque colonne
+   a sa propre durée (voir OnboardingModal.jsx). Une classe arbitraire avec une
+   valeur interpolée ne serait pas détectée par le JIT Tailwind. */
+@keyframes scroll-up {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+@keyframes scroll-down {
+  from {
+    transform: translateY(-50%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Changement d'écran du tutoriel : glissement latéral directionnel (droite
+   en avançant, gauche en reculant), même déplacement de 24px que .reveal /
+   .hero-in pour rester dans la même grammaire de mouvement que le reste de
+   l'app plutôt que d'inventer une nouvelle amplitude. */
+@media (prefers-reduced-motion: no-preference) {
+  .slide-in-right {
+    animation: slide-in-right 0.3s ease-out both;
+  }
+  .slide-in-left {
+    animation: slide-in-left 0.3s ease-out both;
+  }
+}
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
