@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useTutorial } from '../context/TutorialContext'
 import { useGoBack } from '../lib/navigation'
 import SharingPanel from '../components/SharingPanel'
 import LoadingScreen from '../components/LoadingScreen'
@@ -31,6 +32,8 @@ function LibrarySection() {
 }
 
 function SecuritySection() {
+  const { replay } = useTutorial()
+
   return (
     <div className="space-y-4">
       <div>
@@ -41,6 +44,16 @@ function SecuritySection() {
         >
           Changer de mot de passe
         </Link>
+      </div>
+      <div>
+        <h3 className="text-sm font-medium mb-2">Tutoriel</h3>
+        <button
+          type="button"
+          onClick={replay}
+          className="rounded-sm border border-ink/20 px-4 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+        >
+          Revoir le tutoriel
+        </button>
       </div>
       <DeleteAccountSection />
     </div>

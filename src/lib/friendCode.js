@@ -5,11 +5,21 @@ const UNIQUE_VIOLATION = '23505'
 export async function getMyProfile(userId) {
   const { data, error } = await supabase
     .from('profiles')
-    .select('user_id, display_name, first_name, last_name, email, friend_code')
+    .select(
+      'user_id, display_name, first_name, last_name, email, friend_code, has_seen_tutorial',
+    )
     .eq('user_id', userId)
     .maybeSingle()
   if (error) throw error
   return data
+}
+
+export async function markTutorialSeen(userId) {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ has_seen_tutorial: true })
+    .eq('user_id', userId)
+  if (error) throw error
 }
 
 // display_name suit le prénom, comme à l'inscription (handle_new_user_profile) :
