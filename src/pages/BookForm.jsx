@@ -21,6 +21,7 @@ import { BOOK_TYPES } from '../lib/bookTypes'
 import { useGoBack } from '../lib/navigation'
 import LoadingScreen from '../components/LoadingScreen'
 import BookCardVisual from '../components/BookCardVisual'
+import SuggestInput from '../components/SuggestInput'
 import { STATUS_BORDER_CLASS } from '../lib/statusLabels'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
@@ -368,63 +369,43 @@ export default function BookForm() {
             </div>
 
             <Field label="Éditeur">
-              <input
-                value={book.publisher ?? ''}
-                onChange={(e) => set('publisher', e.target.value)}
-                list="publisher-suggestions"
+              <SuggestInput
+                value={book.publisher}
+                onChange={(v) => set('publisher', v)}
+                suggestions={existingPublishers}
                 className={inputClass}
               />
-              <datalist id="publisher-suggestions">
-                {existingPublishers.map((p) => (
-                  <option key={p} value={p} />
-                ))}
-              </datalist>
             </Field>
 
             <Field label="Collection">
-              <input
-                value={book.collection ?? ''}
-                onChange={(e) => set('collection', e.target.value)}
+              <SuggestInput
+                value={book.collection}
+                onChange={(v) => set('collection', v)}
+                suggestions={existingCollections}
                 placeholder="Folio SF, Champs…"
-                list="collection-suggestions"
                 className={inputClass}
               />
-              <datalist id="collection-suggestions">
-                {existingCollections.map((c) => (
-                  <option key={c} value={c} />
-                ))}
-              </datalist>
             </Field>
 
             <Field label="Édition">
-              <input
-                value={book.edition ?? ''}
-                onChange={(e) => set('edition', e.target.value)}
+              <SuggestInput
+                value={book.edition}
+                onChange={(v) => set('edition', v)}
+                suggestions={existingEditions}
                 placeholder="Poche, Grand format, Illustrée, Collector…"
-                list="edition-suggestions"
                 className={inputClass}
               />
-              <datalist id="edition-suggestions">
-                {existingEditions.map((e) => (
-                  <option key={e} value={e} />
-                ))}
-              </datalist>
             </Field>
 
             <div className="grid grid-cols-3 gap-4">
               <div className="col-span-2">
                 <Field label="Série">
-                  <input
-                    value={book.series ?? ''}
-                    onChange={(e) => set('series', e.target.value)}
-                    list="series-suggestions"
+                  <SuggestInput
+                    value={book.series}
+                    onChange={(v) => set('series', v)}
+                    suggestions={existingSeries}
                     className={inputClass}
                   />
-                  <datalist id="series-suggestions">
-                    {existingSeries.map((s) => (
-                      <option key={s} value={s} />
-                    ))}
-                  </datalist>
                 </Field>
               </div>
               <Field label="Tome">
@@ -440,18 +421,13 @@ export default function BookForm() {
             </div>
 
             <Field label="Univers">
-              <input
-                value={book.universe ?? ''}
-                onChange={(e) => set('universe', e.target.value)}
+              <SuggestInput
+                value={book.universe}
+                onChange={(v) => set('universe', v)}
+                suggestions={existingUniverses}
                 placeholder="Hercule Poirot, Avengers, X-Men…"
-                list="universe-suggestions"
                 className={inputClass}
               />
-              <datalist id="universe-suggestions">
-                {existingUniverses.map((u) => (
-                  <option key={u} value={u} />
-                ))}
-              </datalist>
             </Field>
 
             <Field label="Résumé">
