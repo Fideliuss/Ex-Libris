@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getBook, getSeriesSiblings, updateBook } from '../lib/books'
 import { useAuth } from '../context/AuthContext'
@@ -14,6 +14,129 @@ import WishlistRibbon from '../components/WishlistRibbon'
 import { navigateWithViewTransition, useGoBack } from '../lib/navigation'
 import ReadingBookmark from '../components/ReadingBookmark'
 import LoadingScreen from '../components/LoadingScreen'
+import BookCoverPlaceholder from '../components/BookCoverPlaceholder'
+
+// Au-delà de ce nombre de tomes manquants d'affilée, on compresse le trou en
+// une seule chip "···" plutôt que d'en afficher une par tome manquant :
+// sans ça, posséder les tomes 1 et 1000 d'une longue série générerait ~1000
+// chips grisées.
+const GAP_COLLAPSE_THRESHOLD = 3
+
+// Construit la rangée de chips [tome possédé | tome manquant | trou
+// compressé] entre le plus petit et le plus grand tome possédé (pas besoin
+// de connaître la taille réelle de la série, juste l'étendue de ce qu'on a).
+function buildTomeSlots(siblings) {
+  const numbered = siblings.filter((s) => s.series_index != null)
+  if (numbered.length === 0) return []
+  const ownedByIndex = new Map(
+    numbered.map((s) => [s.series_index, { id: s.id, status: s.status }]),
+  )
+  const indices = numbered.map((s) => s.series_index)
+  const min = Math.min(...indices)
+  const max = Math.max(...indices)
+
+  const slots = []
+  let i = min
+  while (i <= max) {
+    if (ownedByIndex.has(i)) {
+      const { id, status } = ownedByIndex.get(i)
+      slots.push({ type: 'owned', index: i, id, status })
+      i += 1
+      continue
+    }
+    let gapEnd = i
+    while (gapEnd <= max && !ownedByIndex.has(gapEnd)) gapEnd += 1
+    const gapLength = gapEnd - i
+    if (gapLength > GAP_COLLAPSE_THRESHOLD) {
+      slots.push({ type: 'ellipsis', key: `ellipsis-${i}`, from: i, to: gapEnd - 1 })
+    } else {
+      for (let j = i; j < gapEnd; j += 1) {
+        slots.push({ type: 'gap', index: j })
+      }
+    }
+    i = gapEnd
+  }
+  return slots
+}
+
+function TomeChips({ slots, currentIndex, onSelect }) {
+  const scrollRef = useRef(null)
+
+  useEffect(() => {
+    const el = scrollRef.current?.querySelector(`[data-tome="${currentIndex}"]`)
+    el?.scrollIntoView({ behavior: 'instant', inline: 'center', block: 'nearest' })
+  }, [currentIndex])
+
+  // Molette verticale -> défilement horizontal : sans ça, la rangée n'est
+  // scrollable qu'au doigt (mobile) ou en glissant la scrollbar. Sur PC
+  // avec une souris classique, rien ne permettait d'atteindre les chips
+  // hors champ.
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    function onWheel(e) {
+      if (e.deltaY === 0 || el.scrollWidth <= el.clientWidth) return
+      e.preventDefault()
+      el.scrollLeft += e.deltaY
+    }
+    el.addEventListener('wheel', onWheel, { passive: false })
+    return () => el.removeEventListener('wheel', onWheel)
+  }, [])
+
+  return (
+    <div
+      ref={scrollRef}
+      role="group"
+      aria-label="Tomes de la série"
+      className="flex items-center gap-1 overflow-x-auto min-w-0 flex-1 py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+    >
+      {slots.map((slot) => {
+        if (slot.type === 'ellipsis') {
+          return (
+            <span
+              key={slot.key}
+              aria-hidden="true"
+              title={`Tomes ${slot.from} à ${slot.to} non possédés`}
+              className="shrink-0 w-6 h-6 flex items-center justify-center text-xs text-ink/70"
+            >
+              ···
+            </span>
+          )
+        }
+        if (slot.type === 'gap') {
+          return (
+            <span
+              key={`gap-${slot.index}`}
+              title={`Tome ${slot.index} non possédé`}
+              className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full border border-dashed border-ink/20 text-[10px] font-mono text-ink/70"
+            >
+              {slot.index}
+            </span>
+          )
+        }
+        const active = slot.index === currentIndex
+        return (
+          <button
+            key={slot.id}
+            type="button"
+            data-tome={slot.index}
+            disabled={active}
+            onClick={() => onSelect(slot)}
+            aria-current={active ? 'true' : undefined}
+            title={`Tome ${slot.index} (${STATUS_LABELS[slot.status] ?? slot.status})`}
+            className={`shrink-0 w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-mono focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:cursor-default ${
+              active
+                ? `${STATUS_BADGE_CLASS[slot.status] ?? 'bg-ink/70 text-white'} border-transparent`
+                : `${STATUS_BORDER_CLASS[slot.status] ?? 'border-ink/40'} text-ink/70 hover:bg-ink/5`
+            }`}
+          >
+            {slot.index}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
 
 export default function BookDetail() {
   const { id } = useParams()
@@ -92,11 +215,31 @@ export default function BookDetail() {
     }
   }, [book?.series, book?.user_id])
 
+  // Même critère que l'onglet « À compléter » de la collection et le
+  // formulaire d'édition (voir Collection.jsx / BookForm.jsx) : les champs
+  // qu'un scan ISBN réussi remplit normalement tout seul.
+  const missingFields = book
+    ? [
+        !book.cover_url && 'Couverture',
+        !book.author && 'Auteur',
+        !book.publisher && 'Éditeur',
+        !book.page_count && 'Pages',
+        !book.description && 'Résumé',
+      ].filter(Boolean)
+    : []
+
   const visibleSiblings = book?.series ? seriesSiblings : []
+  const tomeSlots = buildTomeSlots(visibleSiblings)
+  // Sans series_index sur au moins un tome, l'ordre des siblings est
+  // arbitraire (celui de la base) : naviguer "précédent/suivant" dedans
+  // serait aussi trompeur que l'ancienne fraction "12/17", donc on
+  // désactive la navigation plutôt que de laisser croire à un ordre réel.
+  const hasOrder = tomeSlots.length > 0
   const siblingIndex = visibleSiblings.findIndex((s) => s.id === id)
-  const prevSibling = siblingIndex > 0 ? visibleSiblings[siblingIndex - 1] : null
+  const prevSibling =
+    hasOrder && siblingIndex > 0 ? visibleSiblings[siblingIndex - 1] : null
   const nextSibling =
-    siblingIndex >= 0 && siblingIndex < visibleSiblings.length - 1
+    hasOrder && siblingIndex >= 0 && siblingIndex < visibleSiblings.length - 1
       ? visibleSiblings[siblingIndex + 1]
       : null
 
@@ -115,6 +258,11 @@ export default function BookDetail() {
     },
     [navigate],
   )
+
+  function handleChipSelect(slot) {
+    const direction = slot.index < book.series_index ? 'back' : 'forward'
+    goToSibling({ id: slot.id }, direction)
+  }
 
   // Flèches du clavier : navigue vers le tome précédent/suivant, sauf si le
   // focus est dans un champ de formulaire (select du statut, etc.) ou que la
@@ -162,7 +310,7 @@ export default function BookDetail() {
           <button
             type="button"
             onClick={goBack}
-            className="text-sm text-ink/60 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+            className="text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
           >
             ← Retour à la collection
           </button>
@@ -170,7 +318,7 @@ export default function BookDetail() {
             <button
               type="button"
               onClick={() => navigate(`/books/${id}/edit`)}
-              className="shrink-0 rounded-sm bg-library text-white font-medium px-4 py-2 text-sm hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+              className="shrink-0 rounded-sm bg-library-fill text-white font-medium px-4 py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
             >
               Modifier
             </button>
@@ -185,9 +333,23 @@ export default function BookDetail() {
           className={`relative bg-card border-t-4 border-dashed rounded-sm shadow-sm p-6 ${STATUS_BORDER_CLASS[book.status]}`}
         >
           {book.created_at && (
-            <p className="absolute top-3 right-4 font-mono text-[10px] text-ink/30">
+            <p className="absolute top-3 right-4 font-mono text-[10px] text-ink/70">
               Ajouté le {formatDate(book.created_at.slice(0, 10))}
             </p>
+          )}
+
+          {missingFields.length > 0 && book.user_id === user?.id && (
+            <button
+              type="button"
+              onClick={() => navigate(`/books/${id}/edit`)}
+              className="block w-full text-left rounded-sm border border-dashed border-brass/50 bg-brass/5 px-3 py-2 text-sm text-ink/70 hover:border-brass hover:bg-brass/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+            >
+              <span className="font-medium text-brass">
+                {missingFields.length} champ{missingFields.length > 1 ? 's' : ''} à
+                compléter :
+              </span>{' '}
+              {missingFields.join(', ')}
+            </button>
           )}
 
           <div className="flex gap-6 flex-col sm:flex-row mt-3">
@@ -213,11 +375,11 @@ export default function BookDetail() {
                   />
                 </button>
               ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <span className="font-serif text-ink/30 text-sm px-4 text-center">
-                    {book.title}
-                  </span>
-                </div>
+                <BookCoverPlaceholder
+                  title={book.title}
+                  author={book.author}
+                  volume={book.type === 'manga' && book.series ? book.series_index : null}
+                />
               )}
             </div>
 
@@ -247,28 +409,38 @@ export default function BookDetail() {
                 </>
               )}
               {visibleSiblings.length > 1 && (
-                <div className="flex items-center gap-2 mt-1">
-                  <button
-                    type="button"
-                    onClick={() => goToSibling(prevSibling, 'back')}
-                    disabled={!prevSibling}
-                    aria-label="Tome précédent"
-                    className="text-sm text-library hover:text-library/80 disabled:text-ink/20 disabled:cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
-                  >
-                    ‹
-                  </button>
-                  <span className="font-mono text-[11px] text-ink/40">
-                    {siblingIndex + 1} / {visibleSiblings.length}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => goToSibling(nextSibling, 'forward')}
-                    disabled={!nextSibling}
-                    aria-label="Tome suivant"
-                    className="text-sm text-library hover:text-library/80 disabled:text-ink/20 disabled:cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
-                  >
-                    ›
-                  </button>
+                <div className="flex items-center gap-2 mt-1 max-w-full">
+                  {hasOrder ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => goToSibling(prevSibling, 'back')}
+                        disabled={!prevSibling}
+                        aria-label="Tome précédent"
+                        className="shrink-0 text-sm text-library hover:text-library/80 disabled:text-ink/20 disabled:cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                      >
+                        ‹
+                      </button>
+                      <TomeChips
+                        slots={tomeSlots}
+                        currentIndex={book.series_index}
+                        onSelect={handleChipSelect}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => goToSibling(nextSibling, 'forward')}
+                        disabled={!nextSibling}
+                        aria-label="Tome suivant"
+                        className="shrink-0 text-sm text-library hover:text-library/80 disabled:text-ink/20 disabled:cursor-default focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                      >
+                        ›
+                      </button>
+                    </>
+                  ) : (
+                    <span className="font-mono text-[11px] text-ink/70">
+                      {visibleSiblings.length} tomes possédés
+                    </span>
+                  )}
                 </div>
               )}
               {book.universe && (
@@ -276,22 +448,22 @@ export default function BookDetail() {
                   Univers : {book.universe}
                 </p>
               )}
-              {book.author && (
-                <p className="text-ink/70 mt-1">{book.author}</p>
-              )}
+              <p className={`text-ink/70 mt-1 ${book.author ? '' : 'italic'}`}>
+                {book.author || 'Auteur non renseigné'}
+              </p>
               {(book.translator || book.illustrator) && (
-                <p className="text-xs text-ink/50 mt-0.5">
+                <p className="text-xs text-ink/70 mt-0.5">
                   {book.translator && `Traduit par ${book.translator}`}
                   {book.translator && book.illustrator && ' · '}
                   {book.illustrator && `Illustré par ${book.illustrator}`}
                 </p>
               )}
-              {book.publisher && (
-                <p className="text-sm text-ink/50 mt-0.5">
-                  {book.publisher}
-                  {book.collection && ` · ${book.collection}`}
-                </p>
-              )}
+              <p className="text-sm text-ink/70 mt-0.5">
+                <span className={book.publisher ? '' : 'italic'}>
+                  {book.publisher || 'Éditeur non renseigné'}
+                </span>
+                {book.collection && ` · ${book.collection}`}
+              </p>
 
               <div className="flex flex-wrap items-center gap-2 mt-3">
                 {book.user_id === user?.id ? (
@@ -300,7 +472,7 @@ export default function BookDetail() {
                     onChange={(e) => handleStatusChange(e.target.value)}
                     disabled={statusSaving}
                     aria-label="Changer le statut"
-                    className={`font-mono text-xs uppercase border border-ink/20 rounded-full px-2 py-0.5 bg-surface cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60 ${STATUS_BADGE_CLASS[book.status] ?? 'text-ink/50'}`}
+                    className={`font-mono text-xs uppercase rounded-full px-2 py-0.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-library disabled:opacity-60 ${STATUS_BADGE_CLASS[book.status] ?? 'bg-ink/10 text-ink/70'}`}
                   >
                     <option value="wishlist">Wishlist</option>
                     <option value="to-read">À lire</option>
@@ -309,13 +481,13 @@ export default function BookDetail() {
                   </select>
                 ) : (
                   <span
-                    className={`font-mono text-xs uppercase border border-ink/20 rounded-full px-2 py-0.5 ${STATUS_BADGE_CLASS[book.status] ?? 'text-ink/50'}`}
+                    className={`font-mono text-xs uppercase rounded-full px-2 py-0.5 ${STATUS_BADGE_CLASS[book.status] ?? 'bg-ink/10 text-ink/70'}`}
                   >
                     {STATUS_LABELS[book.status] ?? book.status}
                   </span>
                 )}
                 {book.type !== 'book' && (
-                  <span className="font-mono text-xs uppercase text-ink/50 border border-ink/20 rounded-full px-2 py-0.5">
+                  <span className="font-mono text-xs uppercase text-ink/70 border border-ink/20 rounded-full px-2 py-0.5">
                     {BOOK_TYPES[book.type]}
                   </span>
                 )}
@@ -338,7 +510,7 @@ export default function BookDetail() {
                   {book.tags.map((tag) => (
                     <span
                       key={tag}
-                      className="bg-library text-white text-xs px-2 py-0.5 rounded-full"
+                      className="bg-library-fill text-white text-xs px-2 py-0.5 rounded-full"
                     >
                       {tag}
                     </span>
@@ -348,25 +520,48 @@ export default function BookDetail() {
             </div>
           </div>
 
-          {book.description && (
-            <div className="mt-6 pt-6 border-t border-ink/10">
-              <h2 className="font-serif text-lg mb-2">Résumé</h2>
-              <p className="text-sm text-ink/70 whitespace-pre-line">
-                {book.description}
-              </p>
-            </div>
-          )}
+          <div className="mt-6 pt-6 border-t border-ink/10">
+            <h2 className="font-serif text-lg mb-2">Résumé</h2>
+            <p
+              className={`text-sm text-ink/70 whitespace-pre-line ${book.description ? '' : 'italic'}`}
+            >
+              {book.description || 'Résumé non renseigné.'}
+            </p>
+          </div>
 
           <div className="mt-6 pt-6 border-t border-ink/10 grid grid-cols-2 sm:grid-cols-3 gap-4">
-            <DetailField label="ISBN" value={book.isbn} mono />
-            <DetailField label="Pages" value={book.page_count} mono />
-            <DetailField label="Date de début" value={formatDate(book.date_started)} />
-            <DetailField label="Date de fin" value={formatDate(book.date_finished)} />
-            <DetailField label="Date d'achat" value={formatDate(book.purchase_date)} />
+            <DetailField
+              label="ISBN"
+              value={book.isbn}
+              mono
+              placeholder="Non renseigné"
+            />
+            <DetailField
+              label="Pages"
+              value={book.page_count}
+              mono
+              placeholder="Non renseigné"
+            />
+            <DetailField
+              label="Date de début"
+              value={formatDate(book.date_started)}
+              placeholder="Non renseigné"
+            />
+            <DetailField
+              label="Date de fin"
+              value={formatDate(book.date_finished)}
+              placeholder="Non renseigné"
+            />
+            <DetailField
+              label="Date d'achat"
+              value={formatDate(book.purchase_date)}
+              placeholder="Non renseigné"
+            />
             <DetailField
               label="Prix"
               value={book.price != null ? `${Number(book.price).toFixed(2)} €` : null}
               mono
+              placeholder="Non renseigné"
             />
           </div>
 
@@ -408,12 +603,17 @@ export default function BookDetail() {
   )
 }
 
-function DetailField({ label, value, mono }) {
-  if (value === null || value === undefined || value === '') return null
+function DetailField({ label, value, mono, placeholder }) {
+  const isEmpty = value === null || value === undefined || value === ''
+  if (isEmpty && !placeholder) return null
   return (
     <div>
-      <p className="text-xs text-ink/50">{label}</p>
-      <p className={`text-sm ${mono ? 'font-mono' : ''}`}>{value}</p>
+      <p className="text-xs text-ink/70">{label}</p>
+      <p
+        className={`text-sm ${isEmpty ? 'italic' : mono ? 'font-mono' : ''}`}
+      >
+        {isEmpty ? placeholder : value}
+      </p>
     </div>
   )
 }

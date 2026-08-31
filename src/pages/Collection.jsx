@@ -10,7 +10,11 @@ import BulkActionBar from '../components/BulkActionBar'
 import HouseholdSwitchBadge from '../components/HouseholdSwitchBadge'
 import TabBar from '../components/TabBar'
 import LoadingScreen from '../components/LoadingScreen'
-import { STATUS_LABELS } from '../lib/statusLabels'
+import {
+  STATUS_LABELS,
+  STATUS_BADGE_CLASS,
+  STATUS_BORDER_CLASS,
+} from '../lib/statusLabels'
 import { authorSortKey } from '../lib/authorSort'
 
 const STATUS_ORDER = Object.keys(STATUS_LABELS)
@@ -195,6 +199,12 @@ export default function Collection() {
       if (book.universe) set.add(book.universe)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [books])
+
+  const statusCounts = useMemo(() => {
+    const counts = {}
+    for (const book of books) counts[book.status] = (counts[book.status] ?? 0) + 1
+    return counts
   }, [books])
 
   // Livres sans couverture ou sans les champs qu'un scan ISBN réussi remplit
@@ -457,7 +467,7 @@ export default function Collection() {
               to="/account"
               title={user?.email}
               aria-label="Mon compte"
-              className="w-9 h-9 rounded-full bg-library text-white font-mono text-sm flex items-center justify-center hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-library focus-visible:ring-offset-2"
+              className="w-9 h-9 rounded-full bg-library-fill text-white font-mono text-sm flex items-center justify-center hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-library focus-visible:ring-offset-2"
             >
               {user?.email?.[0]?.toUpperCase() ?? '?'}
             </Link>
@@ -484,21 +494,52 @@ export default function Collection() {
 
       <main key={isMine ? 'mine' : 'partner'} className="max-w-5xl mx-auto px-6 fade-in">
         {!loading && !error && books.length > 0 && (
-          <TabBar
-            tabs={[
-              { key: 'collection', label: 'Collection' },
-              {
-                key: 'todo',
-                label:
-                  incompleteBooks.length > 0
-                    ? `À traiter (${incompleteBooks.length})`
-                    : 'À traiter',
-              },
-            ]}
-            active={collectionTab}
-            onChange={setCollectionTab}
-            ariaLabel="Vue de la collection"
-          />
+          <div className="flex items-start justify-between gap-3">
+            <TabBar
+              tabs={[
+                { key: 'collection', label: 'Collection' },
+                {
+                  key: 'todo',
+                  label:
+                    incompleteBooks.length > 0
+                      ? `À compléter (${incompleteBooks.length})`
+                      : 'À compléter',
+                  title:
+                    'Livres sans couverture, auteur, éditeur, pages ou résumé',
+                },
+              ]}
+              active={collectionTab}
+              onChange={setCollectionTab}
+              ariaLabel="Vue de la collection"
+            />
+            {isMine && (
+              <Link
+                to="/books/new"
+                className="hidden sm:inline-flex items-center gap-1.5 shrink-0 rounded-sm bg-library-fill text-white font-medium px-4 py-1.5 text-sm shadow-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+              >
+                <span className="text-base leading-none" aria-hidden="true">
+                  +
+                </span>
+                Ajouter un livre
+              </Link>
+            )}
+          </div>
+        )}
+
+        {!loading && !error && books.length > 0 && collectionTab === 'collection' && (
+          <div className="flex flex-wrap gap-2 mb-4" role="group" aria-label="Filtrer par statut">
+            {STATUS_ORDER.map((key) => (
+              <StatusChip
+                key={key}
+                active={status === key}
+                count={statusCounts[key] ?? 0}
+                label={STATUS_LABELS[key]}
+                onClick={() => setStatus(status === key ? '' : key)}
+                fillClass={STATUS_BADGE_CLASS[key]}
+                borderClass={STATUS_BORDER_CLASS[key]}
+              />
+            ))}
+          </div>
         )}
 
         {!loading && !error && books.length > 0 && collectionTab === 'collection' && (
@@ -523,7 +564,6 @@ export default function Collection() {
             type={type}
             onTypeChange={setType}
             status={status}
-            onStatusChange={setStatus}
             hasActiveFilters={hasActiveFilters}
             onReset={resetFilters}
           />
@@ -544,19 +584,19 @@ export default function Collection() {
             </p>
             {isMine ? (
               <>
-                <p className="text-sm text-ink/60 mb-6">
+                <p className="text-sm text-ink/70 mb-6">
                   Ajoute ton premier livre pour commencer à suivre tes
                   lectures.
                 </p>
                 <Link
                   to="/books/new"
-                  className="inline-block rounded-sm bg-library text-white font-medium px-4 py-2 text-sm hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+                  className="inline-block rounded-sm bg-library-fill text-white font-medium px-4 py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
                 >
                   Ajouter un livre
                 </Link>
               </>
             ) : (
-              <p className="text-sm text-ink/60">
+              <p className="text-sm text-ink/70">
                 Rien à afficher pour l'instant.
               </p>
             )}
@@ -564,7 +604,7 @@ export default function Collection() {
         ) : collectionTab === 'todo' && incompleteBooks.length === 0 ? (
           <div className="text-center py-16">
             <p className="font-serif text-xl mb-2">Tout est renseigné 🎉</p>
-            <p className="text-sm text-ink/60">
+            <p className="text-sm text-ink/70">
               Aucun livre à compléter pour l'instant.
             </p>
           </div>
@@ -573,7 +613,7 @@ export default function Collection() {
             <p className="font-serif text-xl mb-2">
               Aucun livre ne correspond
             </p>
-            <p className="text-sm text-ink/60 mb-6">
+            <p className="text-sm text-ink/70 mb-6">
               Essaie d'autres critères de recherche ou de filtres.
             </p>
             <button
@@ -589,7 +629,7 @@ export default function Collection() {
             <div className="flex items-center justify-between gap-3 mb-3">
               {selectionMode ? (
                 <div className="flex items-center gap-3">
-                  <p className="font-mono text-xs text-ink/50">
+                  <p className="font-mono text-xs text-ink/70">
                     {selectedIds.size} sélectionné{selectedIds.size > 1 ? 's' : ''}
                   </p>
                   <button
@@ -603,11 +643,11 @@ export default function Collection() {
                   </button>
                 </div>
               ) : (
-                <p className="font-mono text-xs text-ink/50">
+                <p className="font-mono text-xs text-ink/70">
                   {collectionTab === 'todo' ? (
                     <>
                       {visibleBooks.length} livre
-                      {visibleBooks.length > 1 ? 's' : ''} à traiter
+                      {visibleBooks.length > 1 ? 's' : ''} à compléter
                     </>
                   ) : (
                     <>
@@ -625,7 +665,7 @@ export default function Collection() {
                     onClick={() =>
                       selectionMode ? exitSelectionMode() : setSelectionMode(true)
                     }
-                    className="text-xs text-ink/50 hover:text-library underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                    className="text-xs text-ink/70 hover:text-library underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
                   >
                     {selectionMode ? 'Annuler' : 'Sélectionner'}
                   </button>
@@ -651,7 +691,7 @@ export default function Collection() {
                 item.type === 'header' ? (
                   <p
                     key={item.renderKey}
-                    className="col-span-full font-mono text-xs uppercase tracking-widest text-ink/50 border-b border-ink/10 pb-1 mt-2 first:mt-0"
+                    className="col-span-full font-mono text-xs uppercase tracking-widest text-ink/70 border-b border-ink/10 pb-1 mt-2 first:mt-0"
                   >
                     {item.label}
                   </p>
@@ -689,17 +729,34 @@ export default function Collection() {
           <Link
             to="/books/new"
             aria-label="Ajouter un livre"
-            className="fixed bottom-6 right-6 flex items-center justify-center gap-2 w-14 h-14 sm:w-auto sm:h-auto sm:px-5 sm:py-3 rounded-full bg-library text-white shadow-lg hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+            className="sm:hidden fixed bottom-6 right-6 flex items-center justify-center w-14 h-14 rounded-full bg-library-fill text-white shadow-lg hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
           >
-            <span className="text-3xl sm:text-xl leading-none" aria-hidden="true">
+            <span className="text-3xl leading-none" aria-hidden="true">
               +
-            </span>
-            <span className="hidden sm:inline text-sm font-medium">
-              Ajouter un livre
             </span>
           </Link>
         )
       )}
     </div>
+  )
+}
+
+function StatusChip({ active, count, label, onClick, fillClass, borderClass }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
+        active
+          ? fillClass
+          : `border ${borderClass} text-ink/70 hover:text-ink`
+      }`}
+    >
+      {label}
+      <span className={`font-mono ${active ? 'opacity-80' : 'text-ink/70'}`}>
+        {count}
+      </span>
+    </button>
   )
 }

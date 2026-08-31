@@ -36,7 +36,7 @@ export default function TagInput({ value, onChange, suggestions = [] }) {
         {value.map((tag) => (
           <span
             key={tag}
-            className="inline-flex items-center gap-1 bg-library text-white text-xs px-2 py-1 rounded-full"
+            className="inline-flex items-center gap-1 bg-library-fill text-white text-xs px-2 py-1 rounded-full"
           >
             {tag}
             <button
@@ -65,7 +65,7 @@ export default function TagInput({ value, onChange, suggestions = [] }) {
               key={tag}
               type="button"
               onClick={() => addTag(tag)}
-              className="text-xs px-2 py-1 rounded-full border border-brass/40 text-brass hover:bg-brass hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brass"
+              className="text-xs px-2 py-1 rounded-full border border-brass/40 text-brass hover:bg-brass-fill hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brass"
             >
               {tag}
             </button>

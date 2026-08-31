@@ -28,6 +28,7 @@ export default function Login() {
   const [lastName, setLastName] = useState('')
   const [acceptedPolicy, setAcceptedPolicy] = useState(false)
   const [error, setError] = useState(null)
+  const [clockSkew, setClockSkew] = useState(false)
   const [info, setInfo] = useState(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -39,10 +40,14 @@ export default function Login() {
   async function handleSignIn(e) {
     e.preventDefault()
     setError(null)
+    setClockSkew(false)
     setSubmitting(true)
     const { error } = await signIn(email, password)
     setSubmitting(false)
-    if (error) setError(describeSignInError(error))
+    if (error) {
+      setClockSkew(isClockSkewError(error))
+      setError(describeSignInError(error))
+    }
   }
 
   async function handleGoogleSignIn() {
@@ -120,7 +125,7 @@ export default function Login() {
       <Link
         to="/"
         onClick={handleBackToLanding}
-        className="flex items-center gap-2 text-sm text-ink/60 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+        className="flex items-center gap-2 text-sm text-ink/70 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
       >
         <span aria-hidden="true">←</span> Retour à l'accueil
       </Link>
@@ -173,16 +178,25 @@ export default function Login() {
                 {error}
               </p>
             )}
+            {clockSkew && (
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="w-full rounded-sm border border-stamp/40 text-stamp py-2 text-sm hover:bg-stamp/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+              >
+                Rafraîchir la page
+              </button>
+            )}
 
             <button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-sm bg-library text-white font-medium py-2 text-sm hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
+              className="w-full rounded-sm bg-library-fill text-white font-medium py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
             >
               {submitting ? 'Connexion…' : 'Se connecter'}
             </button>
 
-            <div className="flex items-center gap-3 text-xs text-ink/40">
+            <div className="flex items-center gap-3 text-xs text-ink/70">
               <div className="flex-1 border-t border-ink/10" />
               ou
               <div className="flex-1 border-t border-ink/10" />
@@ -196,12 +210,12 @@ export default function Login() {
             >
               Continuer avec Google
             </button>
-            <p className="text-xs text-ink/40 text-center">
+            <p className="text-xs text-ink/70 text-center">
               En continuant, tu acceptes notre{' '}
               <Link
                 to="/confidentialite"
                 target="_blank"
-                className="underline underline-offset-2 hover:text-ink/60"
+                className="underline underline-offset-2 hover:text-ink/70"
               >
                 politique de confidentialité
               </Link>
@@ -211,7 +225,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => switchMode('forgot')}
-              className="w-full text-center text-sm text-ink/60 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+              className="w-full text-center text-sm text-ink/70 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
             >
               Mot de passe oublié ?
             </button>
@@ -219,7 +233,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => switchMode('signup')}
-              className="w-full text-center text-sm text-ink/60 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+              className="w-full text-center text-sm text-ink/70 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
             >
               Créer un compte
             </button>
@@ -350,7 +364,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={submitting || !acceptedPolicy}
-              className="w-full rounded-sm bg-library text-white font-medium py-2 text-sm hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
+              className="w-full rounded-sm bg-library-fill text-white font-medium py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
             >
               {submitting ? 'Création…' : 'Créer le compte'}
             </button>
@@ -358,7 +372,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => switchMode('signin')}
-              className="w-full text-center text-sm text-ink/60 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+              className="w-full text-center text-sm text-ink/70 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
             >
               Retour à la connexion
             </button>
@@ -403,7 +417,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-sm bg-library text-white font-medium py-2 text-sm hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
+              className="w-full rounded-sm bg-library-fill text-white font-medium py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
             >
               {submitting ? 'Envoi…' : 'Envoyer le lien'}
             </button>
@@ -411,7 +425,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => switchMode('signin')}
-              className="w-full text-center text-sm text-ink/60 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+              className="w-full text-center text-sm text-ink/70 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
             >
               Retour à la connexion
             </button>
@@ -420,6 +434,15 @@ export default function Login() {
       </div>
     </div>
   )
+}
+
+// Ecart d'horloge système côté client : le JWT semble "émis dans le futur"
+// par rapport à l'heure locale. Un simple rafraîchissement suffit en général
+// (nouvelle requête, nouvel horodatage), sans attendre que l'utilisateur
+// corrige l'horloge de sa machine.
+function isClockSkewError(error) {
+  const message = error.message ?? ''
+  return /issued.*(at|in).*future|jwt.*future/i.test(message)
 }
 
 function describeSignInError(error) {
@@ -431,6 +454,9 @@ function describeSignInError(error) {
   }
   if (code === 'invalid_credentials' || /invalid login credentials/i.test(message)) {
     return 'Email ou mot de passe incorrect.'
+  }
+  if (isClockSkewError(error)) {
+    return "Erreur temporaire de connexion. Rafraîchis la page et réessaie."
   }
   return `Connexion impossible : ${message || 'erreur inconnue'}.`
 }

@@ -24,8 +24,8 @@ export default function StatusStackedBar({ segments }) {
               aria-hidden="true"
               className={`w-2.5 h-2.5 rounded-full shrink-0 ${s.colorClass}`}
             />
-            <span className="text-ink/60">{s.label}</span>
-            <span className="font-mono text-ink/40">{s.value}</span>
+            <span className="text-ink/70">{s.label}</span>
+            <span className="font-mono text-ink/70">{s.value}</span>
           </div>
         ))}
       </div>

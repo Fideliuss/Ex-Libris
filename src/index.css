@@ -1,9 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-  --font-serif: 'Source Serif 4', Georgia, serif;
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+  /* Serif décorative (Fraunces) : réservée au logo, aux titres de section
+     (h1/h2) et aux titres de fiches livres. Jamais pour du texte courant ou
+     des labels d'UI — c'est Inter (--font-sans) qui gère tout ça, avec une
+     échelle de graisse volontairement limitée : 400 (texte courant), 500
+     (labels/mise en avant légère), 600 (boutons/actions). */
+  --font-serif: 'Fraunces', Georgia, serif;
+  /* Test en cours : Public Sans à la place d'Inter — pas encore un choix
+     retenu pour le design system. */
+  --font-sans: 'Public Sans', system-ui, sans-serif;
+  /* Test en cours : Red Hat Mono à la place de JetBrains Mono sur tous les
+     labels/badges/petites capitales de l'app — dessinée pour de la vraie UI
+     (pas un éditeur de code), donc plus adaptée au petit corps que Courier
+     Prime. Pas encore un choix retenu pour le design system. */
+  --font-mono: 'Red Hat Mono', 'JetBrains Mono', ui-monospace, Consolas, monospace;
 
   --color-paper: #eae1cb;
   --color-card: #fbf7ed;
@@ -15,10 +26,53 @@
   --color-brass: #ad8a54;
   --color-stamp: #a2372e;
 
-  /* Signal de statut : wishlist=bleu, à lire=neutre (brass), en cours=jaune,
-     lu=vert (library). */
+  /* Signal de statut : wishlist=bleu, à lire=prune, en cours=terracotta,
+     lu=vert (library). Trois teintes volontairement écartées les unes des
+     autres (et de brass/stamp) pour rester identifiables en un coup d'œil. */
   --color-wishlist: #3b6e91;
-  --color-reading: #b8860b;
+  --color-reading: #8a5210;
+
+  /* Fonds pleins des badges de statut (texte blanc par-dessus) : valeurs
+     fixes, non réajustées en mode sombre. Contrairement aux tokens de texte
+     ci-dessus (éclaircis en sombre pour rester lisibles sur fond sombre),
+     un badge plein a besoin de rester assez sombre pour que le texte blanc
+     garde un contraste ≥ 4.5:1 quel que soit le thème — d'où des tokens
+     séparés plutôt que de réutiliser --color-library tel quel. */
+  --color-toread: #5c3a63;
+  --color-read: #2f4a3c;
+
+  /* Couverture "sans image" (BookCoverPlaceholder) : un livre reste un objet
+     physique, sa couleur ne doit pas s'inverser avec le thème — fixe dans
+     les deux cas, comme les tokens de badge ci-dessus. */
+  --color-cover: #f6f0e2;
+
+  /* Variantes "fond plein" de library/wishlist/brass/stamp : mêmes teintes
+     que les tokens ci-dessus mais jamais éclaircies en sombre. --color-library
+     etc. doivent rester lisibles comme TEXTE sur fond neutre (donc éclaircis
+     en sombre) ; utilisées à la place en fond plein + texte blanc (boutons,
+     badges, onglet actif), ces versions éclaircies tombent sous 4.5:1 de
+     contraste avec du blanc. Mêmes valeurs que le mode clair, non redéfinies
+     dans les blocs sombre ci-dessous — même logique que --color-toread /
+     --color-read. */
+  --color-library-fill: #2f4a3c;
+  --color-wishlist-fill: #3b6e91;
+  /* Brass est trop clair même en mode clair pour du texte blanc en 14px
+     (3.21:1, sous les 4.5:1 requis) : assombri spécifiquement pour cet
+     usage, pas juste "figé" comme les trois autres. */
+  --color-brass-fill: #8e7145;
+  --color-stamp-fill: #a2372e;
+
+  /* Texte sur --color-cover (couverture "sans image") : ce fond est fixe et
+     clair dans les deux thèmes, donc le texte dessus a le problème inverse
+     des tokens -fill ci-dessus — il doit rester FONCÉ même en mode sombre,
+     alors que --color-ink/brass s'éclaircissent pour rester lisibles sur le
+     fond sombre de la page. Sans ça, le texte devient quasi invisible sur
+     la couverture (1.16:1 pour --color-ink en sombre). --color-stamp-fill
+     convient déjà (5.92:1) ; brass a besoin d'un assombrissement propre à
+     ce fond clair (--color-brass-fill vise le contraste sur du blanc plein,
+     insuffisant ici à 4.02:1). */
+  --color-ink-on-cover: #1e2b3a;
+  --color-brass-on-cover: #836940;
 }
 
 /* Mode sombre : palette "bibliothèque de nuit" (brun/charbon chaud, pas un
@@ -37,7 +91,6 @@
     --color-brass: #c9a06c;
     --color-stamp: #d1594c;
     --color-wishlist: #6fa3c4;
-    --color-reading: #d9a418;
   }
 }
 :root[data-theme='dark'] {
@@ -49,11 +102,42 @@
   --color-brass: #c9a06c;
   --color-stamp: #d1594c;
   --color-wishlist: #6fa3c4;
-  --color-reading: #d9a418;
 }
 
 body {
   @apply bg-paper text-ink font-sans antialiased;
+}
+
+/* Aperçu produit du hero (landing) : fondu haut/bas pour que l'étagère ne
+   coupe pas net, et texture de "fil de pages" sur la tranche droite des
+   mini-livres. Couleur fixe (comme --color-cover), pas de teinte suivant le
+   thème. */
+.shelf-fade::before,
+.shelf-fade::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 72px;
+  z-index: 2;
+  pointer-events: none;
+}
+.shelf-fade::before {
+  top: 0;
+  background: linear-gradient(var(--color-paper), transparent);
+}
+.shelf-fade::after {
+  bottom: 0;
+  background: linear-gradient(transparent, var(--color-paper));
+}
+
+.book-pages {
+  background-color: var(--color-cover);
+  background-image: repeating-linear-gradient(
+    180deg,
+    rgba(30, 43, 58, 0.1) 0 1px,
+    transparent 1px 3px
+  );
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -209,5 +293,60 @@ body {
   }
   50% {
     transform: translateY(-8px);
+  }
+}
+
+/* Colonnes de couvertures en arrière-plan du tutoriel d'onboarding : défilement
+   en boucle continue (pas lié au scroll, il n'y en a pas dans un modal), posé
+   en JS via style inline plutôt qu'une classe Tailwind puisque chaque colonne
+   a sa propre durée (voir OnboardingModal.jsx). Une classe arbitraire avec une
+   valeur interpolée ne serait pas détectée par le JIT Tailwind. */
+@keyframes scroll-up {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+@keyframes scroll-down {
+  from {
+    transform: translateY(-50%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Changement d'écran du tutoriel : glissement latéral directionnel (droite
+   en avançant, gauche en reculant), même déplacement de 24px que .reveal /
+   .hero-in pour rester dans la même grammaire de mouvement que le reste de
+   l'app plutôt que d'inventer une nouvelle amplitude. */
+@media (prefers-reduced-motion: no-preference) {
+  .slide-in-right {
+    animation: slide-in-right 0.3s ease-out both;
+  }
+  .slide-in-left {
+    animation: slide-in-left 0.3s ease-out both;
+  }
+}
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }

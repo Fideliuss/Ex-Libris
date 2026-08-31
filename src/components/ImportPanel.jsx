@@ -128,7 +128,7 @@ export default function ImportPanel() {
             les livres déjà présents ne sont jamais dupliqués.
           </p>
           <div className="flex flex-wrap gap-3">
-            <label className="inline-block cursor-pointer rounded-sm bg-library text-white font-medium px-4 py-2 text-sm hover:bg-library/90 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-library">
+            <label className="inline-block cursor-pointer rounded-sm bg-library-fill text-white font-medium px-4 py-2 text-sm hover:bg-library-fill/90 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-library">
               Fichier CSV (Libib)
               <input
                 type="file"
@@ -188,14 +188,14 @@ export default function ImportPanel() {
           </ul>
 
           {!hasWork ? (
-            <p className="text-sm text-ink/60">
+            <p className="text-sm text-ink/70">
               Rien à faire — ta collection est déjà à jour avec ce fichier.
             </p>
           ) : (
             <button
               type="button"
               onClick={handleImport}
-              className="rounded-sm bg-library text-white font-medium px-4 py-2 text-sm hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+              className="rounded-sm bg-library-fill text-white font-medium px-4 py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
             >
               Continuer
             </button>
@@ -203,7 +203,7 @@ export default function ImportPanel() {
           <button
             type="button"
             onClick={() => setStep('idle')}
-            className="block text-sm text-ink/50 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+            className="block text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
           >
             Choisir un autre fichier
           </button>
@@ -211,7 +211,7 @@ export default function ImportPanel() {
       )}
 
       {step === 'importing' && (
-        <p className="font-mono text-sm text-ink/60 text-center py-4">
+        <p className="font-mono text-sm text-ink/70 text-center py-4">
           Import en cours…
         </p>
       )}
@@ -235,7 +235,7 @@ export default function ImportPanel() {
           </div>
           <Link
             to="/"
-            className="inline-block rounded-sm bg-library text-white font-medium px-4 py-2 text-sm hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+            className="inline-block rounded-sm bg-library-fill text-white font-medium px-4 py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
           >
             Voir ma collection
           </Link>

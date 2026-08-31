@@ -55,7 +55,7 @@ export default function DonutChart({ segments }) {
               className={`w-3 h-3 rounded-full shrink-0 bg-current ${s.colorClass}`}
             />
             <span className="text-ink/70">{s.label}</span>
-            <span className="font-mono text-xs text-ink/50 ml-auto pl-2">
+            <span className="font-mono text-xs text-ink/70 ml-auto pl-2">
               {s.value} · {Math.round((s.value / total) * 100)}%
             </span>
           </li>

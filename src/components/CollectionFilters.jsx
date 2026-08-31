@@ -26,7 +26,6 @@ export default function CollectionFilters({
   type,
   onTypeChange,
   status,
-  onStatusChange,
   hasActiveFilters,
   onReset,
 }) {
@@ -43,7 +42,7 @@ export default function CollectionFilters({
         onChange={(e) => onSearchChange(e.target.value)}
         placeholder="Rechercher par titre, auteur ou ISBN…"
         aria-label="Rechercher par titre, auteur ou ISBN"
-        className="w-full rounded-sm border border-ink/20 bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+        className="w-full rounded-sm border border-ink/20 bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
       />
 
       <div className="flex items-center gap-3">
@@ -60,7 +59,7 @@ export default function CollectionFilters({
           <button
             type="button"
             onClick={onReset}
-            className="text-sm text-ink/50 hover:text-stamp underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+            className="text-sm text-ink/70 hover:text-stamp underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
           >
             Réinitialiser
           </button>
@@ -138,7 +137,7 @@ export default function CollectionFilters({
             )}
           </FilterSection>
 
-          <FilterSection label="Type &amp; statut">
+          <FilterSection label="Type">
             <select
               value={type}
               onChange={(e) => onTypeChange(e.target.value)}
@@ -152,19 +151,6 @@ export default function CollectionFilters({
                 </option>
               ))}
             </select>
-
-            <select
-              value={status}
-              onChange={(e) => onStatusChange(e.target.value)}
-              aria-label="Filtrer par statut"
-              className={selectClass}
-            >
-              <option value="">Tous les statuts</option>
-              <option value="wishlist">Wishlist</option>
-              <option value="to-read">À lire</option>
-              <option value="reading">En cours</option>
-              <option value="read">Lu</option>
-            </select>
           </FilterSection>
         </div>
       )}
@@ -175,7 +161,7 @@ export default function CollectionFilters({
 function FilterSection({ label, children }) {
   return (
     <div>
-      <p className="font-mono text-xs uppercase tracking-widest text-ink/50 mb-2">
+      <p className="font-mono text-xs uppercase tracking-widest text-ink/70 mb-2">
         {label}
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">{children}</div>

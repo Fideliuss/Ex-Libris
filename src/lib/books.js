@@ -67,7 +67,7 @@ export async function getBook(id) {
 export async function getSeriesSiblings(series, userId) {
   const { data, error } = await supabase
     .from('books')
-    .select('id, series_index')
+    .select('id, series_index, status')
     .eq('series', series)
     .eq('user_id', userId)
     .order('series_index', { ascending: true, nullsFirst: false })

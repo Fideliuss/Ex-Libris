@@ -28,7 +28,7 @@ export default function BarChart({ bars }) {
         <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
           {[chartMax, midTick, 0].map((tick, i) => (
             <div key={i} className="flex items-center gap-2">
-              <span className="font-mono text-[10px] text-ink/40 w-6 -ml-8 text-right shrink-0">
+              <span className="font-mono text-[10px] text-ink/70 w-6 -ml-8 text-right shrink-0">
                 {tick}
               </span>
               <div className="flex-1 border-t border-ink/10" />
@@ -71,7 +71,7 @@ export default function BarChart({ bars }) {
       <div className="flex gap-0.5 mt-1.5 pl-8">
         {bars.map((m) => (
           <div key={m.key} className="flex-1 text-center">
-            <span className="font-mono text-[10px] text-ink/50">
+            <span className="font-mono text-[10px] text-ink/70">
               {m.shortLabel}
             </span>
           </div>

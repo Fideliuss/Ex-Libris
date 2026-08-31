@@ -16,6 +16,8 @@ import { describeError } from '../lib/errors'
 import { BOOK_TYPES } from '../lib/bookTypes'
 import { useGoBack } from '../lib/navigation'
 import LoadingScreen from '../components/LoadingScreen'
+import BookCardVisual from '../components/BookCardVisual'
+import { STATUS_BORDER_CLASS } from '../lib/statusLabels'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 
@@ -91,6 +93,17 @@ export default function BookForm() {
   function set(field, value) {
     setBook((b) => ({ ...b, [field]: value }))
   }
+
+  // Même critère que l'onglet « À compléter » de la collection et le
+  // bandeau de la fiche livre (voir Collection.jsx / BookDetail.jsx) : les
+  // champs qu'un scan ISBN réussi remplit normalement tout seul.
+  const missingFields = [
+    !book.cover_url && 'Couverture',
+    !book.author && 'Auteur',
+    !book.publisher && 'Éditeur',
+    !book.page_count && 'Pages',
+    !book.description && 'Résumé',
+  ].filter(Boolean)
 
   async function handleLookup(isbnOverride) {
     const isbnToSearch = isbnOverride ?? book.isbn
@@ -175,7 +188,7 @@ export default function BookForm() {
       purchase_date: book.purchase_date || null,
       series: book.series?.trim() || null,
       series_index: book.series_index === '' ? null : Number(book.series_index),
-      universe: book.type === 'comics' ? book.universe?.trim() || null : null,
+      universe: book.universe?.trim() || null,
     }
     try {
       if (isEdit) {
@@ -213,11 +226,12 @@ export default function BookForm() {
 
   return (
     <div className="min-h-svh p-6">
-      <div className="max-w-xl mx-auto">
+      <div className="max-w-4xl mx-auto lg:flex lg:items-start lg:gap-8">
+        <div className="max-w-xl mx-auto lg:mx-0 lg:flex-1 lg:min-w-0">
         <button
           type="button"
           onClick={goBack}
-          className="text-sm text-ink/60 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+          className="text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
         >
           {isEdit ? '← Retour à la fiche' : '← Retour à la collection'}
         </button>
@@ -226,10 +240,71 @@ export default function BookForm() {
           {isEdit ? 'Modifier le livre' : 'Ajouter un livre'}
         </h1>
 
+        {missingFields.length > 0 ? (
+          <p className="mb-4 rounded-sm border border-dashed border-brass/50 bg-brass/5 px-3 py-2 text-sm text-ink/70">
+            <span className="font-medium text-brass">
+              {missingFields.length} champ{missingFields.length > 1 ? 's' : ''} à
+              compléter :
+            </span>{' '}
+            {missingFields.join(', ')}
+          </p>
+        ) : (
+          <p className="mb-4 rounded-sm border border-library/30 bg-library/5 px-3 py-2 text-sm text-library">
+            ✓ Fiche complète
+          </p>
+        )}
+
         <form
           onSubmit={handleSubmit}
           className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6 space-y-5"
         >
+          <Field label="ISBN">
+            <input
+              value={book.isbn ?? ''}
+              onChange={(e) => set('isbn', e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  handleLookup()
+                }
+              }}
+              inputMode="numeric"
+              placeholder="978..."
+              className={`${inputClass} font-mono`}
+            />
+            <div className="flex gap-2 mt-2">
+              <button
+                type="button"
+                onClick={() => handleLookup()}
+                disabled={lookupLoading}
+                className="flex-1 rounded-sm bg-library-fill text-white px-3 py-2 text-sm font-medium hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
+              >
+                {lookupLoading ? 'Recherche…' : 'Chercher'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setScannerOpen(true)}
+                className="flex-1 rounded-sm border border-ink/20 text-ink/70 px-3 py-2 text-sm font-medium hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+              >
+                Scanner
+              </button>
+            </div>
+            {lookupMessage && (
+              <p
+                role="status"
+                className={`text-sm mt-1.5 ${
+                  lookupMessage.type === 'error'
+                    ? 'text-stamp'
+                    : lookupMessage.type === 'success'
+                      ? 'text-library'
+                      : 'text-ink/70'
+                }`}
+              >
+                {lookupMessage.text}
+              </p>
+            )}
+          </Field>
+
           <Field label="Titre" required>
             <input
               required
@@ -253,296 +328,253 @@ export default function BookForm() {
             </select>
           </Field>
 
-          <Field label="Auteur">
-            <input
-              value={book.author ?? ''}
-              onChange={(e) => set('author', e.target.value)}
-              className={inputClass}
-            />
-          </Field>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Traducteur">
+          <FormSection title="Détails du livre" defaultOpen>
+            <Field label="Auteur">
               <input
-                value={book.translator ?? ''}
-                onChange={(e) => set('translator', e.target.value)}
+                value={book.author ?? ''}
+                onChange={(e) => set('author', e.target.value)}
                 className={inputClass}
               />
             </Field>
-            <Field label="Dessinateur">
-              <input
-                value={book.illustrator ?? ''}
-                onChange={(e) => set('illustrator', e.target.value)}
-                className={inputClass}
-              />
-            </Field>
-          </div>
 
-          <Field label="Éditeur">
-            <input
-              value={book.publisher ?? ''}
-              onChange={(e) => set('publisher', e.target.value)}
-              className={inputClass}
-            />
-          </Field>
-
-          <Field label="Collection">
-            <input
-              value={book.collection ?? ''}
-              onChange={(e) => set('collection', e.target.value)}
-              placeholder="Folio SF, Champs…"
-              list="collection-suggestions"
-              className={inputClass}
-            />
-            <datalist id="collection-suggestions">
-              {existingCollections.map((c) => (
-                <option key={c} value={c} />
-              ))}
-            </datalist>
-          </Field>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="col-span-2">
-              <Field label="Série">
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Traducteur">
                 <input
-                  value={book.series ?? ''}
-                  onChange={(e) => set('series', e.target.value)}
+                  value={book.translator ?? ''}
+                  onChange={(e) => set('translator', e.target.value)}
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Dessinateur">
+                <input
+                  value={book.illustrator ?? ''}
+                  onChange={(e) => set('illustrator', e.target.value)}
                   className={inputClass}
                 />
               </Field>
             </div>
-            <Field label="Tome">
+
+            <Field label="Éditeur">
               <input
-                type="number"
-                min="0"
-                step="0.5"
-                value={book.series_index ?? ''}
-                onChange={(e) => set('series_index', e.target.value)}
-                className={`${inputClass} font-mono`}
+                value={book.publisher ?? ''}
+                onChange={(e) => set('publisher', e.target.value)}
+                className={inputClass}
               />
             </Field>
-          </div>
 
-          {book.type === 'comics' && (
-            <Field label="Univers / Équipe">
+            <Field label="Collection">
+              <input
+                value={book.collection ?? ''}
+                onChange={(e) => set('collection', e.target.value)}
+                placeholder="Folio SF, Champs…"
+                list="collection-suggestions"
+                className={inputClass}
+              />
+              <datalist id="collection-suggestions">
+                {existingCollections.map((c) => (
+                  <option key={c} value={c} />
+                ))}
+              </datalist>
+            </Field>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="col-span-2">
+                <Field label="Série">
+                  <input
+                    value={book.series ?? ''}
+                    onChange={(e) => set('series', e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+              </div>
+              <Field label="Tome">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  value={book.series_index ?? ''}
+                  onChange={(e) => set('series_index', e.target.value)}
+                  className={`${inputClass} font-mono`}
+                />
+              </Field>
+            </div>
+
+            <Field label="Univers">
               <input
                 value={book.universe ?? ''}
                 onChange={(e) => set('universe', e.target.value)}
-                placeholder="Avengers, X-Men…"
+                placeholder="Hercule Poirot, Avengers, X-Men…"
                 className={inputClass}
               />
             </Field>
-          )}
 
-          <Field label="Résumé">
-            <textarea
-              rows={4}
-              value={book.description ?? ''}
-              onChange={(e) => set('description', e.target.value)}
-              placeholder="Rempli automatiquement par le lookup ISBN si disponible."
-              className={inputClass}
-            />
-          </Field>
+            <Field label="Résumé">
+              <textarea
+                rows={4}
+                value={book.description ?? ''}
+                onChange={(e) => set('description', e.target.value)}
+                placeholder="Rempli automatiquement par le lookup ISBN si disponible."
+                className={inputClass}
+              />
+            </Field>
 
-          <Field label="ISBN">
-            <input
-              value={book.isbn ?? ''}
-              onChange={(e) => set('isbn', e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  handleLookup()
-                }
-              }}
-              inputMode="numeric"
-              placeholder="978..."
-              className={`${inputClass} font-mono`}
-            />
-            <div className="flex gap-2 mt-2">
-              <button
-                type="button"
-                onClick={() => setScannerOpen(true)}
-                className="flex-1 rounded-sm border border-ink/20 text-ink/70 px-3 py-2 text-sm font-medium hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-              >
-                Scanner
-              </button>
-              <button
-                type="button"
-                onClick={() => handleLookup()}
-                disabled={lookupLoading}
-                className="flex-1 rounded-sm border border-library text-library px-3 py-2 text-sm font-medium hover:bg-library hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:opacity-60"
-              >
-                {lookupLoading ? 'Recherche…' : 'Chercher'}
-              </button>
-            </div>
-            {lookupMessage && (
-              <p
-                role="status"
-                className={`text-sm mt-1.5 ${
-                  lookupMessage.type === 'error'
-                    ? 'text-stamp'
-                    : lookupMessage.type === 'success'
-                      ? 'text-library'
-                      : 'text-ink/60'
-                }`}
-              >
-                {lookupMessage.text}
-              </p>
-            )}
-          </Field>
-
-          <Field label="Couverture">
-            <div className="flex gap-4 items-start">
-              <div className="w-24 aspect-[2/3] shrink-0 rounded-sm border border-ink/10 bg-paper overflow-hidden flex items-center justify-center">
-                {book.cover_url ? (
-                  <img
-                    src={book.cover_url}
-                    alt=""
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <span className="text-ink/30 text-xs text-center px-1">
-                    Aucune couverture
-                  </span>
-                )}
-              </div>
-
-              <div className="flex-1 space-y-2">
-                <input
-                  type="url"
-                  value={book.cover_url ?? ''}
-                  onChange={(e) => set('cover_url', e.target.value)}
-                  placeholder="https://..."
-                  className={inputClass}
-                />
-                <div className="flex flex-wrap items-center gap-3">
-                  <label className="cursor-pointer rounded-sm border border-ink/20 px-3 py-1.5 text-sm text-ink/70 hover:border-library hover:text-library focus-within:outline-none focus-within:ring-2 focus-within:ring-library">
-                    {coverUploading ? 'Import…' : 'Importer une image'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="sr-only"
-                      onChange={handleCoverUpload}
-                      disabled={coverUploading}
+            <Field label="Couverture">
+              <div className="flex gap-4 items-start">
+                <div className="w-24 aspect-[2/3] shrink-0 rounded-sm border border-ink/10 bg-paper overflow-hidden flex items-center justify-center">
+                  {book.cover_url ? (
+                    <img
+                      src={book.cover_url}
+                      alt=""
+                      className="w-full h-full object-contain"
                     />
-                  </label>
-                  <label className="cursor-pointer rounded-sm border border-ink/20 px-3 py-1.5 text-sm text-ink/70 hover:border-library hover:text-library focus-within:outline-none focus-within:ring-2 focus-within:ring-library">
-                    {coverUploading ? 'Import…' : 'Prendre une photo'}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      capture="environment"
-                      className="sr-only"
-                      onChange={handleCoverUpload}
-                      disabled={coverUploading}
-                    />
-                  </label>
-                  {book.cover_url && (
-                    <button
-                      type="button"
-                      onClick={() => set('cover_url', '')}
-                      className="text-sm text-ink/50 hover:text-stamp underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
-                    >
-                      Retirer
-                    </button>
+                  ) : (
+                    <span className="text-ink/70 text-xs text-center px-1">
+                      Aucune couverture
+                    </span>
                   )}
                 </div>
-                {coverError && (
-                  <p role="alert" className="text-sm text-stamp">
-                    {coverError}
-                  </p>
-                )}
+
+                <div className="flex-1 space-y-2">
+                  <input
+                    type="url"
+                    value={book.cover_url ?? ''}
+                    onChange={(e) => set('cover_url', e.target.value)}
+                    placeholder="https://..."
+                    className={inputClass}
+                  />
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="cursor-pointer rounded-sm border border-ink/20 px-3 py-1.5 text-sm text-ink/70 hover:border-library hover:text-library focus-within:outline-none focus-within:ring-2 focus-within:ring-library">
+                      {coverUploading ? 'Import…' : 'Importer une image'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={handleCoverUpload}
+                        disabled={coverUploading}
+                      />
+                    </label>
+                    <label className="cursor-pointer rounded-sm border border-ink/20 px-3 py-1.5 text-sm text-ink/70 hover:border-library hover:text-library focus-within:outline-none focus-within:ring-2 focus-within:ring-library">
+                      {coverUploading ? 'Import…' : 'Prendre une photo'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="sr-only"
+                        onChange={handleCoverUpload}
+                        disabled={coverUploading}
+                      />
+                    </label>
+                    {book.cover_url && (
+                      <button
+                        type="button"
+                        onClick={() => set('cover_url', '')}
+                        className="text-sm text-ink/70 hover:text-stamp underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                      >
+                        Retirer
+                      </button>
+                    )}
+                  </div>
+                  {coverError && (
+                    <p role="alert" className="text-sm text-stamp">
+                      {coverError}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          </Field>
+            </Field>
 
-          <Field label="Tags">
-            <TagInput
-              value={book.tags ?? []}
-              onChange={(tags) => set('tags', tags)}
-              suggestions={existingTags}
-            />
-          </Field>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Statut">
-              <select
-                value={book.status}
-                onChange={(e) => set('status', e.target.value)}
-                className={inputClass}
-              >
-                <option value="wishlist">Wishlist</option>
-                <option value="to-read">À lire</option>
-                <option value="reading">En cours</option>
-                <option value="read">Lu</option>
-              </select>
-            </Field>
-            <Field label="Note">
-              <StarRating
-                value={book.rating}
-                onChange={(v) => set('rating', v)}
-              />
-            </Field>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Date de début">
-              <input
-                type="date"
-                value={book.date_started ?? ''}
-                onChange={(e) => set('date_started', e.target.value)}
-                className={inputClass}
-              />
-            </Field>
-            <Field label="Date de fin">
-              <input
-                type="date"
-                value={book.date_finished ?? ''}
-                onChange={(e) => set('date_finished', e.target.value)}
-                className={inputClass}
-              />
-            </Field>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Field label="Date d'achat">
-              <input
-                type="date"
-                value={book.purchase_date ?? ''}
-                onChange={(e) => set('purchase_date', e.target.value)}
-                className={inputClass}
-              />
-            </Field>
-            <Field label="Prix d'achat (€)">
+            <Field label="Nombre de pages">
               <input
                 type="number"
                 min="0"
-                step="0.01"
-                value={book.price ?? ''}
-                onChange={(e) => set('price', e.target.value)}
+                value={book.page_count ?? ''}
+                onChange={(e) => set('page_count', e.target.value)}
                 className={`${inputClass} font-mono`}
               />
             </Field>
-          </div>
 
-          <Field label="Nombre de pages">
-            <input
-              type="number"
-              min="0"
-              value={book.page_count ?? ''}
-              onChange={(e) => set('page_count', e.target.value)}
-              className={`${inputClass} font-mono`}
-            />
-          </Field>
+            <Field label="Tags">
+              <TagInput
+                value={book.tags ?? []}
+                onChange={(tags) => set('tags', tags)}
+                suggestions={existingTags}
+              />
+            </Field>
+          </FormSection>
 
-          <Field label="Notes">
-            <textarea
-              rows={4}
-              value={book.notes ?? ''}
-              onChange={(e) => set('notes', e.target.value)}
-              className={inputClass}
-            />
-          </Field>
+          <FormSection title="Ma lecture" defaultOpen={isEdit}>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Statut">
+                <select
+                  value={book.status}
+                  onChange={(e) => set('status', e.target.value)}
+                  className={inputClass}
+                >
+                  <option value="wishlist">Wishlist</option>
+                  <option value="to-read">À lire</option>
+                  <option value="reading">En cours</option>
+                  <option value="read">Lu</option>
+                </select>
+              </Field>
+              <Field label="Note">
+                <StarRating
+                  value={book.rating}
+                  onChange={(v) => set('rating', v)}
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Date de début">
+                <input
+                  type="date"
+                  value={book.date_started ?? ''}
+                  onChange={(e) => set('date_started', e.target.value)}
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Date de fin">
+                <input
+                  type="date"
+                  value={book.date_finished ?? ''}
+                  onChange={(e) => set('date_finished', e.target.value)}
+                  className={inputClass}
+                />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Date d'achat">
+                <input
+                  type="date"
+                  value={book.purchase_date ?? ''}
+                  onChange={(e) => set('purchase_date', e.target.value)}
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Prix d'achat (€)">
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={book.price ?? ''}
+                  onChange={(e) => set('price', e.target.value)}
+                  className={`${inputClass} font-mono`}
+                />
+              </Field>
+            </div>
+          </FormSection>
+
+          <FormSection title="Notes personnelles" defaultOpen={isEdit}>
+            <Field label="Notes">
+              <textarea
+                rows={4}
+                value={book.notes ?? ''}
+                onChange={(e) => set('notes', e.target.value)}
+                className={inputClass}
+              />
+            </Field>
+          </FormSection>
 
           {error && (
             <p role="alert" className="text-sm text-stamp">
@@ -554,7 +586,7 @@ export default function BookForm() {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 rounded-sm bg-library text-white font-medium py-2 text-sm hover:bg-library/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
+              className="flex-1 rounded-sm bg-library-fill text-white font-medium py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
             >
               {saving ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Ajouter'}
             </button>
@@ -563,7 +595,7 @@ export default function BookForm() {
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(true)}
-                className="rounded-sm border border-stamp/40 text-stamp px-4 py-2 text-sm hover:bg-stamp hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp"
+                className="rounded-sm border border-stamp/40 text-stamp px-4 py-2 text-sm hover:bg-stamp-fill hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp"
               >
                 Supprimer
               </button>
@@ -587,7 +619,7 @@ export default function BookForm() {
                   type="button"
                   onClick={handleDelete}
                   disabled={saving}
-                  className="text-sm px-3 py-1.5 rounded-sm bg-stamp text-white hover:bg-stamp/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp disabled:opacity-60"
+                  className="text-sm px-3 py-1.5 rounded-sm bg-stamp-fill text-white hover:bg-stamp-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp disabled:opacity-60"
                 >
                   Confirmer
                 </button>
@@ -595,6 +627,9 @@ export default function BookForm() {
             </div>
           )}
         </form>
+      </div>
+
+        <LivePreviewCard book={book} />
       </div>
 
       {scannerOpen && (
@@ -618,6 +653,34 @@ export default function BookForm() {
   )
 }
 
+// Aperçu "façon carte de la collection" (D1 angle C, partie 2 de la fiche
+// de chantier) : retour visuel immédiat sur ce qui sera enregistré, mis à
+// jour en direct pendant la saisie (avant même le premier scan ISBN).
+function LivePreviewCard({ book }) {
+  // BookCardVisual attend un titre pour afficher une ligne correcte : un
+  // champ vide donnerait un <p> vide plutôt qu'un vrai placeholder, d'où le
+  // fallback local (comportement propre à cet aperçu, pas à la vraie carte).
+  const previewBook = { ...book, title: book.title || 'Titre à renseigner' }
+  return (
+    // Collée à droite du formulaire (colonne sticky, même pattern que la
+    // barre latérale de /account) plutôt qu'insérée dans le flux du
+    // formulaire (encombrant sur un long formulaire vertical) ou un simple
+    // fixed calé sur le viewport (se détache visuellement du formulaire sur
+    // un écran large). Réservée au desktop : pas de place à côté du
+    // formulaire sur un écran étroit.
+    <div className="hidden lg:block lg:w-44 lg:shrink-0 lg:sticky lg:top-24">
+      <p className="font-mono text-xs tracking-widest text-library uppercase mb-2">
+        Aperçu
+      </p>
+      <div
+        className={`relative bg-card border-t-4 border-dashed rounded-sm shadow-lg overflow-hidden ${STATUS_BORDER_CLASS[book.status]}`}
+      >
+        <BookCardVisual book={previewBook} />
+      </div>
+    </div>
+  )
+}
+
 function Field({ label, required, children }) {
   return (
     <label className="block">
@@ -627,6 +690,47 @@ function Field({ label, required, children }) {
       </span>
       {children}
     </label>
+  )
+}
+
+// Section repliable pour regrouper les champs secondaires (formulaire
+// d'ajout/édition, "Angle C" de la fiche de chantier D1) : ISBN/Titre/Type
+// restent toujours visibles hors section, le reste se range par thème pour
+// réduire la densité visuelle sans rien cacher définitivement.
+function FormSection({ title, defaultOpen = false, children }) {
+  const [open, setOpen] = useState(defaultOpen)
+  // grid-template-rows en classe Tailwind (grid-rows-[0fr]/[1fr]) ne se
+  // recalculait pas de façon fiable au toggle dans les tests : la même
+  // propriété posée en style inline fonctionne correctement, donc on passe
+  // par là plutôt que par une classe pour cette propriété précise.
+  const reduceMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  return (
+    <div className="border-t border-ink/10 pt-5">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex items-center justify-between w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+      >
+        <span className="font-serif text-lg font-semibold">{title}</span>
+        <span aria-hidden="true" className="text-ink/70">
+          {open ? '▴' : '▾'}
+        </span>
+      </button>
+      <div
+        className="grid"
+        style={{
+          gridTemplateRows: open ? '1fr' : '0fr',
+          transition: reduceMotion ? 'none' : 'grid-template-rows 300ms ease-out',
+        }}
+      >
+        <div className="overflow-hidden" inert={!open}>
+          <div className="space-y-5 pt-4">{children}</div>
+        </div>
+      </div>
+    </div>
   )
 }
 

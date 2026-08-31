@@ -57,7 +57,7 @@ export default function PersonalInfoSection({ user }) {
       <div>
         <label
           htmlFor="firstName"
-          className="block font-mono text-xs uppercase tracking-widest text-ink/50 mb-1"
+          className="block font-mono text-xs uppercase tracking-widest text-ink/70 mb-1"
         >
           Prénom
         </label>
@@ -73,7 +73,7 @@ export default function PersonalInfoSection({ user }) {
       <div>
         <label
           htmlFor="lastName"
-          className="block font-mono text-xs uppercase tracking-widest text-ink/50 mb-1"
+          className="block font-mono text-xs uppercase tracking-widest text-ink/70 mb-1"
         >
           Nom
         </label>
@@ -89,7 +89,7 @@ export default function PersonalInfoSection({ user }) {
       <div>
         <label
           htmlFor="email"
-          className="block font-mono text-xs uppercase tracking-widest text-ink/50 mb-1"
+          className="block font-mono text-xs uppercase tracking-widest text-ink/70 mb-1"
         >
           Email
         </label>
@@ -98,7 +98,7 @@ export default function PersonalInfoSection({ user }) {
           type="email"
           value={user.email ?? ''}
           disabled
-          className="w-full rounded-sm border border-ink/10 bg-paper px-3 py-2 text-sm text-ink/50 cursor-not-allowed"
+          className="w-full rounded-sm border border-ink/10 bg-paper px-3 py-2 text-sm text-ink/70 cursor-not-allowed"
         />
       </div>
 

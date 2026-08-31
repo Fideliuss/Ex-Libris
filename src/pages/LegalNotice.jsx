@@ -6,7 +6,7 @@ export default function LegalNotice() {
       <div className="max-w-2xl mx-auto">
         <Link
           to="/"
-          className="text-sm text-ink/60 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+          className="text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
         >
           ← Retour à l'accueil
         </Link>

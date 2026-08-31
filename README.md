@@ -1,6 +1,6 @@
 # Ex Libris
 
-![build-check](https://github.com/Fideliuss/ma-bibliotheque/actions/workflows/build-check.yml/badge.svg)
+![build-check](https://github.com/Fideliuss/Ex-Libris/actions/workflows/build-check.yml/badge.svg)
 
 PWA personnelle de gestion de bibliothèque (livres, BD, comics, mangas),
 née pour remplacer un tableur Excel qu'on se repassait à deux. Chacun garde
@@ -154,8 +154,8 @@ crédits) en dehors d'un vrai merge sur `main` :
 - `develop` est la branche de travail. Chaque fonctionnalité part d'une
   branche `feature/xxx` créée depuis `develop`.
 - Commits au format [conventionnel](https://www.conventionalcommits.org/) :
-  `feat:`, `fix:`, `chore:`, `docs:`, `refactor:` — indispensable pour que
-  le versionnage automatique fonctionne.
+  `feat:`, `fix:`, `chore:`, `docs:`, `refactor:` — pour garder un
+  historique lisible.
 - Chaque `feature/xxx` termine par une pull request vers `develop`. La CI
   (`.github/workflows/build-check.yml`) lance `npm ci`, `npm run lint`,
   `npm run test` et `npm run build` sur chaque PR, et doit passer avant
@@ -164,13 +164,12 @@ crédits) en dehors d'un vrai merge sur `main` :
   les PR qui touchent `supabase/`, à titre informatif.
 - `main` et `develop` sont protégées : push direct interdit, merge
   uniquement via PR avec la CI au vert.
-- Quand `develop` est stable, ouvrir une PR de `develop` vers `main`.
-- `release-please` (`.github/workflows/release-please.yml`) tourne à chaque
-  push sur `main` : il maintient une PR de release à jour avec le
-  changelog et le bump de version (patch/minor/major selon les commits
-  conventionnels). Merger cette PR crée le tag Git correspondant.
-- Netlify ne surveille que `main` (branch deploys et previews désactivés).
-- Protection des branches via [Repository Rulesets](https://github.com/Fideliuss/ma-bibliotheque/rules)
+- Quand `develop` est stable, ouvrir une PR de `develop` vers `main`. Le
+  merge de cette PR déclenche le déploiement (Netlify ne surveille que
+  `main`, branch deploys et previews désactivés). Pas de versionnage
+  automatique : `CHANGELOG.md` est un historique figé, `package.json`
+  n'est plus bumpé.
+- Protection des branches via [Repository Rulesets](https://github.com/Fideliuss/Ex-Libris/rules)
   (pas l'ancienne "branch protection" classique, qui ne bloque pas
   vraiment les push directs quand 0 review est requise).
 
