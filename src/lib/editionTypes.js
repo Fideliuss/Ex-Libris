@@ -5,6 +5,10 @@
 export const EDITION_GROUPS = [
   {
     label: 'Format',
+    // Exclusif : un livre n'a physiquement qu'un seul format (pas de
+    // "relié poche"), contrairement à l'édition spéciale ci-dessous où les
+    // cases sont cumulables.
+    exclusive: true,
     types: ['Poche', 'Grand format', 'Reliée', 'Numérique'],
   },
   {
