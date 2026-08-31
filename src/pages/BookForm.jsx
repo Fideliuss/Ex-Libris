@@ -226,7 +226,8 @@ export default function BookForm() {
 
   return (
     <div className="min-h-svh p-6">
-      <div className="max-w-xl mx-auto">
+      <div className="max-w-4xl mx-auto lg:flex lg:items-start lg:gap-8">
+        <div className="max-w-xl mx-auto lg:mx-0 lg:flex-1 lg:min-w-0">
         <button
           type="button"
           onClick={goBack}
@@ -628,7 +629,8 @@ export default function BookForm() {
         </form>
       </div>
 
-      <LivePreviewCard book={book} />
+        <LivePreviewCard book={book} />
+      </div>
 
       {scannerOpen && (
         <Suspense
@@ -660,10 +662,13 @@ function LivePreviewCard({ book }) {
   // fallback local (comportement propre à cet aperçu, pas à la vraie carte).
   const previewBook = { ...book, title: book.title || 'Titre à renseigner' }
   return (
-    // Flottant plutôt qu'inséré dans le flux du formulaire (encombrant sur
-    // un long formulaire vertical), et réservé au desktop : pas de place
-    // pour ça à côté du formulaire sur un écran étroit.
-    <div className="hidden lg:block fixed top-24 right-6 w-44 z-20">
+    // Collée à droite du formulaire (colonne sticky, même pattern que la
+    // barre latérale de /account) plutôt qu'insérée dans le flux du
+    // formulaire (encombrant sur un long formulaire vertical) ou un simple
+    // fixed calé sur le viewport (se détache visuellement du formulaire sur
+    // un écran large). Réservée au desktop : pas de place à côté du
+    // formulaire sur un écran étroit.
+    <div className="hidden lg:block lg:w-44 lg:shrink-0 lg:sticky lg:top-24">
       <p className="font-mono text-xs tracking-widest text-library uppercase mb-2">
         Aperçu
       </p>
