@@ -16,6 +16,8 @@ import { describeError } from '../lib/errors'
 import { BOOK_TYPES } from '../lib/bookTypes'
 import { useGoBack } from '../lib/navigation'
 import LoadingScreen from '../components/LoadingScreen'
+import BookCardVisual from '../components/BookCardVisual'
+import { STATUS_BORDER_CLASS } from '../lib/statusLabels'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 
@@ -224,7 +226,8 @@ export default function BookForm() {
 
   return (
     <div className="min-h-svh p-6">
-      <div className="max-w-xl mx-auto">
+      <div className="max-w-4xl mx-auto lg:flex lg:items-start lg:gap-8">
+        <div className="max-w-xl mx-auto lg:mx-0 lg:flex-1 lg:min-w-0">
         <button
           type="button"
           onClick={goBack}
@@ -626,6 +629,9 @@ export default function BookForm() {
         </form>
       </div>
 
+        <LivePreviewCard book={book} />
+      </div>
+
       {scannerOpen && (
         <Suspense
           fallback={
@@ -643,6 +649,34 @@ export default function BookForm() {
           />
         </Suspense>
       )}
+    </div>
+  )
+}
+
+// Aperçu "façon carte de la collection" (D1 angle C, partie 2 de la fiche
+// de chantier) : retour visuel immédiat sur ce qui sera enregistré, mis à
+// jour en direct pendant la saisie (avant même le premier scan ISBN).
+function LivePreviewCard({ book }) {
+  // BookCardVisual attend un titre pour afficher une ligne correcte : un
+  // champ vide donnerait un <p> vide plutôt qu'un vrai placeholder, d'où le
+  // fallback local (comportement propre à cet aperçu, pas à la vraie carte).
+  const previewBook = { ...book, title: book.title || 'Titre à renseigner' }
+  return (
+    // Collée à droite du formulaire (colonne sticky, même pattern que la
+    // barre latérale de /account) plutôt qu'insérée dans le flux du
+    // formulaire (encombrant sur un long formulaire vertical) ou un simple
+    // fixed calé sur le viewport (se détache visuellement du formulaire sur
+    // un écran large). Réservée au desktop : pas de place à côté du
+    // formulaire sur un écran étroit.
+    <div className="hidden lg:block lg:w-44 lg:shrink-0 lg:sticky lg:top-24">
+      <p className="font-mono text-xs tracking-widest text-library uppercase mb-2">
+        Aperçu
+      </p>
+      <div
+        className={`relative bg-card border-t-4 border-dashed rounded-sm shadow-lg overflow-hidden ${STATUS_BORDER_CLASS[book.status]}`}
+      >
+        <BookCardVisual book={previewBook} />
+      </div>
     </div>
   )
 }
