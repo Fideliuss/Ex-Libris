@@ -400,18 +400,24 @@ export default function Collection() {
     return runBulkAction(() => bulkDeleteBooks([...selectedIds]))
   }
 
-  function handleBulkStatus(newStatus) {
-    return runBulkAction(() =>
-      bulkUpdateBooks(
-        [...selectedIds].map((id) => ({ id, patch: { status: newStatus } })),
-      ),
-    )
+  // Statut/Type ne sont jamais vides (des select avec valeur par défaut) :
+  // seuls les champs texte/tableau ont besoin d'être normalisés en null
+  // pour rester cohérents avec la fiche livre (BookForm.jsx) plutôt que de
+  // stocker une chaîne ou un tableau vide.
+  function normalizeBulkValue(targetField, raw) {
+    if (targetField === 'edition') {
+      const clean = (raw ?? []).filter(Boolean)
+      return clean.length > 0 ? clean : null
+    }
+    if (typeof raw === 'string') return raw.trim() || null
+    return raw
   }
 
-  function handleBulkType(newType) {
+  function handleBulkApplyField(targetField, raw) {
+    const patchValue = normalizeBulkValue(targetField, raw)
     return runBulkAction(() =>
       bulkUpdateBooks(
-        [...selectedIds].map((id) => ({ id, patch: { type: newType } })),
+        [...selectedIds].map((id) => ({ id, patch: { [targetField]: patchValue } })),
       ),
     )
   }
@@ -734,9 +740,11 @@ export default function Collection() {
           working={bulkWorking}
           error={bulkError}
           tags={selectedBooksTags}
+          publishers={publishers}
+          collections={collections}
+          universes={universeList}
           onDelete={handleBulkDelete}
-          onChangeStatus={handleBulkStatus}
-          onChangeType={handleBulkType}
+          onApplyField={handleBulkApplyField}
           onAddTag={handleBulkAddTag}
           onRemoveTag={handleBulkRemoveTag}
           onCancel={exitSelectionMode}
