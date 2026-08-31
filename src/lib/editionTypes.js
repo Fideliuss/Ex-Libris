@@ -5,11 +5,16 @@
 export const EDITION_GROUPS = [
   {
     label: 'Format',
-    // Exclusif : un livre n'a physiquement qu'un seul format (pas de
-    // "relié poche"), contrairement à l'édition spéciale ci-dessous où les
-    // cases sont cumulables.
+    // Exclusif : un livre n'a physiquement qu'une seule taille/support à la
+    // fois. Indépendant de la reliure ci-dessous : un poche relié existe
+    // (ex: les Collector J'ai Lu), donc ce n'est pas le même axe.
     exclusive: true,
-    types: ['Poche', 'Grand format', 'Reliée', 'Numérique'],
+    types: ['Poche', 'Grand format', 'Numérique'],
+  },
+  {
+    label: 'Reliure',
+    exclusive: true,
+    types: ['Broché', 'Relié'],
   },
   {
     label: 'Édition spéciale',
