@@ -16,8 +16,8 @@ import { describeError } from '../lib/errors'
 import { BOOK_TYPES } from '../lib/bookTypes'
 import { useGoBack } from '../lib/navigation'
 import LoadingScreen from '../components/LoadingScreen'
-import BookCoverPlaceholder from '../components/BookCoverPlaceholder'
-import { STATUS_BADGE_CLASS, STATUS_LABELS } from '../lib/statusLabels'
+import BookCardVisual from '../components/BookCardVisual'
+import { STATUS_BORDER_CLASS } from '../lib/statusLabels'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 
@@ -655,44 +655,19 @@ export default function BookForm() {
 // de chantier) : retour visuel immédiat sur ce qui sera enregistré, mis à
 // jour en direct pendant la saisie (avant même le premier scan ISBN).
 function LivePreviewCard({ book }) {
+  // BookCardVisual attend un titre pour afficher une ligne correcte : un
+  // champ vide donnerait un <p> vide plutôt qu'un vrai placeholder, d'où le
+  // fallback local (comportement propre à cet aperçu, pas à la vraie carte).
+  const previewBook = { ...book, title: book.title || 'Titre à renseigner' }
   return (
-    <div>
+    <div className="max-w-[220px]">
       <p className="font-mono text-xs tracking-widest text-library uppercase mb-2">
         Aperçu
       </p>
-      <div className="flex gap-3 items-center rounded-sm border border-ink/10 bg-paper p-3">
-        <div className="relative w-14 aspect-[2/3] shrink-0 rounded-sm border border-ink/10 bg-paper overflow-hidden">
-          {book.cover_url ? (
-            <img
-              src={book.cover_url}
-              alt=""
-              className="w-full h-full object-contain"
-            />
-          ) : (
-            <BookCoverPlaceholder
-              title={book.title || 'Titre'}
-              author={book.author}
-              volume={book.type === 'manga' && book.series ? book.series_index : null}
-            />
-          )}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p
-            className={`font-serif text-base leading-snug line-clamp-2 ${book.title ? '' : 'italic text-ink/70'}`}
-          >
-            {book.title || 'Titre à renseigner'}
-          </p>
-          <p
-            className={`text-sm mt-0.5 truncate text-ink/70 ${book.author ? '' : 'italic'}`}
-          >
-            {book.author || 'Auteur non renseigné'}
-          </p>
-          <span
-            className={`inline-block mt-1.5 font-mono text-[10px] uppercase rounded-full px-2 py-0.5 ${STATUS_BADGE_CLASS[book.status] ?? 'bg-ink/10 text-ink/70'}`}
-          >
-            {STATUS_LABELS[book.status] ?? book.status}
-          </span>
-        </div>
+      <div
+        className={`relative bg-card border-t-4 border-dashed rounded-sm shadow-sm overflow-hidden ${STATUS_BORDER_CLASS[book.status]}`}
+      >
+        <BookCardVisual book={previewBook} />
       </div>
     </div>
   )
