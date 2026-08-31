@@ -25,12 +25,9 @@ const SAMPLE_BOOKS = [
 const COLUMN_BOOK_COUNT = 5
 const COLUMNS = [
   { duration: 36, direction: 'up', offset: 0 },
-  { duration: 30, direction: 'down', offset: 3 },
-  { duration: 44, direction: 'up', offset: 6 },
-  { duration: 26, direction: 'down', offset: 1 },
-  { duration: 34, direction: 'up', offset: 8 },
-  { duration: 40, direction: 'down', offset: 4 },
-  { duration: 24, direction: 'up', offset: 2 },
+  { duration: 44, direction: 'down', offset: 3 },
+  { duration: 30, direction: 'up', offset: 6 },
+  { duration: 40, direction: 'down', offset: 8 },
 ]
 
 function CoverColumn({ duration, direction, offset }) {
@@ -43,7 +40,7 @@ function CoverColumn({ duration, direction, offset }) {
   const doubled = [...books, ...books]
   return (
     <div
-      className="w-20 shrink-0 flex flex-col gap-3"
+      className="w-32 shrink-0 flex flex-col gap-4"
       style={{
         animation: reduceMotion ? 'none' : `scroll-${direction} ${duration}s linear infinite`,
       }}
@@ -261,7 +258,7 @@ export default function OnboardingModal({ step, onStepChange, onSkip, onFinish, 
       onClick={onSkip}
       className="fixed inset-0 z-50 overflow-hidden bg-ink flex items-center justify-center p-6"
     >
-      <div className="absolute inset-0 flex gap-3.5 justify-center" aria-hidden="true">
+      <div className="absolute inset-0 flex gap-5 justify-center" aria-hidden="true">
         {COLUMNS.map((col, i) => (
           <CoverColumn key={i} {...col} />
         ))}
