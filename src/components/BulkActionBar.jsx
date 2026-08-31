@@ -24,6 +24,17 @@ const FIELDS = [
   { key: 'purchase_date', label: "Date d'achat", defaultValue: '' },
 ]
 
+// Statut/Type ont toujours une valeur (des select, pas de case vide
+// possible) : seuls les autres champs peuvent être vidés en masse.
+const CLEARABLE_FIELDS = new Set([
+  'publisher',
+  'collection',
+  'series',
+  'edition',
+  'universe',
+  'purchase_date',
+])
+
 export default function BulkActionBar({
   count,
   working,
@@ -182,6 +193,18 @@ export default function BulkActionBar({
             >
               Appliquer
             </button>
+
+            {CLEARABLE_FIELDS.has(field) && (
+              <button
+                type="button"
+                onClick={() => onApplyField(field, field === 'edition' ? [] : '')}
+                disabled={disabled}
+                title="Vider ce champ sur les livres sélectionnés"
+                className="text-sm px-3 py-1.5 rounded-sm border border-stamp/40 text-stamp hover:bg-stamp-fill hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp disabled:opacity-60"
+              >
+                Retirer
+              </button>
+            )}
 
             <button
               type="button"
