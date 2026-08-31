@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { STATUS_BADGE_CLASS, STATUS_LABELS } from '../lib/statusLabels'
 import BookCoverPlaceholder from './BookCoverPlaceholder'
 
 const TOTAL_STEPS = 5
+// Distance minimale (px) pour compter comme un swipe plutôt qu'un tap ou un
+// scroll vertical un peu de travers.
+const SWIPE_THRESHOLD = 50
 
 // Fond décoratif : colonnes de vraies couvertures (même composant que
 // partout ailleurs dans l'app) qui défilent en boucle continue derrière le
@@ -287,6 +290,32 @@ export default function OnboardingModal({ step, onStepChange, onSkip, onFinish, 
 
   const isLast = step === TOTAL_STEPS - 1
 
+  // Navigation au swipe (mobile) : gauche -> tome suivant, droite -> tome
+  // précédent, comme la carte de tomes. On compare le mouvement horizontal
+  // au vertical pour ne pas confondre un swipe avec un scroll de la carte
+  // (elle est scrollable, voir overflow-y-auto plus bas) un peu de travers.
+  const touchStartRef = useRef(null)
+  function handleTouchStart(e) {
+    const t = e.touches[0]
+    touchStartRef.current = { x: t.clientX, y: t.clientY }
+  }
+  function handleTouchEnd(e) {
+    const start = touchStartRef.current
+    touchStartRef.current = null
+    if (!start) return
+    const t = e.changedTouches[0]
+    const deltaX = t.clientX - start.x
+    const deltaY = t.clientY - start.y
+    if (Math.abs(deltaX) < SWIPE_THRESHOLD || Math.abs(deltaX) < Math.abs(deltaY)) {
+      return
+    }
+    if (deltaX < 0 && step < TOTAL_STEPS - 1) {
+      onStepChange(step + 1)
+    } else if (deltaX > 0 && step > 0) {
+      onStepChange(step - 1)
+    }
+  }
+
   return (
     <div
       role="dialog"
@@ -306,6 +335,8 @@ export default function OnboardingModal({ step, onStepChange, onSkip, onFinish, 
 
       <div
         onClick={(e) => e.stopPropagation()}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
         className={`relative w-full max-w-[420px] max-h-[85vh] overflow-y-auto bg-card border-t-4 border-dashed border-brass rounded-sm shadow-xl p-8 sm:p-9 transition-all duration-200 ${
           closing ? 'opacity-0 scale-95' : 'opacity-100 scale-100'
         }`}
