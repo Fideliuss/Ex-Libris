@@ -463,8 +463,19 @@ export default function BookDetail() {
                   {book.publisher || 'Éditeur non renseigné'}
                 </span>
                 {book.collection && ` · ${book.collection}`}
-                {book.edition?.length > 0 && ` · ${book.edition.join(', ')}`}
               </p>
+              {book.edition?.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {book.edition.map((e) => (
+                    <span
+                      key={e}
+                      className="text-xs px-2 py-0.5 rounded-full border border-brass/40 text-brass"
+                    >
+                      {e}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               <div className="flex flex-wrap items-center gap-2 mt-3">
                 {book.user_id === user?.id ? (
