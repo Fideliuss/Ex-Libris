@@ -6,7 +6,10 @@ import {
   getBook,
   listAllCollections,
   listAllEditions,
+  listAllPublishers,
+  listAllSeries,
   listAllTags,
+  listAllUniverses,
   updateBook,
 } from '../lib/books'
 import { lookupIsbn } from '../lib/isbnLookup'
@@ -58,6 +61,9 @@ export default function BookForm() {
   const [existingTags, setExistingTags] = useState([])
   const [existingCollections, setExistingCollections] = useState([])
   const [existingEditions, setExistingEditions] = useState([])
+  const [existingPublishers, setExistingPublishers] = useState([])
+  const [existingSeries, setExistingSeries] = useState([])
+  const [existingUniverses, setExistingUniverses] = useState([])
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -72,6 +78,9 @@ export default function BookForm() {
     listAllTags().then(setExistingTags).catch(() => {})
     listAllCollections().then(setExistingCollections).catch(() => {})
     listAllEditions().then(setExistingEditions).catch(() => {})
+    listAllPublishers().then(setExistingPublishers).catch(() => {})
+    listAllSeries().then(setExistingSeries).catch(() => {})
+    listAllUniverses().then(setExistingUniverses).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -362,8 +371,14 @@ export default function BookForm() {
               <input
                 value={book.publisher ?? ''}
                 onChange={(e) => set('publisher', e.target.value)}
+                list="publisher-suggestions"
                 className={inputClass}
               />
+              <datalist id="publisher-suggestions">
+                {existingPublishers.map((p) => (
+                  <option key={p} value={p} />
+                ))}
+              </datalist>
             </Field>
 
             <Field label="Collection">
@@ -402,8 +417,14 @@ export default function BookForm() {
                   <input
                     value={book.series ?? ''}
                     onChange={(e) => set('series', e.target.value)}
+                    list="series-suggestions"
                     className={inputClass}
                   />
+                  <datalist id="series-suggestions">
+                    {existingSeries.map((s) => (
+                      <option key={s} value={s} />
+                    ))}
+                  </datalist>
                 </Field>
               </div>
               <Field label="Tome">
@@ -423,8 +444,14 @@ export default function BookForm() {
                 value={book.universe ?? ''}
                 onChange={(e) => set('universe', e.target.value)}
                 placeholder="Hercule Poirot, Avengers, X-Men…"
+                list="universe-suggestions"
                 className={inputClass}
               />
+              <datalist id="universe-suggestions">
+                {existingUniverses.map((u) => (
+                  <option key={u} value={u} />
+                ))}
+              </datalist>
             </Field>
 
             <Field label="Résumé">

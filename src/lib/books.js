@@ -145,6 +145,48 @@ export async function listAllEditions() {
   return [...editions].sort((a, b) => a.localeCompare(b, 'fr'))
 }
 
+export async function listAllPublishers() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data, error } = await supabase
+    .from('books')
+    .select('publisher')
+    .eq('user_id', user.id)
+    .not('publisher', 'is', null)
+  if (error) throw error
+  const publishers = new Set(data.map((row) => row.publisher).filter(Boolean))
+  return [...publishers].sort((a, b) => a.localeCompare(b, 'fr'))
+}
+
+export async function listAllSeries() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data, error } = await supabase
+    .from('books')
+    .select('series')
+    .eq('user_id', user.id)
+    .not('series', 'is', null)
+  if (error) throw error
+  const series = new Set(data.map((row) => row.series).filter(Boolean))
+  return [...series].sort((a, b) => a.localeCompare(b, 'fr'))
+}
+
+export async function listAllUniverses() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data, error } = await supabase
+    .from('books')
+    .select('universe')
+    .eq('user_id', user.id)
+    .not('universe', 'is', null)
+  if (error) throw error
+  const universes = new Set(data.map((row) => row.universe).filter(Boolean))
+  return [...universes].sort((a, b) => a.localeCompare(b, 'fr'))
+}
+
 // Migration : un tag utilisé comme nom de collection éditeur (ex: "folio sf")
 // devient la valeur du champ `collection` sur tous les livres concernés, et
 // est retiré de leurs tags. Retourne le nombre de livres modifiés.
