@@ -5,7 +5,6 @@ import {
   deleteBook,
   getBook,
   listAllCollections,
-  listAllEditions,
   listAllPublishers,
   listAllSeries,
   listAllTags,
@@ -22,6 +21,7 @@ import { useGoBack } from '../lib/navigation'
 import LoadingScreen from '../components/LoadingScreen'
 import BookCardVisual from '../components/BookCardVisual'
 import SuggestInput from '../components/SuggestInput'
+import EditionCheckboxes from '../components/EditionCheckboxes'
 import { STATUS_BORDER_CLASS } from '../lib/statusLabels'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
@@ -33,7 +33,7 @@ const emptyBook = {
   illustrator: '',
   publisher: '',
   collection: '',
-  edition: '',
+  edition: [],
   isbn: '',
   cover_url: '',
   description: '',
@@ -61,7 +61,6 @@ export default function BookForm() {
   const [book, setBook] = useState(emptyBook)
   const [existingTags, setExistingTags] = useState([])
   const [existingCollections, setExistingCollections] = useState([])
-  const [existingEditions, setExistingEditions] = useState([])
   const [existingPublishers, setExistingPublishers] = useState([])
   const [existingSeries, setExistingSeries] = useState([])
   const [existingUniverses, setExistingUniverses] = useState([])
@@ -78,7 +77,6 @@ export default function BookForm() {
   useEffect(() => {
     listAllTags().then(setExistingTags).catch(() => {})
     listAllCollections().then(setExistingCollections).catch(() => {})
-    listAllEditions().then(setExistingEditions).catch(() => {})
     listAllPublishers().then(setExistingPublishers).catch(() => {})
     listAllSeries().then(setExistingSeries).catch(() => {})
     listAllUniverses().then(setExistingUniverses).catch(() => {})
@@ -98,6 +96,7 @@ export default function BookForm() {
           price: data.price ?? '',
           purchase_date: data.purchase_date ?? '',
           series_index: data.series_index ?? '',
+          edition: data.edition ?? [],
         }),
       )
       .catch((err) => setError(describeError(err)))
@@ -192,6 +191,7 @@ export default function BookForm() {
     e.preventDefault()
     setSaving(true)
     setError(null)
+    const cleanEdition = (book.edition ?? []).filter(Boolean)
     const payload = {
       ...book,
       date_started: book.date_started || null,
@@ -203,6 +203,7 @@ export default function BookForm() {
       series: book.series?.trim() || null,
       series_index: book.series_index === '' ? null : Number(book.series_index),
       universe: book.universe?.trim() || null,
+      edition: cleanEdition.length > 0 ? cleanEdition : null,
     }
     try {
       if (isEdit) {
@@ -388,12 +389,9 @@ export default function BookForm() {
             </Field>
 
             <Field label="Édition">
-              <SuggestInput
-                value={book.edition}
+              <EditionCheckboxes
+                value={book.edition ?? []}
                 onChange={(v) => set('edition', v)}
-                suggestions={existingEditions}
-                placeholder="Poche, Grand format, Illustrée, Collector…"
-                className={inputClass}
               />
             </Field>
 

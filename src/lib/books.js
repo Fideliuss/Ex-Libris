@@ -131,20 +131,6 @@ export async function listAllCollections() {
   return [...collections].sort((a, b) => a.localeCompare(b, 'fr'))
 }
 
-export async function listAllEditions() {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const { data, error } = await supabase
-    .from('books')
-    .select('edition')
-    .eq('user_id', user.id)
-    .not('edition', 'is', null)
-  if (error) throw error
-  const editions = new Set(data.map((row) => row.edition).filter(Boolean))
-  return [...editions].sort((a, b) => a.localeCompare(b, 'fr'))
-}
-
 export async function listAllPublishers() {
   const {
     data: { user },

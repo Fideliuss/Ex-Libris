@@ -190,7 +190,7 @@ export default function Collection() {
   const editions = useMemo(() => {
     const set = new Set()
     for (const book of books) {
-      if (book.edition) set.add(book.edition)
+      for (const e of book.edition ?? []) set.add(e)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
   }, [books])
@@ -251,7 +251,7 @@ export default function Collection() {
         return false
       if (publisher && book.publisher !== publisher) return false
       if (collection && book.collection !== collection) return false
-      if (edition && book.edition !== edition) return false
+      if (edition && !book.edition?.includes(edition)) return false
       if (series && book.series !== series) return false
       if (universe && book.universe !== universe) return false
       if (type && book.type !== type) return false

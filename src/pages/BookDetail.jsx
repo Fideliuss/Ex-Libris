@@ -463,7 +463,7 @@ export default function BookDetail() {
                   {book.publisher || 'Éditeur non renseigné'}
                 </span>
                 {book.collection && ` · ${book.collection}`}
-                {book.edition && ` · ${book.edition}`}
+                {book.edition?.length > 0 && ` · ${book.edition.join(', ')}`}
               </p>
 
               <div className="flex flex-wrap items-center gap-2 mt-3">
