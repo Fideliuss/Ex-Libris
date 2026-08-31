@@ -742,6 +742,7 @@ export default function Collection() {
           tags={selectedBooksTags}
           publishers={publishers}
           collections={collections}
+          series={seriesList}
           universes={universeList}
           onDelete={handleBulkDelete}
           onApplyField={handleBulkApplyField}

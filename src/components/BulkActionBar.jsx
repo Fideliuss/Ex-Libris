@@ -18,6 +18,7 @@ const FIELDS = [
   { key: 'type', label: 'Type', defaultValue: 'book' },
   { key: 'publisher', label: 'Éditeur', defaultValue: '' },
   { key: 'collection', label: 'Collection', defaultValue: '' },
+  { key: 'series', label: 'Série', defaultValue: '' },
   { key: 'edition', label: 'Édition', defaultValue: [] },
   { key: 'universe', label: 'Univers', defaultValue: '' },
   { key: 'purchase_date', label: "Date d'achat", defaultValue: '' },
@@ -30,6 +31,7 @@ export default function BulkActionBar({
   tags,
   publishers,
   collections,
+  series,
   universes,
   onDelete,
   onApplyField,
@@ -139,6 +141,14 @@ export default function BulkActionBar({
                   value={value}
                   onChange={setValue}
                   suggestions={collections}
+                  className={inputClass}
+                />
+              )}
+              {field === 'series' && (
+                <SuggestInput
+                  value={value}
+                  onChange={setValue}
+                  suggestions={series}
                   className={inputClass}
                 />
               )}
