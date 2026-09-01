@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { inputClass } from '../lib/ui'
+import { inputClass, primaryButtonClass } from '../lib/ui'
 import { navigateWithViewTransition } from '../lib/navigation'
 
 export default function Login() {
@@ -191,7 +191,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-sm bg-library-fill text-white font-medium py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
+              className={`w-full rounded-sm py-2 text-sm ${primaryButtonClass}`}
             >
               {submitting ? 'Connexion…' : 'Se connecter'}
             </button>
@@ -364,7 +364,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={submitting || !acceptedPolicy}
-              className="w-full rounded-sm bg-library-fill text-white font-medium py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
+              className={`w-full rounded-sm py-2 text-sm ${primaryButtonClass}`}
             >
               {submitting ? 'Création…' : 'Créer le compte'}
             </button>
@@ -417,7 +417,7 @@ export default function Login() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full rounded-sm bg-library-fill text-white font-medium py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
+              className={`w-full rounded-sm py-2 text-sm ${primaryButtonClass}`}
             >
               {submitting ? 'Envoi…' : 'Envoyer le lien'}
             </button>

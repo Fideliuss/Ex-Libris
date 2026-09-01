@@ -334,7 +334,7 @@ export default function BookDetail() {
             <button
               type="button"
               onClick={() => navigate(`/books/${id}/edit`)}
-              className="shrink-0 rounded-sm bg-library-fill text-white font-medium px-4 py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+              className={`shrink-0 rounded-sm px-4 py-2 text-sm ${primaryButtonClass}`}
             >
               Modifier
             </button>
@@ -372,7 +372,7 @@ export default function BookDetail() {
             <div className="relative w-40 aspect-[2/3] shrink-0 rounded-sm border border-ink/10 bg-paper overflow-hidden mx-auto sm:mx-0">
               {book.status === 'read' && (
                 <span className="absolute top-2 right-2 -rotate-6 border-2 border-library text-library font-mono text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm bg-card/90 z-10">
-                  Lu
+                  {STATUS_LABELS.read}
                 </span>
               )}
               {book.status === 'wishlist' && <WishlistRibbon />}
@@ -494,10 +494,11 @@ export default function BookDetail() {
                     aria-label="Changer le statut"
                     className={`font-mono text-xs uppercase rounded-full px-2 py-0.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-library disabled:opacity-60 ${STATUS_BADGE_CLASS[book.status] ?? 'bg-ink/10 text-ink/70'}`}
                   >
-                    <option value="wishlist">Wishlist</option>
-                    <option value="to-read">PAL</option>
-                    <option value="reading">En cours</option>
-                    <option value="read">Lu</option>
+                    {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
                   </select>
                 ) : (
                   <span

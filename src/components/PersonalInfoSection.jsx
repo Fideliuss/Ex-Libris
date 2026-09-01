@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getMyProfile, updateMyProfile } from '../lib/friendCode'
 import { describeError } from '../lib/errors'
+import { inputClass, labelClass, secondaryButtonClass } from '../lib/ui'
 import LoadingScreen from './LoadingScreen'
 
 export default function PersonalInfoSection({ user }) {
@@ -57,7 +58,7 @@ export default function PersonalInfoSection({ user }) {
       <div>
         <label
           htmlFor="firstName"
-          className="block font-mono text-xs uppercase tracking-widest text-ink/70 mb-1"
+          className={`block ${labelClass} mb-1`}
         >
           Prénom
         </label>
@@ -66,14 +67,14 @@ export default function PersonalInfoSection({ user }) {
           type="text"
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
-          className="w-full rounded-sm border border-ink/20 bg-surface px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+          className={inputClass}
         />
       </div>
 
       <div>
         <label
           htmlFor="lastName"
-          className="block font-mono text-xs uppercase tracking-widest text-ink/70 mb-1"
+          className={`block ${labelClass} mb-1`}
         >
           Nom
         </label>
@@ -82,14 +83,14 @@ export default function PersonalInfoSection({ user }) {
           type="text"
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
-          className="w-full rounded-sm border border-ink/20 bg-surface px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+          className={inputClass}
         />
       </div>
 
       <div>
         <label
           htmlFor="email"
-          className="block font-mono text-xs uppercase tracking-widest text-ink/70 mb-1"
+          className={`block ${labelClass} mb-1`}
         >
           Email
         </label>
@@ -105,7 +106,7 @@ export default function PersonalInfoSection({ user }) {
       <button
         type="submit"
         disabled={saving}
-        className="rounded-sm border border-ink/20 px-4 py-2 text-sm text-ink/70 hover:border-library hover:text-library disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+        className={`rounded-sm px-4 py-2 text-sm ${secondaryButtonClass}`}
       >
         {saving ? 'Enregistrement…' : saved ? 'Enregistré ✓' : 'Enregistrer'}
       </button>

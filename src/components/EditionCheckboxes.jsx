@@ -1,4 +1,5 @@
 import { EDITION_GROUPS, EDITION_TYPES } from '../lib/editionTypes'
+import { labelClass } from '../lib/ui'
 
 const checkboxClass =
   'rounded-sm border-ink/30 text-library-fill focus:outline-none focus-visible:ring-2 focus-visible:ring-library'
@@ -42,9 +43,7 @@ export default function EditionCheckboxes({ value = [], onChange }) {
     <div className="space-y-3">
       {EDITION_GROUPS.map((group) => (
         <div key={group.label}>
-          <p className="font-mono text-xs uppercase tracking-widest text-ink/70 mb-1.5">
-            {group.label}
-          </p>
+          <p className={`${labelClass} mb-1.5`}>{group.label}</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-2">
             {group.types.map((type) => (
               <label key={type} className="flex items-center gap-2 text-sm">

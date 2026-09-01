@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { deleteMyAccount } from '../lib/account'
 import { describeError } from '../lib/errors'
+import { dangerButtonClass } from '../lib/ui'
 
 export default function DeleteAccountSection() {
   const { user, signOut } = useAuth()
@@ -56,7 +57,7 @@ export default function DeleteAccountSection() {
             type="button"
             onClick={handleDelete}
             disabled={working}
-            className="rounded-sm bg-stamp-fill text-white font-medium px-3 py-1.5 text-xs hover:bg-stamp-fill/90 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp"
+            className={`rounded-sm font-medium px-3 py-1.5 text-xs ${dangerButtonClass}`}
           >
             {working ? 'Suppression…' : 'Oui, tout supprimer'}
           </button>

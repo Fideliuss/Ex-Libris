@@ -21,7 +21,7 @@ export default function BookCardVisual({ book }) {
     <>
       {book.status === 'read' && (
         <span className="absolute top-3 right-3 -rotate-6 border-2 border-library text-library font-mono text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm bg-card/90 pointer-events-none z-10">
-          Lu
+          {STATUS_LABELS.read}
         </span>
       )}
 
