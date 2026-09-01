@@ -356,7 +356,7 @@ export default function BookDetail() {
           )}
 
           {specialEditions.length > 0 && (
-            <SpecialEditionRibbon label={specialEditions.join(' · ')} />
+            <SpecialEditionRibbon labels={specialEditions} />
           )}
 
           {missingFields.length > 0 && book.user_id === user?.id && (
