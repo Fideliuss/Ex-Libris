@@ -1,5 +1,5 @@
 import { STATUS_BADGE_CLASS, STATUS_LABELS } from '../lib/statusLabels'
-import { BOOK_TYPES } from '../lib/bookTypes'
+import { BOOK_TYPES, SERIES_DRIVEN_TYPES } from '../lib/bookTypes'
 import WishlistRibbon from './WishlistRibbon'
 import ReadingBookmark from './ReadingBookmark'
 import BookCoverPlaceholder from './BookCoverPlaceholder'
@@ -10,10 +10,11 @@ import BookCoverPlaceholder from './BookCoverPlaceholder'
 // que l'aperçu montre vraiment la carte finale plutôt qu'une
 // reconstruction approximative qui pourrait diverger avec le temps.
 export default function BookCardVisual({ book }) {
-  // Un manga a quasi toujours le même titre que sa série (juste le tome qui
-  // change) : afficher les deux répète la même chose deux fois. On montre
-  // la série comme titre principal et le tome bien en évidence à la place.
-  const isMangaVolume = book.type === 'manga' && book.series
+  // Un manga/comics a quasi toujours le même titre que sa série (juste le
+  // tome qui change) : afficher les deux répète la même chose deux fois. On
+  // montre la série comme titre principal et le tome bien en évidence à la
+  // place.
+  const isSeriesVolume = SERIES_DRIVEN_TYPES.includes(book.type) && book.series
 
   return (
     <>
@@ -38,7 +39,7 @@ export default function BookCardVisual({ book }) {
           <BookCoverPlaceholder
             title={book.title}
             author={book.author}
-            volume={isMangaVolume ? book.series_index : null}
+            volume={isSeriesVolume ? book.series_index : null}
           />
         )}
         {book.type !== 'book' && (
@@ -46,10 +47,17 @@ export default function BookCardVisual({ book }) {
             {BOOK_TYPES[book.type]}
           </span>
         )}
+        {!isSeriesVolume && book.series_index != null && (
+          <span
+            className={`absolute bottom-2 right-2 w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-mono font-semibold ${STATUS_BADGE_CLASS[book.status]}`}
+          >
+            {book.series_index}
+          </span>
+        )}
       </div>
 
       <div className="p-3">
-        {isMangaVolume ? (
+        {isSeriesVolume ? (
           <>
             <p className="font-serif text-base leading-snug line-clamp-2">
               {book.series}
@@ -66,10 +74,7 @@ export default function BookCardVisual({ book }) {
               {book.title}
             </p>
             {book.series && (
-              <p className="text-xs text-brass mt-0.5 truncate">
-                {book.series}
-                {book.series_index != null && ` · Tome ${book.series_index}`}
-              </p>
+              <p className="text-xs text-brass mt-0.5 truncate">{book.series}</p>
             )}
           </>
         )}

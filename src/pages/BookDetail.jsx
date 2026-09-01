@@ -10,7 +10,7 @@ import {
   STATUS_LABELS,
 } from '../lib/statusLabels'
 import { describeError } from '../lib/errors'
-import { BOOK_TYPES } from '../lib/bookTypes'
+import { BOOK_TYPES, SERIES_DRIVEN_TYPES } from '../lib/bookTypes'
 import WishlistRibbon from '../components/WishlistRibbon'
 import { navigateWithViewTransition, useGoBack } from '../lib/navigation'
 import ReadingBookmark from '../components/ReadingBookmark'
@@ -304,6 +304,11 @@ export default function BookDetail() {
     )
   }
 
+  // Un manga/comics a quasi toujours le même titre que sa série (juste le
+  // tome qui change) : la série + le tome priment sur le titre pour ces
+  // types, comme sur la carte de la collection (BookCardVisual.jsx).
+  const isSeriesVolume = SERIES_DRIVEN_TYPES.includes(book.type) && book.series
+
   return (
     <div className="min-h-svh p-6">
       <div className="max-w-2xl mx-auto">
@@ -353,7 +358,7 @@ export default function BookDetail() {
             </button>
           )}
 
-          <div className="flex gap-6 flex-col sm:flex-row mt-3">
+          <div className="relative flex gap-6 flex-col sm:flex-row mt-3">
             <div className="relative w-40 aspect-[2/3] shrink-0 rounded-sm border border-ink/10 bg-paper overflow-hidden mx-auto sm:mx-0">
               {book.status === 'read' && (
                 <span className="absolute top-2 right-2 -rotate-6 border-2 border-library text-library font-mono text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm bg-card/90 z-10">
@@ -379,13 +384,13 @@ export default function BookDetail() {
                 <BookCoverPlaceholder
                   title={book.title}
                   author={book.author}
-                  volume={book.type === 'manga' && book.series ? book.series_index : null}
+                  volume={isSeriesVolume ? book.series_index : null}
                 />
               )}
             </div>
 
             <div className="flex-1 min-w-0">
-              {book.type === 'manga' && book.series ? (
+              {isSeriesVolume ? (
                 <>
                   <h1 className="font-serif text-2xl font-semibold">
                     {book.series}
@@ -402,10 +407,7 @@ export default function BookDetail() {
                     {book.title}
                   </h1>
                   {book.series && (
-                    <p className="text-sm text-brass mt-0.5">
-                      {book.series}
-                      {book.series_index != null && ` · Tome ${book.series_index}`}
-                    </p>
+                    <p className="text-sm text-brass mt-0.5">{book.series}</p>
                   )}
                 </>
               )}
@@ -443,11 +445,6 @@ export default function BookDetail() {
                     </span>
                   )}
                 </div>
-              )}
-              {book.universe && (
-                <p className="text-sm text-brass mt-0.5">
-                  Univers : {book.universe}
-                </p>
               )}
               <p className={`text-ink/70 mt-1 ${book.author ? '' : 'italic'}`}>
                 {book.author || 'Auteur non renseigné'}
@@ -531,6 +528,15 @@ export default function BookDetail() {
                 </div>
               )}
             </div>
+
+            {book.universe && (
+              <span
+                className="absolute bottom-0 right-0 bg-ink text-paper font-mono text-[10px] uppercase tracking-widest px-2 py-1 rounded-sm"
+                aria-label={`Univers : ${book.universe}`}
+              >
+                {book.universe}
+              </span>
+            )}
           </div>
 
           <div className="mt-6 pt-6 border-t border-ink/10">
