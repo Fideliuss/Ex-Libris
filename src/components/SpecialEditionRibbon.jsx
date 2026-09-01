@@ -10,9 +10,9 @@ export default function SpecialEditionRibbon({ labels }) {
   return (
     <div
       aria-hidden="true"
-      className="absolute bottom-0 right-0 w-28 h-28 overflow-hidden pointer-events-none z-10"
+      className="absolute bottom-0 right-0 w-32 h-32 overflow-hidden pointer-events-none z-10"
     >
-      <div className="absolute right-[-40px] bottom-[10px] w-[160px] -rotate-45 text-center bg-brass-fill text-white font-mono text-[10px] font-bold uppercase tracking-widest py-1 leading-tight shadow">
+      <div className="absolute right-[-52px] bottom-[22px] w-[220px] -rotate-45 text-center bg-brass-fill text-white font-mono text-[10px] font-bold uppercase tracking-widest py-1 leading-tight shadow">
         {labels.map((label) => (
           <div key={label}>{label}</div>
         ))}
