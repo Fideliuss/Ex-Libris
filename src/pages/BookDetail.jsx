@@ -353,7 +353,7 @@ export default function BookDetail() {
             </button>
           )}
 
-          <div className="flex gap-6 flex-col sm:flex-row mt-3">
+          <div className="relative flex gap-6 flex-col sm:flex-row mt-3">
             <div className="relative w-40 aspect-[2/3] shrink-0 rounded-sm border border-ink/10 bg-paper overflow-hidden mx-auto sm:mx-0">
               {book.status === 'read' && (
                 <span className="absolute top-2 right-2 -rotate-6 border-2 border-library text-library font-mono text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm bg-card/90 z-10">
@@ -444,11 +444,6 @@ export default function BookDetail() {
                   )}
                 </div>
               )}
-              {book.universe && (
-                <p className="text-sm text-brass mt-0.5">
-                  Univers : {book.universe}
-                </p>
-              )}
               <p className={`text-ink/70 mt-1 ${book.author ? '' : 'italic'}`}>
                 {book.author || 'Auteur non renseigné'}
               </p>
@@ -531,6 +526,15 @@ export default function BookDetail() {
                 </div>
               )}
             </div>
+
+            {book.universe && (
+              <span
+                className="absolute bottom-0 right-0 bg-ink text-paper font-mono text-[10px] uppercase tracking-widest px-2 py-1 rounded-sm"
+                aria-label={`Univers : ${book.universe}`}
+              >
+                {book.universe}
+              </span>
+            )}
           </div>
 
           <div className="mt-6 pt-6 border-t border-ink/10">
