@@ -47,6 +47,13 @@ export default function BookCardVisual({ book }) {
             {BOOK_TYPES[book.type]}
           </span>
         )}
+        {!isSeriesVolume && book.series_index != null && (
+          <span
+            className={`absolute bottom-2 right-2 w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-mono font-semibold ${STATUS_BADGE_CLASS[book.status]}`}
+          >
+            {book.series_index}
+          </span>
+        )}
       </div>
 
       <div className="p-3">
@@ -67,10 +74,7 @@ export default function BookCardVisual({ book }) {
               {book.title}
             </p>
             {book.series && (
-              <p className="text-xs text-brass mt-0.5 truncate">
-                {book.series}
-                {book.series_index != null && ` · Tome ${book.series_index}`}
-              </p>
+              <p className="text-xs text-brass mt-0.5 truncate">{book.series}</p>
             )}
           </>
         )}
