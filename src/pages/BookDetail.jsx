@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getBook, getSeriesSiblings, updateBook } from '../lib/books'
-import { sortEditions } from '../lib/editionTypes'
+import { sortEditions, SPECIAL_EDITION_TYPES } from '../lib/editionTypes'
+import SpecialEditionRibbon from '../components/SpecialEditionRibbon'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import {
@@ -309,6 +310,16 @@ export default function BookDetail() {
   // types, comme sur la carte de la collection (BookCardVisual.jsx).
   const isSeriesVolume = SERIES_DRIVEN_TYPES.includes(book.type) && book.series
 
+  // Les éditions "spéciale" (Collector, Illustrée...) sortent du lot des
+  // badges texte pour un ruban doré bien visible ; le reste (Format,
+  // Reliure) garde le traitement badge habituel.
+  const specialEditions = sortEditions(
+    (book.edition ?? []).filter((e) => SPECIAL_EDITION_TYPES.includes(e)),
+  )
+  const otherEditions = sortEditions(
+    (book.edition ?? []).filter((e) => !SPECIAL_EDITION_TYPES.includes(e)),
+  )
+
   return (
     <div className="min-h-svh p-6">
       <div className="max-w-2xl mx-auto">
@@ -342,6 +353,10 @@ export default function BookDetail() {
             <p className="absolute top-3 right-4 font-mono text-[10px] text-ink/70">
               Ajouté le {formatDate(book.created_at.slice(0, 10))}
             </p>
+          )}
+
+          {specialEditions.length > 0 && (
+            <SpecialEditionRibbon label={specialEditions.join(' · ')} />
           )}
 
           {missingFields.length > 0 && book.user_id === user?.id && (
@@ -462,9 +477,9 @@ export default function BookDetail() {
                 </span>
                 {book.collection && ` · ${book.collection}`}
               </p>
-              {book.edition?.length > 0 && (
+              {otherEditions.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1.5">
-                  {sortEditions(book.edition).map((e) => (
+                  {otherEditions.map((e) => (
                     <span
                       key={e}
                       className="text-xs px-2 py-0.5 rounded-full border border-brass/40 text-brass"

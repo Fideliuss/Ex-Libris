@@ -30,7 +30,7 @@ export const EDITION_GROUPS = [
 
 export const EDITION_TYPES = EDITION_GROUPS.flatMap((group) => group.types)
 
-const SPECIAL_EDITION_TYPES = EDITION_GROUPS.find(
+export const SPECIAL_EDITION_TYPES = EDITION_GROUPS.find(
   (group) => group.label === 'Édition spéciale',
 ).types
 
