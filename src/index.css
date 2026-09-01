@@ -26,7 +26,7 @@
   --color-brass: #ad8a54;
   --color-stamp: #a2372e;
 
-  /* Signal de statut : wishlist=bleu, à lire=prune, en cours=terracotta,
+  /* Signal de statut : wishlist=bleu, PAL=prune, en cours=terracotta,
      lu=vert (library). Trois teintes volontairement écartées les unes des
      autres (et de brass/stamp) pour rester identifiables en un coup d'œil. */
   --color-wishlist: #3b6e91;

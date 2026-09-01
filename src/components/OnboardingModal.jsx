@@ -181,7 +181,7 @@ function StepContent({ step, firstName }) {
           Suis où tu en es
         </h2>
         <p className="text-sm text-ink/70 text-center leading-relaxed mb-5">
-          Marque un livre wishlist, à lire, en cours ou lu, et change d'avis
+          Marque un livre wishlist, PAL, en cours ou lu, et change d'avis
           quand tu veux depuis sa fiche.
         </p>
         <div className="flex flex-wrap gap-2 justify-center">

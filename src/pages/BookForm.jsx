@@ -531,7 +531,7 @@ export default function BookForm() {
                   className={inputClass}
                 >
                   <option value="wishlist">Wishlist</option>
-                  <option value="to-read">À lire</option>
+                  <option value="to-read">PAL</option>
                   <option value="reading">En cours</option>
                   <option value="read">Lu</option>
                 </select>

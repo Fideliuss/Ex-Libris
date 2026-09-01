@@ -495,7 +495,7 @@ export default function BookDetail() {
                     className={`font-mono text-xs uppercase rounded-full px-2 py-0.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-library disabled:opacity-60 ${STATUS_BADGE_CLASS[book.status] ?? 'bg-ink/10 text-ink/70'}`}
                   >
                     <option value="wishlist">Wishlist</option>
-                    <option value="to-read">À lire</option>
+                    <option value="to-read">PAL</option>
                     <option value="reading">En cours</option>
                     <option value="read">Lu</option>
                   </select>
