@@ -48,12 +48,6 @@ export default function BookCardVisual({ book }) {
         )}
       </div>
 
-      {book.universe && (
-        <p className="bg-ink text-paper font-mono text-[10px] uppercase tracking-widest text-center py-1 px-1 truncate">
-          {book.universe}
-        </p>
-      )}
-
       <div className="p-3">
         {isMangaVolume ? (
           <>
