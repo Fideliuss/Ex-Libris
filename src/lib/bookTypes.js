@@ -6,6 +6,9 @@ export const BOOK_TYPES = {
 }
 
 // Types pour lesquels la fiche et la carte mettent en avant la série + le
-// numéro de tome plutôt que le titre (le tome importe plus que le titre
-// exact de chaque numéro pour ces séries).
-export const SERIES_DRIVEN_TYPES = ['manga', 'comics']
+// numéro de tome plutôt que le titre : uniquement manga, où le titre de
+// chaque tome n'apporte quasi jamais d'info distincte de la série. Les
+// comics ont presque toujours un titre propre à chaque tome (ex: "Guerre
+// Civile" pour le tome 1 de "Civil War") : masquer ce titre ferait perdre
+// une vraie information.
+export const SERIES_DRIVEN_TYPES = ['manga']
