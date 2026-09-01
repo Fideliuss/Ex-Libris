@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getBook, getSeriesSiblings, updateBook } from '../lib/books'
-import { sortEditions } from '../lib/editionTypes'
+import { sortEditions, SPECIAL_EDITION_TYPES } from '../lib/editionTypes'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import {
@@ -309,6 +309,16 @@ export default function BookDetail() {
   // types, comme sur la carte de la collection (BookCardVisual.jsx).
   const isSeriesVolume = SERIES_DRIVEN_TYPES.includes(book.type) && book.series
 
+  // Les éditions "spéciale" (Collector, Illustrée...) sortent du lot des
+  // badges texte pour un ruban doré bien visible ; le reste (Format,
+  // Reliure) garde le traitement badge habituel.
+  const specialEditions = sortEditions(
+    (book.edition ?? []).filter((e) => SPECIAL_EDITION_TYPES.includes(e)),
+  )
+  const otherEditions = sortEditions(
+    (book.edition ?? []).filter((e) => !SPECIAL_EDITION_TYPES.includes(e)),
+  )
+
   return (
     <div className="min-h-svh p-6">
       <div className="max-w-2xl mx-auto">
@@ -462,9 +472,9 @@ export default function BookDetail() {
                 </span>
                 {book.collection && ` · ${book.collection}`}
               </p>
-              {book.edition?.length > 0 && (
+              {otherEditions.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1.5">
-                  {sortEditions(book.edition).map((e) => (
+                  {otherEditions.map((e) => (
                     <span
                       key={e}
                       className="text-xs px-2 py-0.5 rounded-full border border-brass/40 text-brass"
@@ -508,6 +518,21 @@ export default function BookDetail() {
                   </span>
                 )}
               </div>
+
+              {specialEditions.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {specialEditions.map((label, i) => (
+                    <span
+                      key={label}
+                      className={`inline-block border-2 border-brass text-brass font-mono text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-sm bg-card shadow-sm ${
+                        i % 2 === 0 ? '-rotate-3' : 'rotate-3'
+                      }`}
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               {statusError && (
                 <p role="alert" className="text-xs text-stamp mt-2">

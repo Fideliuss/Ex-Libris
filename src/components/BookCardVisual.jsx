@@ -1,5 +1,6 @@
 import { STATUS_BADGE_CLASS, STATUS_LABELS } from '../lib/statusLabels'
 import { BOOK_TYPES, SERIES_DRIVEN_TYPES } from '../lib/bookTypes'
+import { hasSpecialEdition } from '../lib/editionTypes'
 import WishlistRibbon from './WishlistRibbon'
 import ReadingBookmark from './ReadingBookmark'
 import BookCoverPlaceholder from './BookCoverPlaceholder'
@@ -27,6 +28,15 @@ export default function BookCardVisual({ book }) {
       {book.status === 'wishlist' && <WishlistRibbon />}
 
       {book.status === 'reading' && <ReadingBookmark />}
+
+      {hasSpecialEdition(book.edition) && (
+        <span
+          className="absolute bottom-3 right-3 rotate-6 border-2 border-brass text-brass font-mono text-xs font-bold px-1.5 py-0.5 rounded-sm bg-card/90 pointer-events-none z-10"
+          aria-label="Édition spéciale"
+        >
+          ★
+        </span>
+      )}
 
       <div className="relative aspect-[2/3] bg-paper flex items-center justify-center overflow-hidden">
         {book.cover_url ? (

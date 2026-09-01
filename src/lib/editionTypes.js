@@ -30,6 +30,17 @@ export const EDITION_GROUPS = [
 
 export const EDITION_TYPES = EDITION_GROUPS.flatMap((group) => group.types)
 
+export const SPECIAL_EDITION_TYPES = EDITION_GROUPS.find(
+  (group) => group.label === 'Édition spéciale',
+).types
+
+// Un livre "édition spéciale" (Illustrée, Collector, Édition limitée,
+// Édition originale, Intégrale) mérite un traitement visuel à part sur la
+// carte, façon vraie carte de collection.
+export function hasSpecialEdition(edition) {
+  return (edition ?? []).some((e) => SPECIAL_EDITION_TYPES.includes(e))
+}
+
 // Un livre coche ses éditions dans l'ordre où l'utilisateur clique, pas dans
 // l'ordre des groupes : on retrie systématiquement (Format avant Édition
 // spéciale) avant affichage. Les valeurs "Autre" (hors liste) passent en
