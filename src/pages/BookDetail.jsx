@@ -387,13 +387,6 @@ export default function BookDetail() {
                   volume={isSeriesVolume ? book.series_index : null}
                 />
               )}
-              {!isSeriesVolume && book.series_index != null && (
-                <span
-                  className={`absolute bottom-2 right-2 w-7 h-7 flex items-center justify-center rounded-full text-xs font-mono font-semibold ${STATUS_BADGE_CLASS[book.status]}`}
-                >
-                  {book.series_index}
-                </span>
-              )}
             </div>
 
             <div className="flex-1 min-w-0">
