@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode'
+import { primaryButtonClass } from '../lib/ui'
 
 const VIEWPORT_ID = 'barcode-scanner-viewport'
 
@@ -97,7 +98,7 @@ export default function BarcodeScanner({ onDetected, onClose }) {
             <button
               type="button"
               onClick={onClose}
-              className="rounded-sm bg-library-fill text-white font-medium px-4 py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+              className={`rounded-sm px-4 py-2 text-sm ${primaryButtonClass}`}
             >
               Saisir l'ISBN manuellement
             </button>

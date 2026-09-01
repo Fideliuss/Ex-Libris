@@ -14,15 +14,21 @@ import {
 import { lookupIsbn } from '../lib/isbnLookup'
 import { uploadCover } from '../lib/storage'
 import TagInput from '../components/TagInput'
-import { inputClass } from '../lib/ui'
+import {
+  inputClass,
+  primaryButtonClass,
+  secondaryButtonClass,
+  dangerOutlineButtonClass,
+} from '../lib/ui'
 import { describeError } from '../lib/errors'
 import { BOOK_TYPES } from '../lib/bookTypes'
 import { useGoBack } from '../lib/navigation'
 import LoadingScreen from '../components/LoadingScreen'
 import BookCardVisual from '../components/BookCardVisual'
+import InlineConfirm from '../components/InlineConfirm'
 import SuggestInput from '../components/SuggestInput'
 import EditionCheckboxes from '../components/EditionCheckboxes'
-import { STATUS_BORDER_CLASS } from '../lib/statusLabels'
+import { STATUS_BORDER_CLASS, STATUS_LABELS } from '../lib/statusLabels'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 
@@ -292,14 +298,14 @@ export default function BookForm() {
                 type="button"
                 onClick={() => handleLookup()}
                 disabled={lookupLoading}
-                className="flex-1 rounded-sm bg-library-fill text-white px-3 py-2 text-sm font-medium hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
+                className={`flex-1 rounded-sm px-3 py-2 text-sm font-medium ${primaryButtonClass}`}
               >
                 {lookupLoading ? 'Recherche…' : 'Chercher'}
               </button>
               <button
                 type="button"
                 onClick={() => setScannerOpen(true)}
-                className="flex-1 rounded-sm border border-ink/20 text-ink/70 px-3 py-2 text-sm font-medium hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                className={`flex-1 rounded-sm px-3 py-2 text-sm font-medium ${secondaryButtonClass}`}
               >
                 Scanner
               </button>
@@ -530,10 +536,11 @@ export default function BookForm() {
                   onChange={(e) => set('status', e.target.value)}
                   className={inputClass}
                 >
-                  <option value="wishlist">Wishlist</option>
-                  <option value="to-read">À lire</option>
-                  <option value="reading">En cours</option>
-                  <option value="read">Lu</option>
+                  {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
                 </select>
               </Field>
               <Field label="Note">
@@ -606,7 +613,7 @@ export default function BookForm() {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 rounded-sm bg-library-fill text-white font-medium py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
+              className={`flex-1 rounded-sm py-2 text-sm ${primaryButtonClass}`}
             >
               {saving ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Ajouter'}
             </button>
@@ -615,7 +622,7 @@ export default function BookForm() {
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(true)}
-                className="rounded-sm border border-stamp/40 text-stamp px-4 py-2 text-sm hover:bg-stamp-fill hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp"
+                className={`rounded-sm px-4 py-2 text-sm ${dangerOutlineButtonClass}`}
               >
                 Supprimer
               </button>
@@ -623,28 +630,13 @@ export default function BookForm() {
           </div>
 
           {isEdit && confirmingDelete && (
-            <div className="border border-stamp/40 bg-stamp/5 rounded-sm p-4 flex items-center justify-between gap-3">
-              <p className="text-sm text-stamp">
-                Supprimer définitivement ce livre ?
-              </p>
-              <div className="flex gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setConfirmingDelete(false)}
-                  className="text-sm px-3 py-1.5 rounded-sm border border-ink/20 hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={saving}
-                  className="text-sm px-3 py-1.5 rounded-sm bg-stamp-fill text-white hover:bg-stamp-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp disabled:opacity-60"
-                >
-                  Confirmer
-                </button>
-              </div>
-            </div>
+            <InlineConfirm
+              wrapped
+              message="Supprimer définitivement ce livre ?"
+              onCancel={() => setConfirmingDelete(false)}
+              onConfirm={handleDelete}
+              disabled={saving}
+            />
           )}
         </form>
       </div>

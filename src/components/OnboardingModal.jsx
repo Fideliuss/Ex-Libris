@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { STATUS_BADGE_CLASS, STATUS_LABELS } from '../lib/statusLabels'
+import { primaryButtonClass } from '../lib/ui'
 import BookCoverPlaceholder from './BookCoverPlaceholder'
 
 const TOTAL_STEPS = 5
@@ -181,7 +182,7 @@ function StepContent({ step, firstName }) {
           Suis où tu en es
         </h2>
         <p className="text-sm text-ink/70 text-center leading-relaxed mb-5">
-          Marque un livre wishlist, à lire, en cours ou lu, et change d'avis
+          Marque un livre wishlist, PAL, en cours ou lu, et change d'avis
           quand tu veux depuis sa fiche.
         </p>
         <div className="flex flex-wrap gap-2 justify-center">
@@ -391,7 +392,7 @@ export default function OnboardingModal({ step, onStepChange, onSkip, onFinish, 
           <button
             type="button"
             onClick={isLast ? () => requestClose(onFinish) : () => onStepChange(step + 1)}
-            className="rounded-sm bg-library-fill text-white font-medium px-5 py-2.5 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+            className={`rounded-sm px-5 py-2.5 text-sm ${primaryButtonClass}`}
           >
             {isLast ? 'Commencer' : 'Suivant'}
           </button>

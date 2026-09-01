@@ -8,6 +8,7 @@ import LoadingScreen from '../components/LoadingScreen'
 import ThemeToggle from '../components/ThemeToggle'
 import DeleteAccountSection from '../components/DeleteAccountSection'
 import PersonalInfoSection from '../components/PersonalInfoSection'
+import { secondaryButtonClass } from '../lib/ui'
 
 const ImportPanel = lazy(() => import('../components/ImportPanel'))
 const ExportPanel = lazy(() => import('../components/ExportPanel'))
@@ -40,7 +41,7 @@ function SecuritySection() {
         <h3 className="text-sm font-medium mb-2">Mot de passe</h3>
         <Link
           to="/reset-password"
-          className="inline-block rounded-sm border border-ink/20 px-4 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+          className={`inline-block rounded-sm px-4 py-2 text-sm ${secondaryButtonClass}`}
         >
           Changer de mot de passe
         </Link>
@@ -50,7 +51,7 @@ function SecuritySection() {
         <button
           type="button"
           onClick={replay}
-          className="rounded-sm border border-ink/20 px-4 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+          className={`rounded-sm px-4 py-2 text-sm ${secondaryButtonClass}`}
         >
           Revoir le tutoriel
         </button>

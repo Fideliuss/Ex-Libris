@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { BOOK_TYPES } from '../lib/bookTypes'
-import { inputClass } from '../lib/ui'
+import { STATUS_LABELS } from '../lib/statusLabels'
+import { inputClass, dangerOutlineButtonClass } from '../lib/ui'
 import TagMultiSelect from './TagMultiSelect'
 import SuggestInput from './SuggestInput'
 import EditionCheckboxes from './EditionCheckboxes'
+import InlineConfirm from './InlineConfirm'
 
 const bulkInputClass =
   'rounded-sm border border-ink/20 bg-surface px-2 py-1.5 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library'
@@ -73,28 +75,12 @@ export default function BulkActionBar({
         )}
 
         {confirmingDelete ? (
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm text-stamp">
-              Supprimer définitivement {count} livre{count > 1 ? 's' : ''} ?
-            </p>
-            <div className="flex gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setConfirmingDelete(false)}
-                className="text-sm px-3 py-1.5 rounded-sm border border-ink/20 hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-              >
-                Annuler
-              </button>
-              <button
-                type="button"
-                onClick={onDelete}
-                disabled={disabled}
-                className="text-sm px-3 py-1.5 rounded-sm bg-stamp-fill text-white hover:bg-stamp-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp disabled:opacity-60"
-              >
-                Confirmer
-              </button>
-            </div>
-          </div>
+          <InlineConfirm
+            message={`Supprimer définitivement ${count} livre${count > 1 ? 's' : ''} ?`}
+            onCancel={() => setConfirmingDelete(false)}
+            onConfirm={onDelete}
+            disabled={disabled}
+          />
         ) : (
           <>
           <div className="flex flex-wrap items-start gap-2">
@@ -119,10 +105,11 @@ export default function BulkActionBar({
                   aria-label="Nouveau statut"
                   className={bulkInputClass}
                 >
-                  <option value="wishlist">Wishlist</option>
-                  <option value="to-read">À lire</option>
-                  <option value="reading">En cours</option>
-                  <option value="read">Lu</option>
+                  {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
                 </select>
               )}
               {field === 'type' && (
@@ -200,7 +187,7 @@ export default function BulkActionBar({
                 onClick={() => onApplyField(field, field === 'edition' ? [] : '')}
                 disabled={disabled}
                 title="Vider ce champ sur les livres sélectionnés"
-                className="text-sm px-3 py-1.5 rounded-sm border border-stamp/40 text-stamp hover:bg-stamp-fill hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp disabled:opacity-60"
+                className={`text-sm px-3 py-1.5 rounded-sm ${dangerOutlineButtonClass}`}
               >
                 Retirer
               </button>
@@ -210,7 +197,7 @@ export default function BulkActionBar({
               type="button"
               onClick={() => setConfirmingDelete(true)}
               disabled={disabled}
-              className="text-sm px-3 py-1.5 rounded-sm border border-stamp/40 text-stamp hover:bg-stamp-fill hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp disabled:opacity-60"
+              className={`text-sm px-3 py-1.5 rounded-sm ${dangerOutlineButtonClass}`}
             >
               Supprimer
             </button>
@@ -261,7 +248,7 @@ export default function BulkActionBar({
                   setTagsToRemove([])
                 }}
                 disabled={disabled || tagsToRemove.length === 0}
-                className="text-sm px-3 py-1.5 rounded-sm border border-stamp/40 text-stamp hover:bg-stamp-fill hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp disabled:opacity-60"
+                className={`text-sm px-3 py-1.5 rounded-sm ${dangerOutlineButtonClass}`}
               >
                 Retirer le{tagsToRemove.length > 1 ? 's' : ''} tag{tagsToRemove.length > 1 ? 's' : ''}
               </button>

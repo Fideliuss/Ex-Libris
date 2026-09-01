@@ -16,6 +16,7 @@ import {
   STATUS_BORDER_CLASS,
 } from '../lib/statusLabels'
 import { authorSortKey } from '../lib/authorSort'
+import { primaryButtonClass, secondaryButtonClass, labelClass } from '../lib/ui'
 
 const STATUS_ORDER = Object.keys(STATUS_LABELS)
 
@@ -477,7 +478,7 @@ export default function Collection() {
             )}
             <Link
               to="/stats"
-              className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+              className={`rounded-sm px-3 py-2 text-sm ${secondaryButtonClass}`}
             >
               Statistiques
             </Link>
@@ -535,7 +536,7 @@ export default function Collection() {
             {isMine && (
               <Link
                 to="/books/new"
-                className="hidden sm:inline-flex items-center gap-1.5 shrink-0 rounded-sm bg-library-fill text-white font-medium px-4 py-1.5 text-sm shadow-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+                className={`hidden sm:inline-flex items-center gap-1.5 shrink-0 rounded-sm px-4 py-1.5 text-sm shadow-sm ${primaryButtonClass}`}
               >
                 <span className="text-base leading-none" aria-hidden="true">
                   +
@@ -613,7 +614,7 @@ export default function Collection() {
                 </p>
                 <Link
                   to="/books/new"
-                  className="inline-block rounded-sm bg-library-fill text-white font-medium px-4 py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+                  className={`inline-block rounded-sm px-4 py-2 text-sm ${primaryButtonClass}`}
                 >
                   Ajouter un livre
                 </Link>
@@ -642,7 +643,7 @@ export default function Collection() {
             <button
               type="button"
               onClick={resetFilters}
-              className="rounded-sm border border-ink/20 px-4 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+              className={`rounded-sm px-4 py-2 text-sm ${secondaryButtonClass}`}
             >
               Réinitialiser les filtres
             </button>
@@ -714,7 +715,7 @@ export default function Collection() {
                 item.type === 'header' ? (
                   <p
                     key={item.renderKey}
-                    className="col-span-full font-mono text-xs uppercase tracking-widest text-ink/70 border-b border-ink/10 pb-1 mt-2 first:mt-0"
+                    className={`col-span-full ${labelClass} border-b border-ink/10 pb-1 mt-2 first:mt-0`}
                   >
                     {item.label}
                   </p>

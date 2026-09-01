@@ -538,7 +538,7 @@ export default function Stats() {
                   ) : (
                     <div className="grid sm:grid-cols-2 gap-6">
                       <div>
-                        <h3 className="font-mono text-xs uppercase tracking-widest text-ink/70 mb-3">
+                        <h3 className={`${labelClass} mb-3`}>
                           Rythme de lecture
                         </h3>
                         <div className="grid grid-cols-2 gap-3">
@@ -586,7 +586,7 @@ export default function Stats() {
                       </div>
 
                       <div>
-                        <h3 className="font-mono text-xs uppercase tracking-widest text-ink/70 mb-3">
+                        <h3 className={`${labelClass} mb-3`}>
                           Notes
                           {avgRating != null &&
                             ` · moyenne ${avgRating.toFixed(1)} ★`}
