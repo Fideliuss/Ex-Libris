@@ -1,8 +1,29 @@
 import { STATUS_BADGE_CLASS, STATUS_LABELS } from '../lib/statusLabels'
 import { BOOK_TYPES, SERIES_DRIVEN_TYPES } from '../lib/bookTypes'
+import { hasSpecialEdition } from '../lib/editionTypes'
 import WishlistRibbon from './WishlistRibbon'
 import ReadingBookmark from './ReadingBookmark'
 import BookCoverPlaceholder from './BookCoverPlaceholder'
+
+// Crochet de coin façon plaque de collection, pour marquer une édition
+// spéciale (Illustrée, Collector...) sans toucher au reste de la carte.
+function CornerBracket({ className }) {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      className={`absolute w-4 h-4 text-brass pointer-events-none ${className}`}
+      aria-hidden="true"
+    >
+      <path
+        d="M1 1 L1 9 M1 1 L9 1"
+        stroke="currentColor"
+        strokeWidth="2"
+        fill="none"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
 
 // Rendu visuel pur d'une carte livre (couverture, titre/série, auteur,
 // éditeur, tags, statut/note) : partagé entre BookCard (carte interactive
@@ -18,6 +39,15 @@ export default function BookCardVisual({ book }) {
 
   return (
     <>
+      {hasSpecialEdition(book.edition) && (
+        <>
+          <CornerBracket className="top-1 left-1" />
+          <CornerBracket className="top-1 right-1 -scale-x-100" />
+          <CornerBracket className="bottom-1 left-1 -scale-y-100" />
+          <CornerBracket className="bottom-1 right-1 -scale-x-100 -scale-y-100" />
+        </>
+      )}
+
       {book.status === 'read' && (
         <span className="absolute top-3 right-3 -rotate-6 border-2 border-library text-library font-mono text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm bg-card/90 pointer-events-none z-10">
           Lu
