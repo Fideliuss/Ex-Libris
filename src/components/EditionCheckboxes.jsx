@@ -11,9 +11,18 @@ export default function EditionCheckboxes({ value = [], onChange }) {
   const hasCustom = value.some((v) => !EDITION_TYPES.includes(v))
 
   function toggle(type) {
-    onChange(
-      value.includes(type) ? value.filter((v) => v !== type) : [...value, type],
-    )
+    if (value.includes(type)) {
+      onChange(value.filter((v) => v !== type))
+      return
+    }
+    // Un groupe exclusif (Format, Reliure) ne garde qu'un choix à la fois :
+    // cocher "Grand format" retire "Poche" s'il était coché, plutôt que de
+    // les cumuler.
+    const group = EDITION_GROUPS.find((g) => g.types.includes(type))
+    const withoutGroup = group?.exclusive
+      ? value.filter((v) => !group.types.includes(v))
+      : value
+    onChange([...withoutGroup, type])
   }
 
   function toggleCustom() {
