@@ -10,7 +10,7 @@ import {
   STATUS_LABELS,
 } from '../lib/statusLabels'
 import { describeError } from '../lib/errors'
-import { BOOK_TYPES } from '../lib/bookTypes'
+import { BOOK_TYPES, SERIES_DRIVEN_TYPES } from '../lib/bookTypes'
 import WishlistRibbon from '../components/WishlistRibbon'
 import { navigateWithViewTransition, useGoBack } from '../lib/navigation'
 import ReadingBookmark from '../components/ReadingBookmark'
@@ -304,6 +304,11 @@ export default function BookDetail() {
     )
   }
 
+  // Un manga/comics a quasi toujours le même titre que sa série (juste le
+  // tome qui change) : la série + le tome priment sur le titre pour ces
+  // types, comme sur la carte de la collection (BookCardVisual.jsx).
+  const isSeriesVolume = SERIES_DRIVEN_TYPES.includes(book.type) && book.series
+
   return (
     <div className="min-h-svh p-6">
       <div className="max-w-2xl mx-auto">
@@ -379,13 +384,13 @@ export default function BookDetail() {
                 <BookCoverPlaceholder
                   title={book.title}
                   author={book.author}
-                  volume={book.type === 'manga' && book.series ? book.series_index : null}
+                  volume={isSeriesVolume ? book.series_index : null}
                 />
               )}
             </div>
 
             <div className="flex-1 min-w-0">
-              {book.type === 'manga' && book.series ? (
+              {isSeriesVolume ? (
                 <>
                   <h1 className="font-serif text-2xl font-semibold">
                     {book.series}
