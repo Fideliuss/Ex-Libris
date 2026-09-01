@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getBook, getSeriesSiblings, updateBook } from '../lib/books'
 import { sortEditions, SPECIAL_EDITION_TYPES } from '../lib/editionTypes'
-import SpecialEditionRibbon from '../components/SpecialEditionRibbon'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import {
@@ -355,10 +354,6 @@ export default function BookDetail() {
             </p>
           )}
 
-          {specialEditions.length > 0 && (
-            <SpecialEditionRibbon labels={specialEditions} />
-          )}
-
           {missingFields.length > 0 && book.user_id === user?.id && (
             <button
               type="button"
@@ -523,6 +518,21 @@ export default function BookDetail() {
                   </span>
                 )}
               </div>
+
+              {specialEditions.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {specialEditions.map((label, i) => (
+                    <span
+                      key={label}
+                      className={`inline-block border-2 border-brass text-brass font-mono text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-sm bg-card shadow-sm ${
+                        i % 2 === 0 ? '-rotate-3' : 'rotate-3'
+                      }`}
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               {statusError && (
                 <p role="alert" className="text-xs text-stamp mt-2">
