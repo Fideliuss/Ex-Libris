@@ -5,6 +5,7 @@ import { bulkDeleteBooks, bulkUpdateBooks } from '../lib/books'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import { describeError } from '../lib/errors'
 import BookCard from '../components/BookCard'
+import BookTable from '../components/BookTable'
 import CollectionFilters from '../components/CollectionFilters'
 import BulkActionBar from '../components/BulkActionBar'
 import HouseholdSwitchBadge from '../components/HouseholdSwitchBadge'
@@ -110,6 +111,7 @@ export default function Collection() {
   const type = searchParams.get('type') ?? ''
   const status = searchParams.get('status') ?? ''
   const sort = searchParams.get('sort') ?? 'recent'
+  const display = searchParams.get('display') ?? 'grid'
   const collectionTab = searchParams.get('tab') ?? 'collection'
 
   function setParam(key, value) {
@@ -132,6 +134,7 @@ export default function Collection() {
   const setType = (value) => setParam('type', value)
   const setStatus = (value) => setParam('status', value)
   const setSort = (value) => setParam('sort', value)
+  const setDisplay = (value) => setParam('display', value === 'grid' ? null : value)
 
   function setCollectionTab(next) {
     setParam('tab', next === 'collection' ? null : next)
@@ -695,6 +698,32 @@ export default function Collection() {
                   </button>
                 )}
                 {!selectionMode && (
+                  <div
+                    className="flex rounded-sm border border-ink/20 overflow-hidden"
+                    role="group"
+                    aria-label="Type d'affichage"
+                  >
+                    {[
+                      { key: 'grid', label: 'Grille' },
+                      { key: 'table', label: 'Tableau' },
+                    ].map(({ key, label }) => (
+                      <button
+                        key={key}
+                        type="button"
+                        aria-pressed={display === key}
+                        onClick={() => setDisplay(key)}
+                        className={`px-2 py-1 text-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-library ${
+                          display === key
+                            ? 'bg-library-fill text-white'
+                            : 'bg-surface text-ink/70 hover:text-ink'
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {!selectionMode && (
                   <select
                     value={sort}
                     onChange={(e) => setSort(e.target.value)}
@@ -710,27 +739,38 @@ export default function Collection() {
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-              {gridItems.map((item) =>
-                item.type === 'header' ? (
-                  <p
-                    key={item.renderKey}
-                    className={`col-span-full ${labelClass} border-b border-ink/10 pb-1 mt-2 first:mt-0`}
-                  >
-                    {item.label}
-                  </p>
-                ) : (
-                  <BookCard
-                    key={item.renderKey}
-                    book={item.book}
-                    selectable={selectionMode}
-                    selected={selectedIds.has(item.book.id)}
-                    onToggleSelect={toggleSelect}
-                    onStartSelection={isMine ? handleStartSelection : undefined}
-                  />
-                ),
-              )}
-            </div>
+            {display === 'table' ? (
+              <BookTable
+                items={gridItems}
+                selectionMode={selectionMode}
+                selectedIds={selectedIds}
+                onToggleSelect={toggleSelect}
+                onStartSelection={handleStartSelection}
+                isMine={isMine}
+              />
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {gridItems.map((item) =>
+                  item.type === 'header' ? (
+                    <p
+                      key={item.renderKey}
+                      className={`col-span-full ${labelClass} border-b border-ink/10 pb-1 mt-2 first:mt-0`}
+                    >
+                      {item.label}
+                    </p>
+                  ) : (
+                    <BookCard
+                      key={item.renderKey}
+                      book={item.book}
+                      selectable={selectionMode}
+                      selected={selectedIds.has(item.book.id)}
+                      onToggleSelect={toggleSelect}
+                      onStartSelection={isMine ? handleStartSelection : undefined}
+                    />
+                  ),
+                )}
+              </div>
+            )}
           </>
         )}
       </main>
