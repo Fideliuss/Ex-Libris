@@ -18,6 +18,7 @@ const EXPORT_COLUMNS = [
   'date_finished',
   'rating',
   'notes',
+  'favorite_quote',
   'page_count',
   'price',
   'purchase_date',

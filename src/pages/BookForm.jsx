@@ -54,6 +54,7 @@ const emptyBook = {
   rating: 0,
   page_count: '',
   notes: '',
+  favorite_quote: '',
   price: '',
   purchase_date: '',
 }
@@ -598,6 +599,15 @@ export default function BookForm() {
                 rows={4}
                 value={book.notes ?? ''}
                 onChange={(e) => set('notes', e.target.value)}
+                className={inputClass}
+              />
+            </Field>
+            <Field label="Citation favorite">
+              <textarea
+                rows={3}
+                value={book.favorite_quote ?? ''}
+                onChange={(e) => set('favorite_quote', e.target.value)}
+                placeholder="Un passage qui vous a marqué…"
                 className={inputClass}
               />
             </Field>

@@ -574,6 +574,16 @@ export default function BookDetail() {
             </p>
           </div>
 
+          {book.favorite_quote && (
+            <div className="mt-6 pt-6 border-t border-ink/10">
+              <blockquote className="border-l-2 border-brass pl-4 py-1">
+                <p className="font-serif text-lg italic text-ink/80 whitespace-pre-line">
+                  « {book.favorite_quote} »
+                </p>
+              </blockquote>
+            </div>
+          )}
+
           <div className="mt-6 pt-6 border-t border-ink/10 grid grid-cols-2 sm:grid-cols-3 gap-4">
             <DetailField
               label="ISBN"
