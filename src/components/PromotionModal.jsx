@@ -1,0 +1,168 @@
+import { useEffect } from 'react'
+import { ACHIEVEMENT_ICONS, TIER_METAL, LOCKED_METAL, SEAL_WAX } from '../lib/achievementVisuals'
+import { primaryButtonClass } from '../lib/ui'
+
+// Modal centrale pour une plaque ex-libris, dans l'un de trois rôles :
+// - promotion (`animate: true`) : révélation d'un palier fraîchement
+//   atteint, entrée en "pop" + flash façon évolution ;
+// - détails (`animate` absent, `mystery` absent) : consultation d'un
+//   succès déjà obtenu, plaque statique + description complète ;
+// - mystère (`mystery: true`) : succès pas encore débloqué, la plaque
+//   garde son secret, seule la piste (progression) est montrée.
+export default function PromotionModal({ vm, onClose }) {
+  useEffect(() => {
+    function onKeyDown(e) {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
+
+  const {
+    motto,
+    ownerLine,
+    headline,
+    bigNumber,
+    subLabel,
+    tierText,
+    icon,
+    tierRank,
+    dateText,
+    description,
+    nextTierHint,
+    progressText,
+    mystery,
+    seal,
+    animate,
+    actionLabel,
+  } = vm
+  const tier = mystery ? LOCKED_METAL : seal ? SEAL_WAX : (TIER_METAL[tierRank] ?? TIER_METAL[0])
+  const shadow = mystery ? 'rgba(255,255,255,0.15)' : tier.shadow
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Succès"
+      onClick={onClose}
+      className="fixed inset-0 z-50 bg-ink/90 flex items-center justify-center p-6"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative max-w-xs w-full flex flex-col items-center text-center"
+      >
+        <p className="font-mono text-xs uppercase tracking-[0.2em] text-paper/70 mb-4">
+          {headline}
+        </p>
+
+        <div className="relative w-72 aspect-[2.4/1] mb-6">
+          {animate && (
+            <span
+              className="promote-flash absolute inset-0 rounded-full"
+              style={{ background: `radial-gradient(circle, ${shadow} 0%, transparent 70%)` }}
+              aria-hidden="true"
+            />
+          )}
+          <div
+            className={`relative w-full h-full rounded-sm px-5 py-4 flex flex-col items-center justify-center text-center ${animate ? 'promote-plate' : ''}`}
+            style={{
+              background: tier.background,
+              boxShadow:
+                'inset 1px 1px 3px rgba(255,255,255,0.4), inset -2px -2px 5px rgba(15,10,5,0.3), 0 8px 20px rgba(0,0,0,0.35)',
+            }}
+          >
+            {ownerLine && !mystery && (
+              <p className="font-mono text-[9px] uppercase tracking-[0.16em]" style={{ color: `${tier.ink}99` }}>
+                {ownerLine}
+              </p>
+            )}
+            <p
+              className="font-serif italic font-semibold text-lg leading-tight mt-1"
+              style={{ color: tier.ink, textShadow: mystery ? 'none' : `0 1px 0 ${shadow}` }}
+            >
+              {mystery ? 'Ex Libris' : motto}
+            </p>
+            {!mystery && bigNumber != null && (
+              <p className="font-mono font-bold text-4xl leading-none mt-2" style={{ color: tier.ink }}>
+                {bigNumber}
+              </p>
+            )}
+            <p className="font-sans text-xs uppercase tracking-[0.08em] font-medium mt-2" style={{ color: tier.ink }}>
+              {mystery ? 'À débloquer' : subLabel}
+            </p>
+            {progressText && (
+              <p className="font-mono text-[11px] mt-1" style={{ color: `${tier.ink}cc` }}>
+                {progressText}
+              </p>
+            )}
+            {!mystery && tierText && (
+              <span
+                className="absolute bottom-3 left-4 font-mono text-[10px] uppercase tracking-wide"
+                style={{ color: `${tier.ink}bb` }}
+              >
+                {tierText}
+              </span>
+            )}
+            {!mystery && seal && (
+              <span
+                className="absolute bottom-3 right-4 w-7 h-7 rounded-full flex items-center justify-center"
+                style={{ boxShadow: `inset 0 0 0 1px ${tier.ink}70, inset 1px 1px 2px rgba(0,0,0,0.3)` }}
+              >
+                <svg
+                  viewBox="0 0 20 20"
+                  className="w-4 h-4"
+                  fill={icon === 'star' ? tier.ink : 'none'}
+                  stroke={icon === 'star' ? 'none' : tier.ink}
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  {ACHIEVEMENT_ICONS[icon]}
+                </svg>
+              </span>
+            )}
+            {!mystery && !seal && (
+              <svg
+                viewBox="0 0 20 20"
+                className="absolute bottom-3 right-4 w-6 h-6"
+                fill={icon === 'star' ? tier.ink : 'none'}
+                stroke={icon === 'star' ? 'none' : tier.ink}
+                strokeWidth="1.4"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                {ACHIEVEMENT_ICONS[icon]}
+              </svg>
+            )}
+          </div>
+        </div>
+
+        {mystery ? (
+          <p className="text-xs text-paper/70 mb-4 max-w-[240px]">
+            Continue ta collection pour découvrir ce succès.
+          </p>
+        ) : (
+          <>
+            {description && (
+              <p className="text-xs text-paper/70 mb-1 max-w-[260px]">{description}</p>
+            )}
+            {nextTierHint && (
+              <p className="text-xs text-paper/70 mb-1 max-w-[260px]">{nextTierHint}</p>
+            )}
+            {dateText && <p className="text-xs text-paper/50 mb-4 mt-2">{dateText}</p>}
+          </>
+        )}
+
+        <button
+          type="button"
+          onClick={onClose}
+          className={`rounded-sm px-6 py-2 text-sm ${primaryButtonClass}`}
+        >
+          {actionLabel ?? 'Continuer'}
+        </button>
+      </div>
+    </div>
+  )
+}

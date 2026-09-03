@@ -350,3 +350,39 @@ body {
     transform: translateX(0);
   }
 }
+
+/* Modal de promotion d'un succès ex-libris (voir PromotionModal.jsx) :
+   flash radial derrière la nouvelle plaque + entrée en "pop" de la plaque
+   elle-même, façon révélation d'évolution. */
+@media (prefers-reduced-motion: no-preference) {
+  .promote-flash {
+    animation: promote-flash 0.6s ease-out both;
+  }
+  .promote-plate {
+    animation: promote-plate 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.2) 0.15s both;
+  }
+}
+@keyframes promote-flash {
+  from {
+    opacity: 0.9;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.2);
+  }
+}
+@keyframes promote-plate {
+  0% {
+    opacity: 0;
+    transform: scale(0.6) rotate(-8deg);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.06) rotate(2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
