@@ -120,7 +120,7 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
           promotable,
           everRevealed,
           big: true,
-          rotation: rotationFor(badge.id),
+          rotation: 0,
           pinOffset: pinOffsetFor(badge.id),
           description: badge.description,
           onClick: () => {
@@ -272,7 +272,7 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
               {i > 0 && (
                 <div
                   aria-hidden="true"
-                  className="h-2.5 rounded-full mb-12"
+                  className="h-2.5 rounded-full my-8"
                   style={{
                     background: 'linear-gradient(180deg, #8a6339 0%, #5c3f22 55%, #3a270f 100%)',
                     boxShadow:
@@ -297,7 +297,7 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
 function CategoryGroup({ big, minors }) {
   if (!big) {
     return (
-      <div className="grid grid-cols-4 gap-4 mb-10 last:mb-0" style={{ gridAutoRows: '78px' }}>
+      <div className="grid grid-cols-4 gap-4" style={{ gridAutoRows: '78px' }}>
         {minors.map((vm) => (
           <ExLibrisPlate key={vm.id} vm={vm} />
         ))}
@@ -305,7 +305,7 @@ function CategoryGroup({ big, minors }) {
     )
   }
   return (
-    <div className="grid grid-cols-4 gap-4 mb-10 last:mb-0" style={{ gridAutoRows: '78px' }}>
+    <div className="grid grid-cols-4 gap-4" style={{ gridAutoRows: '78px' }}>
       <div style={{ gridColumn: '2 / span 2', gridRow: '1 / span 2' }}>
         <ExLibrisPlate vm={big} />
       </div>
