@@ -416,29 +416,38 @@ const SIMPLE_ACHIEVEMENTS = [
   },
 ]
 
-// Aplatit les familles à paliers (4 badges chacune : un par threshold) et
-// les succès simples (1 badge, toujours "Bronze") en une seule liste de
-// badges indépendants, prêts à être affichés.
+// Une famille à paliers ne produit plus 4 badges séparés : un seul badge
+// "évolutif", qui expose le rang le plus haut réellement atteint
+// (`reachedRank`, -1 si aucun seuil n'est franchi) ainsi que la progression
+// vers le seuil suivant. C'est à l'affichage (voir AchievementsGallery) de
+// décider quel rang montrer selon ce que le joueur a déjà "réclamé".
 export function evaluateAchievements(books, ctx = {}) {
   const badges = []
 
   for (const family of TIERED_ACHIEVEMENTS) {
     const current = family.metric(books)
+    let reachedRank = -1
     family.thresholds.forEach((threshold, i) => {
-      const unlocked = current >= threshold
-      badges.push({
-        id: `${family.id}-${i}`,
-        category: family.category,
-        icon: family.icon,
-        motto: family.motto,
-        translation: `${TIER_LABELS[i]} · ${family.translation}`,
-        description: `${family.description} (seuil : ${threshold}).`,
-        tierRank: i,
-        unlocked,
-        current: Math.min(current, threshold),
-        target: threshold,
-        unlockedAt: unlocked ? family.dateForCount(books, threshold) : null,
-      })
+      if (current >= threshold) reachedRank = i
+    })
+    const nextRank = reachedRank + 1
+    const nextThreshold = family.thresholds[nextRank] ?? null
+
+    badges.push({
+      id: family.id,
+      kind: 'tiered',
+      category: family.category,
+      icon: family.icon,
+      motto: family.motto,
+      translationBase: family.translation,
+      description: family.description,
+      thresholds: family.thresholds,
+      tierLabels: TIER_LABELS,
+      reachedRank,
+      current,
+      nextThreshold,
+      unlockedAtForRank: (rank) =>
+        rank < 0 ? null : family.dateForCount(books, family.thresholds[rank]),
     })
   }
 
@@ -446,12 +455,12 @@ export function evaluateAchievements(books, ctx = {}) {
     const result = achievement.evaluate(books, ctx)
     badges.push({
       id: achievement.id,
+      kind: 'simple',
       category: achievement.category,
       icon: achievement.icon,
       motto: achievement.motto,
       translation: achievement.translation,
       description: achievement.description,
-      tierRank: 0,
       ...result,
     })
   }

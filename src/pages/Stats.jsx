@@ -19,14 +19,14 @@ import { useGoBack } from '../lib/navigation'
 import { BOOK_TYPES } from '../lib/bookTypes'
 import { STATUS_LABELS } from '../lib/statusLabels'
 import { labelClass } from '../lib/ui'
-import { ACHIEVEMENT_CATEGORIES, evaluateAchievements } from '../lib/achievements'
+import { getMyProfile } from '../lib/friendCode'
 import HouseholdTabs from '../components/HouseholdTabs'
 import TabBar from '../components/TabBar'
 import StatusStackedBar from '../components/StatusStackedBar'
 import BarChart from '../components/BarChart'
 import DonutChart from '../components/DonutChart'
 import ReadingHeatmap from '../components/ReadingHeatmap'
-import ExLibrisPlate from '../components/ExLibrisPlate'
+import AchievementsGallery from '../components/AchievementsGallery'
 import LoadingScreen from '../components/LoadingScreen'
 
 const PERIOD_OPTIONS = {
@@ -67,9 +67,30 @@ export default function Stats() {
   const [convertingTag, setConvertingTag] = useState(null)
   const [convertError, setConvertError] = useState(null)
   const [statsTab, setStatsTab] = useState('overview')
+  const [myFirstName, setMyFirstName] = useState(null)
   const [period, setPeriod] = useState('all')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
+
+  // Pour la ligne "Ex-Libris {prénom}" gravée sur les plaques de succès :
+  // le prénom du partenaire est déjà sur `partner.label`, mais le sien
+  // propre n'est nulle part ailleurs dans l'app à ce niveau.
+  useEffect(() => {
+    if (!user) return
+    let active = true
+    getMyProfile(user.id)
+      .then((profile) => {
+        if (active) setMyFirstName(profile?.first_name ?? null)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [user])
+
+  const ownerName = isMine
+    ? myFirstName ?? user?.email?.split('@')[0] ?? null
+    : partner?.label ?? null
 
   async function handleConvertTag(tag) {
     setConvertingTag(tag)
@@ -214,22 +235,6 @@ export default function Stats() {
       .map(([series, count]) => ({ series, count }))
       .sort((a, b) => b.count - a.count)
   }, [books])
-
-  const achievementBadges = useMemo(
-    () => evaluateAchievements(books, { partner }),
-    [books, partner],
-  )
-  const achievementsByCategory = useMemo(() => {
-    const map = new Map()
-    for (const badge of achievementBadges) {
-      if (!map.has(badge.category)) map.set(badge.category, [])
-      map.get(badge.category).push(badge)
-    }
-    return ACHIEVEMENT_CATEGORIES.map((category) => ({
-      category,
-      badges: map.get(category) ?? [],
-    })).filter((group) => group.badges.length > 0)
-  }, [achievementBadges])
 
   // Bornes de la période sélectionnée : pilote tout l'onglet "Activité de
   // lecture" (rythme, notes, couvertures, calendrier, livres finis par mois).
@@ -822,20 +827,12 @@ export default function Stats() {
             )}
 
             {statsTab === 'achievements' && (
-              <div className="space-y-8">
-                {achievementsByCategory.map(({ category, badges }) => (
-                  <div key={category}>
-                    <p className={`${labelClass} border-b border-ink/10 pb-1 mb-3`}>
-                      {category}
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {badges.map((badge) => (
-                        <ExLibrisPlate key={badge.id} badge={badge} userId={user?.id} />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <AchievementsGallery
+                books={books}
+                partner={partner}
+                userId={user?.id}
+                ownerName={ownerName}
+              />
             )}
           </div>
         )}
