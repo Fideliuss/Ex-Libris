@@ -250,7 +250,7 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
   return (
     <div>
       <div
-        className="rounded-lg p-3"
+        className="rounded-lg p-2 sm:p-3"
         style={{
           background: 'linear-gradient(160deg, #6b4a2c 0%, #4a3018 55%, #2e1c0d 100%)',
           boxShadow:
@@ -258,7 +258,7 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
         }}
       >
         <div
-          className="rounded-md p-5"
+          className="rounded-md p-3 sm:p-5"
           style={{
             background:
               'radial-gradient(circle at 15% 20%, rgba(255,255,255,0.05) 0 1.5px, transparent 2px) 0 0/16px 16px, ' +
@@ -280,7 +280,12 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
                   }}
                 />
               )}
-              <CategoryGroup big={group.big} minors={group.minors} />
+              <div className="hidden sm:block">
+                <CategoryGroupDesktop big={group.big} minors={group.minors} />
+              </div>
+              <div className="sm:hidden">
+                <CategoryGroupMobile big={group.big} minors={group.minors} />
+              </div>
             </div>
           ))}
         </div>
@@ -294,7 +299,10 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
 // Un pilier = sa plaque à paliers centrée sur 2 colonnes (2x2), les 4
 // succès mineurs alignés juste en dessous. Sans plaque à paliers
 // (Miscellaneous), les mineurs s'alignent simplement en rangée.
-function CategoryGroup({ big, minors }) {
+// À partir de 4 colonnes seulement (voir CategoryGroupMobile en dessous de
+// sm) : à 2 ou 3 colonnes, un bloc large de 2 ne peut jamais être vraiment
+// centré — il colle forcément à un bord plutôt que de rater son centrage.
+function CategoryGroupDesktop({ big, minors }) {
   if (!big) {
     return (
       <div className="grid grid-cols-4 gap-4" style={{ gridAutoRows: '78px' }}>
@@ -314,6 +322,27 @@ function CategoryGroup({ big, minors }) {
           <ExLibrisPlate vm={vm} />
         </div>
       ))}
+    </div>
+  )
+}
+
+// Sous sm (petit écran) : la plaque à paliers passe en bannière pleine
+// largeur (aucun centrage à calculer, elle occupe tout) et les 4 mineures
+// se rangent en 2x2 plutôt qu'en ligne de 4 — chaque carte garde une
+// taille lisible au lieu de rétrécir pour tenir sur une seule rangée.
+function CategoryGroupMobile({ big, minors }) {
+  return (
+    <div className="space-y-3">
+      {big && (
+        <div style={{ height: '148px' }}>
+          <ExLibrisPlate vm={big} />
+        </div>
+      )}
+      <div className="grid grid-cols-2 gap-3" style={{ gridAutoRows: '84px' }}>
+        {minors.map((vm) => (
+          <ExLibrisPlate key={vm.id} vm={vm} />
+        ))}
+      </div>
     </div>
   )
 }
