@@ -8,7 +8,9 @@ import { ACHIEVEMENT_ICONS, TIER_METAL, LOCKED_METAL } from '../lib/achievementV
 // attente de déblocage" — on ne révèle jamais de quoi il s'agit avant
 // obtention), prêt à promouvoir (prompt qui pulse, cliquable), révélé
 // (devise + chiffre centrés en évidence, rang en bas à gauche, icône en bas
-// à droite).
+// à droite). Posée sur le "mur à trophées" (fond fourni par
+// AchievementsGallery) : petit clou en tête, légère inclinaison propre à
+// chaque plaque, et une case 2x2 agrandie pour un succès Platine révélé.
 export default function ExLibrisPlate({ vm }) {
   const {
     motto,
@@ -23,6 +25,8 @@ export default function ExLibrisPlate({ vm }) {
     locked,
     promotable,
     everRevealed,
+    big,
+    rotation,
     description,
     onClick,
   } = vm
@@ -37,18 +41,28 @@ export default function ExLibrisPlate({ vm }) {
       onClick={promotable ? onClick : undefined}
       disabled={!promotable}
       title={everRevealed ? description : undefined}
-      className={`relative flex flex-col items-center justify-center text-center w-full aspect-[2.4/1] rounded-sm px-3 py-2 ${
-        promotable ? 'cursor-pointer' : 'cursor-default'
-      } ${promotable ? 'animate-pulse' : ''}`}
+      className={`relative flex flex-col items-center justify-center text-center w-full h-full rounded-sm px-3 py-2 ${
+        big ? 'col-span-2 row-span-2' : ''
+      } ${promotable ? 'cursor-pointer animate-pulse' : 'cursor-default'}`}
       style={{
+        transform: `rotate(${rotation}deg)`,
         background: locked ? LOCKED_METAL.background : tier.background,
         boxShadow: locked
-          ? 'inset 1px 1px 2px rgba(255,255,255,0.15), inset -2px -2px 4px rgba(15,10,5,0.3)'
-          : 'inset 1px 1px 2px rgba(255,255,255,0.35), inset -2px -2px 4px rgba(15,10,5,0.25), 0 1px 3px rgba(30,43,58,0.25)',
+          ? 'inset 1px 1px 2px rgba(255,255,255,0.15), inset -2px -2px 4px rgba(15,10,5,0.3), 0 6px 10px rgba(0,0,0,0.3)'
+          : 'inset 1px 1px 2px rgba(255,255,255,0.35), inset -2px -2px 4px rgba(15,10,5,0.25), 0 10px 16px rgba(0,0,0,0.4)',
       }}
     >
+      <span
+        aria-hidden="true"
+        className="absolute -top-[5px] left-1/2 -translate-x-1/2 w-2 h-2 rounded-full"
+        style={{
+          background: 'radial-gradient(circle at 35% 35%, #f0dcae, #8e7145 75%)',
+          boxShadow: '0 2px 3px rgba(0,0,0,0.5)',
+        }}
+      />
+
       {promotable && (
-        <span className="absolute inset-0 flex items-center justify-center px-3 font-mono text-[10px] uppercase tracking-wide text-ink/85 bg-card/75 rounded-sm">
+        <span className="absolute inset-0 flex items-center justify-center px-3 font-mono text-[10px] uppercase tracking-wide text-ink/85 bg-card/80 rounded-sm">
           Promotion disponible — clique
         </span>
       )}
@@ -56,24 +70,30 @@ export default function ExLibrisPlate({ vm }) {
       <div className={promotable ? 'invisible' : ''}>
         {ownerLine && !mystery && (
           <p
-            className="font-mono text-[6.5px] uppercase tracking-[0.16em]"
+            className={`font-mono uppercase tracking-[0.16em] ${big ? 'text-[8px]' : 'text-[6.5px]'}`}
             style={{ color: `${ink}99` }}
           >
             {ownerLine}
           </p>
         )}
         <p
-          className="font-serif italic font-semibold text-[13px] leading-tight"
+          className={`font-serif italic font-semibold leading-tight ${big ? 'text-[19px]' : 'text-[13px]'}`}
           style={{ color: ink, textShadow: mystery ? 'none' : `0 1px 0 ${tier.shadow}` }}
         >
           {mystery ? 'Ex Libris' : motto}
         </p>
         {!mystery && bigNumber != null && (
-          <p className="font-mono font-bold text-[22px] leading-none mt-1" style={{ color: ink }}>
+          <p
+            className={`font-mono font-bold leading-none mt-1 ${big ? 'text-[38px]' : 'text-[22px]'}`}
+            style={{ color: ink }}
+          >
             {bigNumber}
           </p>
         )}
-        <p className="font-sans text-[9.5px] uppercase tracking-[0.07em] font-medium mt-1" style={{ color: ink }}>
+        <p
+          className={`font-sans uppercase tracking-[0.07em] font-medium mt-1 ${big ? 'text-[11px]' : 'text-[9.5px]'}`}
+          style={{ color: ink }}
+        >
           {mystery ? 'En attente de déblocage' : subLabel}
         </p>
         {progressText && (
@@ -90,7 +110,9 @@ export default function ExLibrisPlate({ vm }) {
 
       {!mystery && !promotable && (
         <span
-          className="absolute bottom-1.5 left-1.5 font-mono text-[7px] uppercase tracking-wide"
+          className={`absolute font-mono uppercase tracking-wide ${
+            big ? 'bottom-3 left-3.5 text-[9px]' : 'bottom-1.5 left-1.5 text-[7px]'
+          }`}
           style={{ color: `${ink}bb` }}
         >
           {tierText}
@@ -100,7 +122,7 @@ export default function ExLibrisPlate({ vm }) {
       {!mystery && !promotable && (
         <svg
           viewBox="0 0 20 20"
-          className="absolute bottom-1.5 right-1.5 w-4 h-4"
+          className={`absolute ${big ? 'bottom-3 right-3.5 w-[22px] h-[22px]' : 'bottom-1.5 right-1.5 w-4 h-4'}`}
           fill={icon === 'star' ? ink : 'none'}
           stroke={icon === 'star' ? 'none' : ink}
           strokeWidth="1.4"

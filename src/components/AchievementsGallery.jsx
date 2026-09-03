@@ -26,6 +26,16 @@ function writeState(userId, id, value) {
   }
 }
 
+// Légère rotation propre à chaque plaque (mur à trophées) : dérivée de
+// l'id du succès plutôt que tirée au hasard à chaque rendu, pour qu'elle
+// reste stable d'un rafraîchissement à l'autre.
+function rotationFor(id) {
+  let hash = 0
+  for (let i = 0; i < id.length; i += 1) hash = (hash * 31 + id.charCodeAt(i)) | 0
+  const range = 2.5
+  return ((Math.abs(hash) % 1000) / 1000) * (range * 2) - range
+}
+
 // Calcule le view-model de chaque succès (paliers "réclamés" compris, lus
 // depuis localStorage) et gère la modal de révélation/promotion déclenchée
 // au clic. Les succès à paliers n'affichent qu'UN badge, qui montre le
@@ -68,6 +78,8 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
           locked: !everRevealed,
           promotable,
           everRevealed,
+          big: everRevealed && displayRank === 3,
+          rotation: rotationFor(badge.id),
           description: badge.description,
           onClick: () =>
             setPromotion({
@@ -103,6 +115,8 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
         locked: !badge.unlocked,
         promotable: badge.unlocked && !claimed,
         everRevealed: claimed,
+        big: false,
+        rotation: rotationFor(badge.id),
         description: badge.description,
         onClick: () =>
           setPromotion({
@@ -130,10 +144,24 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
 
   return (
     <div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-        {items.map((vm) => (
-          <ExLibrisPlate key={vm.id} vm={vm} />
-        ))}
+      <div
+        className="rounded-md p-5"
+        style={{
+          background:
+            'radial-gradient(circle at 15% 20%, rgba(255,255,255,0.05) 0 1.5px, transparent 2px) 0 0/16px 16px, ' +
+            'radial-gradient(circle at 60% 70%, rgba(255,255,255,0.04) 0 1.5px, transparent 2px) 4px 8px/20px 20px, ' +
+            'linear-gradient(160deg, #3f2c1e 0%, #2a1c12 100%)',
+          boxShadow: 'inset 0 0 40px rgba(0,0,0,0.5)',
+        }}
+      >
+        <div
+          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
+          style={{ gridAutoRows: '78px' }}
+        >
+          {items.map((vm) => (
+            <ExLibrisPlate key={vm.id} vm={vm} />
+          ))}
+        </div>
       </div>
 
       {promotion && <PromotionModal vm={promotion} onClose={handleClosePromotion} />}
