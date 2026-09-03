@@ -20,6 +20,7 @@ create table profiles (
   last_name text,
   email text not null,
   friend_code text not null unique,
+  has_seen_tutorial boolean not null default false,
   created_at timestamptz default now()
 );
 
@@ -178,6 +179,7 @@ create table books (
   illustrator text,
   publisher text,
   collection text,
+  edition text[],
   description text,
   series text,
   series_index numeric,
@@ -191,6 +193,7 @@ create table books (
   date_finished date,
   rating int check (rating between 0 and 5),
   notes text,
+  favorite_quote text,
   page_count int,
   cover_url text,
   price numeric(10, 2),
