@@ -19,12 +19,14 @@ import { useGoBack } from '../lib/navigation'
 import { BOOK_TYPES } from '../lib/bookTypes'
 import { STATUS_LABELS } from '../lib/statusLabels'
 import { labelClass } from '../lib/ui'
+import { ACHIEVEMENTS } from '../lib/achievements'
 import HouseholdTabs from '../components/HouseholdTabs'
 import TabBar from '../components/TabBar'
 import StatusStackedBar from '../components/StatusStackedBar'
 import BarChart from '../components/BarChart'
 import DonutChart from '../components/DonutChart'
 import ReadingHeatmap from '../components/ReadingHeatmap'
+import ExLibrisPlate from '../components/ExLibrisPlate'
 import LoadingScreen from '../components/LoadingScreen'
 
 const PERIOD_OPTIONS = {
@@ -38,6 +40,7 @@ const STATS_TABS = [
   { key: 'overview', label: "Vue d'ensemble" },
   { key: 'activity', label: 'Activité de lecture' },
   { key: 'library', label: 'Bibliothèque' },
+  { key: 'achievements', label: 'Succès' },
 ]
 
 // Les champs date_started/date_finished sont des "date" Postgres (pas de
@@ -211,6 +214,15 @@ export default function Stats() {
       .map(([series, count]) => ({ series, count }))
       .sort((a, b) => b.count - a.count)
   }, [books])
+
+  const achievementResults = useMemo(
+    () =>
+      ACHIEVEMENTS.map((achievement) => ({
+        achievement,
+        result: achievement.evaluate(books, { partner }),
+      })),
+    [books, partner],
+  )
 
   // Bornes de la période sélectionnée : pilote tout l'onglet "Activité de
   // lecture" (rythme, notes, couvertures, calendrier, livres finis par mois).
@@ -799,6 +811,18 @@ export default function Stats() {
                     </PaginatedList>
                   )}
                 </section>
+              </div>
+            )}
+
+            {statsTab === 'achievements' && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                {achievementResults.map(({ achievement, result }) => (
+                  <ExLibrisPlate
+                    key={achievement.id}
+                    achievement={achievement}
+                    result={result}
+                  />
+                ))}
               </div>
             )}
           </div>
