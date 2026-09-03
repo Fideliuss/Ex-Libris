@@ -2,12 +2,6 @@
 // au clic) : icônes trait par catégorie, et le ton de métal + couleur de
 // gravure par palier (0 Bronze -> 3 Platine).
 export const ACHIEVEMENT_ICONS = {
-  quill: (
-    <>
-      <path d="M4 16l8-8 2 2-8 8H4v-2z" />
-      <path d="M12 8l2-2a2 2 0 0 1 3 3l-2 2" />
-    </>
-  ),
   books: (
     <>
       <rect x="3" y="13.5" width="14" height="3" rx="0.6" />
