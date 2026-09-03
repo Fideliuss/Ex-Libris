@@ -36,6 +36,9 @@ export default function ExLibrisPlate({ vm }) {
   const tier = seal ? SEAL_WAX : (TIER_METAL[tierRank] ?? TIER_METAL[0])
   const mystery = !everRevealed
   const ink = locked ? LOCKED_METAL.ink : tier.ink
+  // Le palier Platine (le sommet d'un pilier) passe sous vitrine : cadre
+  // doré + reflet de verre, plutôt qu'une plaque comme les autres.
+  const showcase = big && tierRank === 3 && everRevealed && !promotable
 
   return (
     <button
@@ -50,9 +53,20 @@ export default function ExLibrisPlate({ vm }) {
         background: locked ? LOCKED_METAL.background : tier.background,
         boxShadow: locked
           ? 'inset 1px 1px 2px rgba(255,255,255,0.15), inset -2px -2px 4px rgba(15,10,5,0.3), 0 6px 10px rgba(0,0,0,0.3)'
-          : 'inset 1px 1px 2px rgba(255,255,255,0.35), inset -2px -2px 4px rgba(15,10,5,0.25), 0 10px 16px rgba(0,0,0,0.4)',
+          : showcase
+            ? 'inset 1px 1px 2px rgba(255,255,255,0.35), inset -2px -2px 4px rgba(15,10,5,0.25), 0 0 0 3px #d9c48f, 0 0 0 5px rgba(0,0,0,0.45), 0 10px 18px rgba(0,0,0,0.5)'
+            : 'inset 1px 1px 2px rgba(255,255,255,0.35), inset -2px -2px 4px rgba(15,10,5,0.25), 0 10px 16px rgba(0,0,0,0.4)',
       }}
     >
+      {showcase && (
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 rounded-sm pointer-events-none"
+          style={{
+            background: 'linear-gradient(115deg, transparent 38%, rgba(255,255,255,0.16) 50%, transparent 62%)',
+          }}
+        />
+      )}
       {big ? (
         <>
           <Pin className="-top-[5px] -left-[5px]" />

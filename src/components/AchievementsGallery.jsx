@@ -250,18 +250,40 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
   return (
     <div>
       <div
-        className="rounded-md p-5"
+        className="rounded-lg p-3"
         style={{
-          background:
-            'radial-gradient(circle at 15% 20%, rgba(255,255,255,0.05) 0 1.5px, transparent 2px) 0 0/16px 16px, ' +
-            'radial-gradient(circle at 60% 70%, rgba(255,255,255,0.04) 0 1.5px, transparent 2px) 4px 8px/20px 20px, ' +
-            'linear-gradient(160deg, #3f2c1e 0%, #2a1c12 100%)',
-          boxShadow: 'inset 0 0 40px rgba(0,0,0,0.5)',
+          background: 'linear-gradient(160deg, #6b4a2c 0%, #4a3018 55%, #2e1c0d 100%)',
+          boxShadow:
+            'inset 0 2px 3px rgba(255,220,170,0.18), inset 0 -2px 4px rgba(0,0,0,0.5), 0 6px 14px rgba(0,0,0,0.4)',
         }}
       >
-        {laidOut.map((group) => (
-          <CategoryGroup key={group.key} big={group.big} minors={group.minors} />
-        ))}
+        <div
+          className="rounded-md p-5"
+          style={{
+            background:
+              'radial-gradient(circle at 15% 20%, rgba(255,255,255,0.05) 0 1.5px, transparent 2px) 0 0/16px 16px, ' +
+              'radial-gradient(circle at 60% 70%, rgba(255,255,255,0.04) 0 1.5px, transparent 2px) 4px 8px/20px 20px, ' +
+              'linear-gradient(160deg, #3f2c1e 0%, #2a1c12 100%)',
+            boxShadow: 'inset 0 0 40px rgba(0,0,0,0.5)',
+          }}
+        >
+          {laidOut.map((group, i) => (
+            <div key={group.key}>
+              {i > 0 && (
+                <div
+                  aria-hidden="true"
+                  className="h-px mb-4"
+                  style={{
+                    background:
+                      'linear-gradient(90deg, transparent, rgba(0,0,0,0.4) 15%, rgba(0,0,0,0.4) 85%, transparent)',
+                    boxShadow: '0 1px 0 rgba(255,255,255,0.06)',
+                  }}
+                />
+              )}
+              <CategoryGroup big={group.big} minors={group.minors} />
+            </div>
+          ))}
+        </div>
       </div>
 
       {modal && <PromotionModal vm={modal} onClose={handleCloseModal} />}
