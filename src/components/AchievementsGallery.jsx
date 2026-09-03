@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
-import { evaluateAchievements, ACHIEVEMENT_CATEGORIES } from '../lib/achievements'
+import { evaluateAchievements } from '../lib/achievements'
 import { formatUnlockedDate } from '../lib/achievementVisuals'
-import { labelClass } from '../lib/ui'
 import ExLibrisPlate from './ExLibrisPlate'
 import PromotionModal from './PromotionModal'
 
@@ -52,7 +51,6 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
 
         return {
           id: badge.id,
-          category: badge.category,
           motto: badge.motto,
           ownerLine,
           bigNumber: everRevealed ? badge.thresholds[displayRank] : null,
@@ -92,11 +90,10 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
       const claimed = readState(userId, badge.id, '0') === '1'
       return {
         id: badge.id,
-        category: badge.category,
         motto: badge.motto,
         ownerLine,
         bigNumber: null,
-        tierText: null,
+        tierText: claimed ? 'Bronze' : null,
         subLabel: badge.translation,
         dateText: claimed ? formatUnlockedDate(badge.unlockedAt) : null,
         progressText:
@@ -126,28 +123,18 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
     })
   })()
 
-  const byCategory = ACHIEVEMENT_CATEGORIES.map((category) => ({
-    category,
-    items: items.filter((item) => item.category === category),
-  })).filter((group) => group.items.length > 0)
-
   function handleClosePromotion() {
     promotion?.onConfirm()
     setPromotion(null)
   }
 
   return (
-    <div className="space-y-8">
-      {byCategory.map(({ category, items: catItems }) => (
-        <div key={category}>
-          <p className={`${labelClass} border-b border-ink/10 pb-1 mb-3`}>{category}</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {catItems.map((vm) => (
-              <ExLibrisPlate key={vm.id} vm={vm} />
-            ))}
-          </div>
-        </div>
-      ))}
+    <div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        {items.map((vm) => (
+          <ExLibrisPlate key={vm.id} vm={vm} />
+        ))}
+      </div>
 
       {promotion && <PromotionModal vm={promotion} onClose={handleClosePromotion} />}
     </div>

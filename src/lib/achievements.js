@@ -468,13 +468,4 @@ export function evaluateAchievements(books, ctx = {}) {
   return badges
 }
 
-export const ACHIEVEMENT_CATEGORIES = [
-  'Paliers de lecture',
-  'Jugement',
-  'Bibliothèque',
-  'Curiosité',
-  'Cœur',
-  'Communauté',
-]
-
 export const TIER_METAL_LABELS = TIER_LABELS
