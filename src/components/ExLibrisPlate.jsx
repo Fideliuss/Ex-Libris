@@ -1,4 +1,4 @@
-import { ACHIEVEMENT_ICONS, TIER_METAL, LOCKED_METAL } from '../lib/achievementVisuals'
+import { ACHIEVEMENT_ICONS, TIER_METAL, LOCKED_METAL, SEAL_WAX } from '../lib/achievementVisuals'
 
 // Rendu pur d'une plaque ex-libris : toute la logique (paliers, ce qui a
 // été "réclamé", dates) est calculée en amont par AchievementsGallery, qui
@@ -26,13 +26,14 @@ export default function ExLibrisPlate({ vm }) {
     promotable,
     everRevealed,
     big,
+    seal,
     rotation,
     pinOffset,
     description,
     onClick,
   } = vm
 
-  const tier = TIER_METAL[tierRank] ?? TIER_METAL[0]
+  const tier = seal ? SEAL_WAX : (TIER_METAL[tierRank] ?? TIER_METAL[0])
   const mystery = !everRevealed
   const ink = locked ? LOCKED_METAL.ink : tier.ink
 
@@ -42,8 +43,8 @@ export default function ExLibrisPlate({ vm }) {
       onClick={onClick}
       title={everRevealed ? description : undefined}
       className={`relative flex flex-col items-center justify-center text-center w-full h-full rounded-sm px-3 py-2 cursor-pointer ${
-        big ? 'col-span-2 row-span-2' : ''
-      } ${promotable ? 'animate-pulse' : ''}`}
+        promotable ? 'animate-pulse' : ''
+      }`}
       style={{
         transform: `rotate(${rotation}deg)`,
         background: locked ? LOCKED_METAL.background : tier.background,
@@ -99,7 +100,7 @@ export default function ExLibrisPlate({ vm }) {
           className={`font-sans uppercase tracking-[0.07em] font-medium mt-1 ${big ? 'text-[11px]' : 'text-[9.5px]'}`}
           style={{ color: ink }}
         >
-          {mystery ? 'En attente de déblocage' : subLabel}
+          {mystery ? 'À débloquer' : subLabel}
         </p>
         {progressText && (
           <p className="font-mono text-[10px] font-medium mt-1" style={{ color: ink }}>
@@ -113,7 +114,7 @@ export default function ExLibrisPlate({ vm }) {
         )}
       </div>
 
-      {!mystery && !promotable && (
+      {!mystery && !promotable && tierText && (
         <span
           className={`absolute font-mono uppercase tracking-wide ${
             big ? 'bottom-3 left-3.5 text-[9px]' : 'bottom-1.5 left-1.5 text-[7px]'
@@ -124,7 +125,27 @@ export default function ExLibrisPlate({ vm }) {
         </span>
       )}
 
-      {!mystery && !promotable && (
+      {!mystery && !promotable && seal && (
+        <span
+          className="absolute bottom-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center"
+          style={{ boxShadow: `inset 0 0 0 1px ${ink}70, inset 1px 1px 2px rgba(0,0,0,0.3)` }}
+        >
+          <svg
+            viewBox="0 0 20 20"
+            className="w-3.5 h-3.5"
+            fill={icon === 'star' ? ink : 'none'}
+            stroke={icon === 'star' ? 'none' : ink}
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            {ACHIEVEMENT_ICONS[icon]}
+          </svg>
+        </span>
+      )}
+
+      {!mystery && !promotable && !seal && (
         <svg
           viewBox="0 0 20 20"
           className={`absolute ${big ? 'bottom-3 right-3.5 w-[22px] h-[22px]' : 'bottom-1.5 right-1.5 w-4 h-4'}`}

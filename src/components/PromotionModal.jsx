@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { ACHIEVEMENT_ICONS, TIER_METAL, LOCKED_METAL } from '../lib/achievementVisuals'
+import { ACHIEVEMENT_ICONS, TIER_METAL, LOCKED_METAL, SEAL_WAX } from '../lib/achievementVisuals'
 import { primaryButtonClass } from '../lib/ui'
 
 // Modal centrale pour une plaque ex-libris, dans l'un de trois rôles :
@@ -32,10 +32,11 @@ export default function PromotionModal({ vm, onClose }) {
     nextTierHint,
     progressText,
     mystery,
+    seal,
     animate,
     actionLabel,
   } = vm
-  const tier = mystery ? LOCKED_METAL : (TIER_METAL[tierRank] ?? TIER_METAL[0])
+  const tier = mystery ? LOCKED_METAL : seal ? SEAL_WAX : (TIER_METAL[tierRank] ?? TIER_METAL[0])
   const shadow = mystery ? 'rgba(255,255,255,0.15)' : tier.shadow
 
   return (
@@ -87,7 +88,7 @@ export default function PromotionModal({ vm, onClose }) {
               </p>
             )}
             <p className="font-sans text-xs uppercase tracking-[0.08em] font-medium mt-2" style={{ color: tier.ink }}>
-              {mystery ? 'En attente de déblocage' : subLabel}
+              {mystery ? 'À débloquer' : subLabel}
             </p>
             {progressText && (
               <p className="font-mono text-[11px] mt-1" style={{ color: `${tier.ink}cc` }}>
@@ -102,7 +103,26 @@ export default function PromotionModal({ vm, onClose }) {
                 {tierText}
               </span>
             )}
-            {!mystery && (
+            {!mystery && seal && (
+              <span
+                className="absolute bottom-3 right-4 w-7 h-7 rounded-full flex items-center justify-center"
+                style={{ boxShadow: `inset 0 0 0 1px ${tier.ink}70, inset 1px 1px 2px rgba(0,0,0,0.3)` }}
+              >
+                <svg
+                  viewBox="0 0 20 20"
+                  className="w-4 h-4"
+                  fill={icon === 'star' ? tier.ink : 'none'}
+                  stroke={icon === 'star' ? 'none' : tier.ink}
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  {ACHIEVEMENT_ICONS[icon]}
+                </svg>
+              </span>
+            )}
+            {!mystery && !seal && (
               <svg
                 viewBox="0 0 20 20"
                 className="absolute bottom-3 right-4 w-6 h-6"

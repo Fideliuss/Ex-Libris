@@ -67,6 +67,16 @@ export const LOCKED_METAL = {
   ink: 'rgba(30,25,15,0.32)',
 }
 
+// Les succès uniques (sans palier) ne sont pas "Bronze" — ce mot laisse
+// croire qu'ils peuvent progresser vers Argent/Or/Platine, alors que ce
+// sont des one-shots. Un cachet de cire à la place : lettrage doré sur cire
+// rouge (même famille que --color-stamp), pas une plaque métal ratée.
+export const SEAL_WAX = {
+  background: 'linear-gradient(160deg, #c9564a 0%, #a2372e 55%, #78241e 100%)',
+  ink: '#f2ddac',
+  shadow: 'rgba(45,10,6,0.55)',
+}
+
 export function formatUnlockedDate(value) {
   if (!value) return null
   const dateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value)

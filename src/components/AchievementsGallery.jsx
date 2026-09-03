@@ -46,11 +46,10 @@ function pinOffsetFor(id) {
   return hash01([...id].reverse().join('')) * (range * 2) - range
 }
 
-// Regroupe par icône (même symbole = même "famille" de succès) en gardant
-// l'ordre d'apparition des icônes, puis aplatit avec un repère de groupe —
-// pas d'en-tête ni de fond différent, juste un souffle d'espace un peu plus
-// grand entre deux groupes pour que ça reste perceptible sans "sectionner"
-// visiblement le mur.
+// Regroupe par icône (même symbole = même pilier) en gardant l'ordre
+// d'apparition, et sépare la plaque à paliers (le "big" du pilier) des
+// succès mineurs — pas d'en-tête ni de fond différent pour distinguer les
+// groupes, juste leur composition (2x2 centré + rangée du dessous).
 function groupByIcon(items) {
   const order = []
   const groups = new Map()
@@ -61,12 +60,14 @@ function groupByIcon(items) {
     }
     groups.get(item.icon).push(item)
   }
-  const flat = []
-  order.forEach((icon, i) => {
-    if (i > 0) flat.push({ spacer: true, key: `spacer-${icon}` })
-    flat.push(...groups.get(icon))
+  return order.map((icon) => {
+    const groupItems = groups.get(icon)
+    return {
+      key: icon,
+      big: groupItems.find((i) => i.big) ?? null,
+      minors: groupItems.filter((i) => !i.big),
+    }
   })
-  return flat
 }
 
 // Calcule le view-model de chaque succès (paliers "réclamés" compris, lus
@@ -176,13 +177,14 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
         motto: badge.motto,
         ownerLine,
         bigNumber: null,
-        tierText: claimed ? 'Bronze' : null,
+        tierText: null,
         subLabel: badge.translation,
         dateText: claimed ? formatUnlockedDate(badge.unlockedAt) : null,
         progressText:
           !badge.unlocked && badge.target > 1 ? `${badge.current}/${badge.target}` : null,
         icon: badge.icon,
         tierRank: 0,
+        seal: true,
         locked: !badge.unlocked,
         promotable: badge.unlocked && !claimed,
         everRevealed: claimed,
@@ -203,7 +205,7 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
               headline: 'Nouveau succès',
               bigNumber: null,
               subLabel: badge.translation,
-              tierText: 'Bronze',
+              seal: true,
               icon: badge.icon,
               tierRank: 0,
               dateText: formatUnlockedDate(badge.unlockedAt),
@@ -215,7 +217,7 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
               ownerLine,
               bigNumber: null,
               subLabel: badge.translation,
-              tierText: 'Bronze',
+              seal: true,
               icon: badge.icon,
               tierRank: 0,
               dateText: formatUnlockedDate(badge.unlockedAt),
@@ -257,21 +259,39 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
           boxShadow: 'inset 0 0 40px rgba(0,0,0,0.5)',
         }}
       >
-        <div
-          className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
-          style={{ gridAutoRows: '78px' }}
-        >
-          {laidOut.map((entry) =>
-            entry.spacer ? (
-              <div key={entry.key} className="col-span-full h-1" aria-hidden="true" />
-            ) : (
-              <ExLibrisPlate key={entry.id} vm={entry} />
-            ),
-          )}
-        </div>
+        {laidOut.map((group) => (
+          <CategoryGroup key={group.key} big={group.big} minors={group.minors} />
+        ))}
       </div>
 
       {modal && <PromotionModal vm={modal} onClose={handleCloseModal} />}
+    </div>
+  )
+}
+
+// Un pilier = sa plaque à paliers centrée sur 2 colonnes (2x2), les 4
+// succès mineurs alignés juste en dessous. Sans plaque à paliers
+// (Miscellaneous), les mineurs s'alignent simplement en rangée.
+function CategoryGroup({ big, minors }) {
+  if (!big) {
+    return (
+      <div className="grid grid-cols-4 gap-4 mb-10 last:mb-0" style={{ gridAutoRows: '78px' }}>
+        {minors.map((vm) => (
+          <ExLibrisPlate key={vm.id} vm={vm} />
+        ))}
+      </div>
+    )
+  }
+  return (
+    <div className="grid grid-cols-4 gap-4 mb-10 last:mb-0" style={{ gridAutoRows: '78px' }}>
+      <div style={{ gridColumn: '2 / span 2', gridRow: '1 / span 2' }}>
+        <ExLibrisPlate vm={big} />
+      </div>
+      {minors.map((vm) => (
+        <div key={vm.id} style={{ gridRow: 3 }}>
+          <ExLibrisPlate vm={vm} />
+        </div>
+      ))}
     </div>
   )
 }
