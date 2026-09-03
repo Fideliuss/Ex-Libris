@@ -27,6 +27,7 @@ export default function ExLibrisPlate({ vm }) {
     everRevealed,
     big,
     rotation,
+    pinOffset,
     description,
     onClick,
   } = vm
@@ -38,12 +39,11 @@ export default function ExLibrisPlate({ vm }) {
   return (
     <button
       type="button"
-      onClick={promotable ? onClick : undefined}
-      disabled={!promotable}
+      onClick={onClick}
       title={everRevealed ? description : undefined}
-      className={`relative flex flex-col items-center justify-center text-center w-full h-full rounded-sm px-3 py-2 ${
+      className={`relative flex flex-col items-center justify-center text-center w-full h-full rounded-sm px-3 py-2 cursor-pointer ${
         big ? 'col-span-2 row-span-2' : ''
-      } ${promotable ? 'cursor-pointer animate-pulse' : 'cursor-default'}`}
+      } ${promotable ? 'animate-pulse' : ''}`}
       style={{
         transform: `rotate(${rotation}deg)`,
         background: locked ? LOCKED_METAL.background : tier.background,
@@ -54,8 +54,10 @@ export default function ExLibrisPlate({ vm }) {
     >
       <span
         aria-hidden="true"
-        className="absolute -top-[5px] left-1/2 -translate-x-1/2 w-2 h-2 rounded-full"
+        className="absolute -top-[5px] w-2 h-2 rounded-full"
         style={{
+          left: `calc(50% + ${pinOffset}px)`,
+          transform: 'translateX(-50%)',
           background: 'radial-gradient(circle at 35% 35%, #f0dcae, #8e7145 75%)',
           boxShadow: '0 2px 3px rgba(0,0,0,0.5)',
         }}

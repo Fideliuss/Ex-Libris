@@ -26,30 +26,65 @@ function writeState(userId, id, value) {
   }
 }
 
-// Légère rotation propre à chaque plaque (mur à trophées) : dérivée de
-// l'id du succès plutôt que tirée au hasard à chaque rendu, pour qu'elle
-// reste stable d'un rafraîchissement à l'autre.
+// Un nombre stable par id (0..1), pour dériver rotation/décalage du clou
+// sans que ça change de rendu en rendu — deux hashs différents (l'un
+// dérivé de l'id seul, l'autre de l'id inversé) pour ne pas corréler les
+// deux jitters entre eux.
+function hash01(seed) {
+  let h = 0
+  for (let i = 0; i < seed.length; i += 1) h = (h * 31 + seed.charCodeAt(i)) | 0
+  return (Math.abs(h) % 1000) / 1000
+}
+
 function rotationFor(id) {
-  let hash = 0
-  for (let i = 0; i < id.length; i += 1) hash = (hash * 31 + id.charCodeAt(i)) | 0
-  const range = 2.5
-  return ((Math.abs(hash) % 1000) / 1000) * (range * 2) - range
+  const range = 4
+  return hash01(id) * (range * 2) - range
+}
+
+function pinOffsetFor(id) {
+  const range = 5
+  return hash01([...id].reverse().join('')) * (range * 2) - range
+}
+
+// Regroupe par icône (même symbole = même "famille" de succès) en gardant
+// l'ordre d'apparition des icônes, puis aplatit avec un repère de groupe —
+// pas d'en-tête ni de fond différent, juste un souffle d'espace un peu plus
+// grand entre deux groupes pour que ça reste perceptible sans "sectionner"
+// visiblement le mur.
+function groupByIcon(items) {
+  const order = []
+  const groups = new Map()
+  for (const item of items) {
+    if (!groups.has(item.icon)) {
+      groups.set(item.icon, [])
+      order.push(item.icon)
+    }
+    groups.get(item.icon).push(item)
+  }
+  const flat = []
+  order.forEach((icon, i) => {
+    if (i > 0) flat.push({ spacer: true, key: `spacer-${icon}` })
+    flat.push(...groups.get(icon))
+  })
+  return flat
 }
 
 // Calcule le view-model de chaque succès (paliers "réclamés" compris, lus
-// depuis localStorage) et gère la modal de révélation/promotion déclenchée
-// au clic. Les succès à paliers n'affichent qu'UN badge, qui montre le
-// palier le plus haut réclamé — atteindre un palier supérieur ne remplace
-// l'affichage qu'une fois la promotion confirmée dans la modal.
+// depuis localStorage) et gère la modal déclenchée au clic — promotion pour
+// un palier fraîchement atteint, détails pour un succès déjà acquis,
+// mystère (sans rien révéler) pour un succès encore hors de portée. Les
+// succès à paliers n'affichent qu'UN badge, qui montre le palier le plus
+// haut réclamé — atteindre un palier supérieur ne remplace l'affichage
+// qu'une fois la promotion confirmée dans la modal.
 export default function AchievementsGallery({ books, partner, userId, ownerName }) {
   const [, setVersion] = useState(0)
-  const [promotion, setPromotion] = useState(null)
+  const [modal, setModal] = useState(null)
 
   const rawBadges = useMemo(() => evaluateAchievements(books, { partner }), [books, partner])
   const ownerLine = ownerName ? `Ex-Libris ${ownerName}` : null
 
-  // Pas de useMemo ici : `version` doit forcer une relecture du
-  // localStorage à chaque clic de promotion, alors qu'il n'apparaît dans
+  // Pas de useMemo ici : la version doit forcer une relecture du
+  // localStorage à chaque clic de promotion, alors qu'elle n'apparaît dans
   // aucune valeur lue par ce calcul (seulement dans son but).
   const items = (() => {
     return rawBadges.map((badge) => {
@@ -58,6 +93,11 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
         const everRevealed = displayRank >= 0
         const promotable = badge.reachedRank > displayRank
         const nextRank = badge.reachedRank
+        const nextTierUp = displayRank + 1
+        const nextTierHint =
+          everRevealed && badge.thresholds[nextTierUp] != null
+            ? `Prochain palier : ${badge.tierLabels[nextTierUp]} — ${badge.current}/${badge.thresholds[nextTierUp]}.`
+            : null
 
         return {
           id: badge.id,
@@ -78,24 +118,52 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
           locked: !everRevealed,
           promotable,
           everRevealed,
-          big: everRevealed && displayRank === 3,
+          big: true,
           rotation: rotationFor(badge.id),
+          pinOffset: pinOffsetFor(badge.id),
           description: badge.description,
-          onClick: () =>
-            setPromotion({
-              onConfirm: () => {
-                writeState(userId, badge.id, String(nextRank))
-                setVersion((v) => v + 1)
-              },
-              motto: badge.motto,
-              ownerLine,
-              headline: everRevealed ? 'Promotion !' : 'Nouveau succès',
-              bigNumber: badge.thresholds[nextRank],
-              subLabel: `${badge.tierLabels[nextRank]} · ${badge.translationBase}`,
-              icon: badge.icon,
-              tierRank: nextRank,
-              dateText: formatUnlockedDate(badge.unlockedAtForRank(nextRank)),
-            }),
+          onClick: () => {
+            if (promotable) {
+              setModal({
+                animate: true,
+                onConfirm: () => {
+                  writeState(userId, badge.id, String(nextRank))
+                  setVersion((v) => v + 1)
+                },
+                motto: badge.motto,
+                ownerLine,
+                headline: everRevealed ? 'Promotion !' : 'Nouveau succès',
+                bigNumber: badge.thresholds[nextRank],
+                subLabel: `${badge.tierLabels[nextRank]} · ${badge.translationBase}`,
+                icon: badge.icon,
+                tierRank: nextRank,
+                dateText: formatUnlockedDate(badge.unlockedAtForRank(nextRank)),
+              })
+            } else if (everRevealed) {
+              setModal({
+                headline: 'Détails du succès',
+                motto: badge.motto,
+                ownerLine,
+                bigNumber: badge.thresholds[displayRank],
+                subLabel: `${badge.tierLabels[displayRank]} · ${badge.translationBase}`,
+                icon: badge.icon,
+                tierRank: displayRank,
+                dateText: formatUnlockedDate(badge.unlockedAtForRank(displayRank)),
+                description: [badge.description, nextTierHint].filter(Boolean).join(' '),
+                actionLabel: 'Fermer',
+              })
+            } else {
+              setModal({
+                headline: 'Succès verrouillé',
+                mystery: true,
+                progressText:
+                  badge.nextThreshold != null
+                    ? `${Math.min(badge.current, badge.nextThreshold)}/${badge.nextThreshold}`
+                    : null,
+                actionLabel: 'Fermer',
+              })
+            }
+          },
         }
       }
 
@@ -117,29 +185,59 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
         everRevealed: claimed,
         big: false,
         rotation: rotationFor(badge.id),
+        pinOffset: pinOffsetFor(badge.id),
         description: badge.description,
-        onClick: () =>
-          setPromotion({
-            onConfirm: () => {
-              writeState(userId, badge.id, '1')
-              setVersion((v) => v + 1)
-            },
-            motto: badge.motto,
-            ownerLine,
-            headline: 'Nouveau succès',
-            bigNumber: null,
-            subLabel: badge.translation,
-            icon: badge.icon,
-            tierRank: 0,
-            dateText: formatUnlockedDate(badge.unlockedAt),
-          }),
+        onClick: () => {
+          if (badge.unlocked && !claimed) {
+            setModal({
+              animate: true,
+              onConfirm: () => {
+                writeState(userId, badge.id, '1')
+                setVersion((v) => v + 1)
+              },
+              motto: badge.motto,
+              ownerLine,
+              headline: 'Nouveau succès',
+              bigNumber: null,
+              subLabel: badge.translation,
+              icon: badge.icon,
+              tierRank: 0,
+              dateText: formatUnlockedDate(badge.unlockedAt),
+            })
+          } else if (claimed) {
+            setModal({
+              headline: 'Détails du succès',
+              motto: badge.motto,
+              ownerLine,
+              bigNumber: null,
+              subLabel: badge.translation,
+              icon: badge.icon,
+              tierRank: 0,
+              dateText: formatUnlockedDate(badge.unlockedAt),
+              description: badge.description,
+              actionLabel: 'Fermer',
+            })
+          } else {
+            setModal({
+              headline: 'Succès verrouillé',
+              mystery: true,
+              progressText:
+                !badge.unlocked && badge.target > 1
+                  ? `${badge.current}/${badge.target}`
+                  : null,
+              actionLabel: 'Fermer',
+            })
+          }
+        },
       }
     })
   })()
 
-  function handleClosePromotion() {
-    promotion?.onConfirm()
-    setPromotion(null)
+  const laidOut = groupByIcon(items)
+
+  function handleCloseModal() {
+    modal?.onConfirm?.()
+    setModal(null)
   }
 
   return (
@@ -158,13 +256,17 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
           className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
           style={{ gridAutoRows: '78px' }}
         >
-          {items.map((vm) => (
-            <ExLibrisPlate key={vm.id} vm={vm} />
-          ))}
+          {laidOut.map((entry) =>
+            entry.spacer ? (
+              <div key={entry.key} className="col-span-full h-1" aria-hidden="true" />
+            ) : (
+              <ExLibrisPlate key={entry.id} vm={entry} />
+            ),
+          )}
         </div>
       </div>
 
-      {promotion && <PromotionModal vm={promotion} onClose={handleClosePromotion} />}
+      {modal && <PromotionModal vm={modal} onClose={handleCloseModal} />}
     </div>
   )
 }
