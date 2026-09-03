@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import { BOOK_TYPES } from '../lib/bookTypes'
+import { inputClass, selectClass, secondaryButtonClass, labelClass } from '../lib/ui'
 import TagMultiSelect from './TagMultiSelect'
-
-const selectClass =
-  'w-full rounded-sm border border-ink/20 bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library'
 
 export default function CollectionFilters({
   search,
@@ -17,6 +15,9 @@ export default function CollectionFilters({
   collection,
   onCollectionChange,
   collections,
+  edition,
+  onEditionChange,
+  editions,
   series,
   onSeriesChange,
   seriesList,
@@ -30,7 +31,7 @@ export default function CollectionFilters({
   onReset,
 }) {
   const activeCount =
-    [publisher, collection, series, universe, type, status].filter(Boolean)
+    [publisher, collection, edition, series, universe, type, status].filter(Boolean)
       .length + (selectedTags.length > 0 ? 1 : 0)
   const [expanded, setExpanded] = useState(() => hasActiveFilters)
 
@@ -42,7 +43,7 @@ export default function CollectionFilters({
         onChange={(e) => onSearchChange(e.target.value)}
         placeholder="Rechercher par titre, auteur ou ISBN…"
         aria-label="Rechercher par titre, auteur ou ISBN"
-        className="w-full rounded-sm border border-ink/20 bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+        className={inputClass}
       />
 
       <div className="flex items-center gap-3">
@@ -50,7 +51,7 @@ export default function CollectionFilters({
           type="button"
           onClick={() => setExpanded((e) => !e)}
           aria-expanded={expanded}
-          className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+          className={`rounded-sm px-3 py-2 text-sm ${secondaryButtonClass}`}
         >
           Filtres{activeCount > 0 && ` (${activeCount})`}{' '}
           <span aria-hidden="true">{expanded ? '▴' : '▾'}</span>
@@ -102,6 +103,20 @@ export default function CollectionFilters({
               {collections.map((c) => (
                 <option key={c} value={c}>
                   {c}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={edition}
+              onChange={(e) => onEditionChange(e.target.value)}
+              aria-label="Filtrer par édition"
+              className={selectClass}
+            >
+              <option value="">Toutes les éditions</option>
+              {editions.map((e) => (
+                <option key={e} value={e}>
+                  {e}
                 </option>
               ))}
             </select>
@@ -161,9 +176,7 @@ export default function CollectionFilters({
 function FilterSection({ label, children }) {
   return (
     <div>
-      <p className="font-mono text-xs uppercase tracking-widest text-ink/70 mb-2">
-        {label}
-      </p>
+      <p className={`${labelClass} mb-2`}>{label}</p>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">{children}</div>
     </div>
   )

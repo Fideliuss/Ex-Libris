@@ -5,19 +5,30 @@ import {
   deleteBook,
   getBook,
   listAllCollections,
+  listAllPublishers,
+  listAllSeries,
   listAllTags,
+  listAllUniverses,
   updateBook,
 } from '../lib/books'
 import { lookupIsbn } from '../lib/isbnLookup'
 import { uploadCover } from '../lib/storage'
 import TagInput from '../components/TagInput'
-import { inputClass } from '../lib/ui'
+import {
+  inputClass,
+  primaryButtonClass,
+  secondaryButtonClass,
+  dangerOutlineButtonClass,
+} from '../lib/ui'
 import { describeError } from '../lib/errors'
 import { BOOK_TYPES } from '../lib/bookTypes'
 import { useGoBack } from '../lib/navigation'
 import LoadingScreen from '../components/LoadingScreen'
 import BookCardVisual from '../components/BookCardVisual'
-import { STATUS_BORDER_CLASS } from '../lib/statusLabels'
+import InlineConfirm from '../components/InlineConfirm'
+import SuggestInput from '../components/SuggestInput'
+import EditionCheckboxes from '../components/EditionCheckboxes'
+import { STATUS_BORDER_CLASS, STATUS_LABELS } from '../lib/statusLabels'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 
@@ -28,6 +39,7 @@ const emptyBook = {
   illustrator: '',
   publisher: '',
   collection: '',
+  edition: [],
   isbn: '',
   cover_url: '',
   description: '',
@@ -42,6 +54,7 @@ const emptyBook = {
   rating: 0,
   page_count: '',
   notes: '',
+  favorite_quote: '',
   price: '',
   purchase_date: '',
 }
@@ -55,6 +68,9 @@ export default function BookForm() {
   const [book, setBook] = useState(emptyBook)
   const [existingTags, setExistingTags] = useState([])
   const [existingCollections, setExistingCollections] = useState([])
+  const [existingPublishers, setExistingPublishers] = useState([])
+  const [existingSeries, setExistingSeries] = useState([])
+  const [existingUniverses, setExistingUniverses] = useState([])
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -68,6 +84,9 @@ export default function BookForm() {
   useEffect(() => {
     listAllTags().then(setExistingTags).catch(() => {})
     listAllCollections().then(setExistingCollections).catch(() => {})
+    listAllPublishers().then(setExistingPublishers).catch(() => {})
+    listAllSeries().then(setExistingSeries).catch(() => {})
+    listAllUniverses().then(setExistingUniverses).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -84,6 +103,7 @@ export default function BookForm() {
           price: data.price ?? '',
           purchase_date: data.purchase_date ?? '',
           series_index: data.series_index ?? '',
+          edition: data.edition ?? [],
         }),
       )
       .catch((err) => setError(describeError(err)))
@@ -178,6 +198,7 @@ export default function BookForm() {
     e.preventDefault()
     setSaving(true)
     setError(null)
+    const cleanEdition = (book.edition ?? []).filter(Boolean)
     const payload = {
       ...book,
       date_started: book.date_started || null,
@@ -189,6 +210,7 @@ export default function BookForm() {
       series: book.series?.trim() || null,
       series_index: book.series_index === '' ? null : Number(book.series_index),
       universe: book.universe?.trim() || null,
+      edition: cleanEdition.length > 0 ? cleanEdition : null,
     }
     try {
       if (isEdit) {
@@ -277,14 +299,14 @@ export default function BookForm() {
                 type="button"
                 onClick={() => handleLookup()}
                 disabled={lookupLoading}
-                className="flex-1 rounded-sm bg-library-fill text-white px-3 py-2 text-sm font-medium hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
+                className={`flex-1 rounded-sm px-3 py-2 text-sm font-medium ${primaryButtonClass}`}
               >
                 {lookupLoading ? 'Recherche…' : 'Chercher'}
               </button>
               <button
                 type="button"
                 onClick={() => setScannerOpen(true)}
-                className="flex-1 rounded-sm border border-ink/20 text-ink/70 px-3 py-2 text-sm font-medium hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                className={`flex-1 rounded-sm px-3 py-2 text-sm font-medium ${secondaryButtonClass}`}
               >
                 Scanner
               </button>
@@ -355,34 +377,38 @@ export default function BookForm() {
             </div>
 
             <Field label="Éditeur">
-              <input
-                value={book.publisher ?? ''}
-                onChange={(e) => set('publisher', e.target.value)}
+              <SuggestInput
+                value={book.publisher}
+                onChange={(v) => set('publisher', v)}
+                suggestions={existingPublishers}
                 className={inputClass}
               />
             </Field>
 
             <Field label="Collection">
-              <input
-                value={book.collection ?? ''}
-                onChange={(e) => set('collection', e.target.value)}
+              <SuggestInput
+                value={book.collection}
+                onChange={(v) => set('collection', v)}
+                suggestions={existingCollections}
                 placeholder="Folio SF, Champs…"
-                list="collection-suggestions"
                 className={inputClass}
               />
-              <datalist id="collection-suggestions">
-                {existingCollections.map((c) => (
-                  <option key={c} value={c} />
-                ))}
-              </datalist>
+            </Field>
+
+            <Field label="Édition">
+              <EditionCheckboxes
+                value={book.edition ?? []}
+                onChange={(v) => set('edition', v)}
+              />
             </Field>
 
             <div className="grid grid-cols-3 gap-4">
               <div className="col-span-2">
                 <Field label="Série">
-                  <input
-                    value={book.series ?? ''}
-                    onChange={(e) => set('series', e.target.value)}
+                  <SuggestInput
+                    value={book.series}
+                    onChange={(v) => set('series', v)}
+                    suggestions={existingSeries}
                     className={inputClass}
                   />
                 </Field>
@@ -400,9 +426,10 @@ export default function BookForm() {
             </div>
 
             <Field label="Univers">
-              <input
-                value={book.universe ?? ''}
-                onChange={(e) => set('universe', e.target.value)}
+              <SuggestInput
+                value={book.universe}
+                onChange={(v) => set('universe', v)}
+                suggestions={existingUniverses}
                 placeholder="Hercule Poirot, Avengers, X-Men…"
                 className={inputClass}
               />
@@ -510,10 +537,11 @@ export default function BookForm() {
                   onChange={(e) => set('status', e.target.value)}
                   className={inputClass}
                 >
-                  <option value="wishlist">Wishlist</option>
-                  <option value="to-read">À lire</option>
-                  <option value="reading">En cours</option>
-                  <option value="read">Lu</option>
+                  {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
                 </select>
               </Field>
               <Field label="Note">
@@ -574,6 +602,15 @@ export default function BookForm() {
                 className={inputClass}
               />
             </Field>
+            <Field label="Citation favorite">
+              <textarea
+                rows={3}
+                value={book.favorite_quote ?? ''}
+                onChange={(e) => set('favorite_quote', e.target.value)}
+                placeholder="Un passage qui vous a marqué…"
+                className={inputClass}
+              />
+            </Field>
           </FormSection>
 
           {error && (
@@ -586,7 +623,7 @@ export default function BookForm() {
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 rounded-sm bg-library-fill text-white font-medium py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
+              className={`flex-1 rounded-sm py-2 text-sm ${primaryButtonClass}`}
             >
               {saving ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Ajouter'}
             </button>
@@ -595,7 +632,7 @@ export default function BookForm() {
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(true)}
-                className="rounded-sm border border-stamp/40 text-stamp px-4 py-2 text-sm hover:bg-stamp-fill hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp"
+                className={`rounded-sm px-4 py-2 text-sm ${dangerOutlineButtonClass}`}
               >
                 Supprimer
               </button>
@@ -603,28 +640,13 @@ export default function BookForm() {
           </div>
 
           {isEdit && confirmingDelete && (
-            <div className="border border-stamp/40 bg-stamp/5 rounded-sm p-4 flex items-center justify-between gap-3">
-              <p className="text-sm text-stamp">
-                Supprimer définitivement ce livre ?
-              </p>
-              <div className="flex gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setConfirmingDelete(false)}
-                  className="text-sm px-3 py-1.5 rounded-sm border border-ink/20 hover:bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-                >
-                  Annuler
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={saving}
-                  className="text-sm px-3 py-1.5 rounded-sm bg-stamp-fill text-white hover:bg-stamp-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-stamp disabled:opacity-60"
-                >
-                  Confirmer
-                </button>
-              </div>
-            </div>
+            <InlineConfirm
+              wrapped
+              message="Supprimer définitivement ce livre ?"
+              onCancel={() => setConfirmingDelete(false)}
+              onConfirm={handleDelete}
+              disabled={saving}
+            />
           )}
         </form>
       </div>

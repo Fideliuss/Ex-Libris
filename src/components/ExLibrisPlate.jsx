@@ -1,0 +1,192 @@
+import { ACHIEVEMENT_ICONS, TIER_METAL, LOCKED_METAL, SEAL_WAX } from '../lib/achievementVisuals'
+
+// Rendu pur d'une plaque ex-libris : toute la logique (paliers, ce qui a
+// été "réclamé", dates) est calculée en amont par AchievementsGallery, qui
+// fournit un view-model déjà résolu — ce composant ne fait que l'afficher.
+//
+// Trois états visuels : verrouillé (mystère complet, "Ex Libris / En
+// attente de déblocage" — on ne révèle jamais de quoi il s'agit avant
+// obtention), prêt à promouvoir (prompt qui pulse, cliquable), révélé
+// (devise + chiffre centrés en évidence, rang en bas à gauche, icône en bas
+// à droite). Posée sur le "mur à trophées" (fond fourni par
+// AchievementsGallery) : petit clou en tête, légère inclinaison propre à
+// chaque plaque, et une case 2x2 agrandie pour un succès Platine révélé.
+export default function ExLibrisPlate({ vm }) {
+  const {
+    motto,
+    ownerLine,
+    bigNumber,
+    tierText,
+    subLabel,
+    dateText,
+    progressText,
+    icon,
+    tierRank,
+    locked,
+    promotable,
+    everRevealed,
+    big,
+    seal,
+    rotation,
+    pinOffset,
+    description,
+    onClick,
+  } = vm
+
+  const tier = seal ? SEAL_WAX : (TIER_METAL[tierRank] ?? TIER_METAL[0])
+  const mystery = !everRevealed
+  const ink = locked ? LOCKED_METAL.ink : tier.ink
+  // Le palier Platine (le sommet d'un pilier) passe sous vitrine : cadre
+  // doré + reflet de verre, plutôt qu'une plaque comme les autres.
+  const showcase = big && tierRank === 3 && everRevealed && !promotable
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={everRevealed ? description : undefined}
+      className={`relative flex flex-col items-center justify-center text-center w-full h-full rounded-sm px-3 py-2 cursor-pointer ${
+        promotable ? 'animate-pulse' : ''
+      }`}
+      style={{
+        transform: `rotate(${rotation}deg)`,
+        background: locked ? LOCKED_METAL.background : tier.background,
+        boxShadow: locked
+          ? 'inset 1px 1px 2px rgba(255,255,255,0.15), inset -2px -2px 4px rgba(15,10,5,0.3), 0 6px 10px rgba(0,0,0,0.3)'
+          : showcase
+            ? 'inset 1px 1px 2px rgba(255,255,255,0.35), inset -2px -2px 4px rgba(15,10,5,0.25), 0 0 0 3px #d9c48f, 0 0 0 5px rgba(0,0,0,0.45), 0 10px 18px rgba(0,0,0,0.5)'
+            : 'inset 1px 1px 2px rgba(255,255,255,0.35), inset -2px -2px 4px rgba(15,10,5,0.25), 0 10px 16px rgba(0,0,0,0.4)',
+      }}
+    >
+      {showcase && (
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 rounded-sm pointer-events-none"
+          style={{
+            background: 'linear-gradient(115deg, transparent 38%, rgba(255,255,255,0.16) 50%, transparent 62%)',
+          }}
+        />
+      )}
+      {big ? (
+        <>
+          <Pin className="-top-[5px] -left-[5px]" />
+          <Pin className="-top-[5px] -right-[5px]" />
+          <Pin className="-bottom-[5px] -left-[5px]" />
+          <Pin className="-bottom-[5px] -right-[5px]" />
+        </>
+      ) : (
+        <Pin
+          className="-top-[5px]"
+          style={{ left: `calc(50% + ${pinOffset}px)`, transform: 'translateX(-50%)' }}
+        />
+      )}
+
+      {promotable && (
+        <span className="absolute inset-0 flex items-center justify-center px-3 font-mono text-[10px] uppercase tracking-wide text-ink/85 bg-card/80 rounded-sm">
+          Promotion disponible — clique
+        </span>
+      )}
+
+      <div className={promotable ? 'invisible' : ''}>
+        {ownerLine && !mystery && (
+          <p
+            className={`font-mono uppercase tracking-[0.16em] ${big ? 'text-[8px]' : 'text-[6.5px]'}`}
+            style={{ color: `${ink}99` }}
+          >
+            {ownerLine}
+          </p>
+        )}
+        <p
+          className={`font-serif italic font-semibold leading-tight ${big ? 'text-[19px]' : 'text-[13px]'}`}
+          style={{ color: ink, textShadow: mystery ? 'none' : `0 1px 0 ${tier.shadow}` }}
+        >
+          {mystery ? 'Ex Libris' : motto}
+        </p>
+        {!mystery && bigNumber != null && (
+          <p
+            className={`font-mono font-bold leading-none mt-1 ${big ? 'text-[38px]' : 'text-[22px]'}`}
+            style={{ color: ink }}
+          >
+            {bigNumber}
+          </p>
+        )}
+        <p
+          className={`font-sans uppercase tracking-[0.07em] font-medium mt-1 ${big ? 'text-[11px]' : 'text-[9.5px]'}`}
+          style={{ color: ink }}
+        >
+          {mystery ? 'À débloquer' : subLabel}
+        </p>
+        {progressText && (
+          <p className="font-mono text-[10px] font-medium mt-1" style={{ color: ink }}>
+            {progressText}
+          </p>
+        )}
+        {!mystery && dateText && (
+          <p className="font-mono text-[8.5px] mt-1" style={{ color: `${ink}bb` }}>
+            {dateText}
+          </p>
+        )}
+      </div>
+
+      {!mystery && !promotable && tierText && (
+        <span
+          className={`absolute font-mono uppercase tracking-wide ${
+            big ? 'bottom-3 left-3.5 text-[9px]' : 'bottom-1.5 left-1.5 text-[7px]'
+          }`}
+          style={{ color: `${ink}bb` }}
+        >
+          {tierText}
+        </span>
+      )}
+
+      {!mystery && !promotable && seal && (
+        <span
+          className="absolute bottom-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center"
+          style={{ boxShadow: `inset 0 0 0 1px ${ink}70, inset 1px 1px 2px rgba(0,0,0,0.3)` }}
+        >
+          <svg
+            viewBox="0 0 20 20"
+            className="w-3.5 h-3.5"
+            fill={icon === 'star' ? ink : 'none'}
+            stroke={icon === 'star' ? 'none' : ink}
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            {ACHIEVEMENT_ICONS[icon]}
+          </svg>
+        </span>
+      )}
+
+      {!mystery && !promotable && !seal && (
+        <svg
+          viewBox="0 0 20 20"
+          className={`absolute ${big ? 'bottom-3 right-3.5 w-[22px] h-[22px]' : 'bottom-1.5 right-1.5 w-4 h-4'}`}
+          fill={icon === 'star' ? ink : 'none'}
+          stroke={icon === 'star' ? 'none' : ink}
+          strokeWidth="1.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          {ACHIEVEMENT_ICONS[icon]}
+        </svg>
+      )}
+    </button>
+  )
+}
+
+function Pin({ className, style }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`absolute w-2 h-2 rounded-full ${className}`}
+      style={{
+        background: 'radial-gradient(circle at 35% 35%, #f0dcae, #8e7145 75%)',
+        boxShadow: '0 2px 3px rgba(0,0,0,0.5)',
+        ...style,
+      }}
+    />
+  )
+}

@@ -16,6 +16,7 @@ import {
   STATUS_BORDER_CLASS,
 } from '../lib/statusLabels'
 import { authorSortKey } from '../lib/authorSort'
+import { primaryButtonClass, secondaryButtonClass, labelClass } from '../lib/ui'
 
 const STATUS_ORDER = Object.keys(STATUS_LABELS)
 
@@ -103,6 +104,7 @@ export default function Collection() {
   const selectedTags = searchParams.getAll('tag')
   const publisher = searchParams.get('publisher') ?? ''
   const collection = searchParams.get('collection') ?? ''
+  const edition = searchParams.get('edition') ?? ''
   const series = searchParams.get('series') ?? ''
   const universe = searchParams.get('universe') ?? ''
   const type = searchParams.get('type') ?? ''
@@ -125,6 +127,7 @@ export default function Collection() {
   const setSearch = (value) => setParam('q', value)
   const setPublisher = (value) => setParam('publisher', value)
   const setCollection = (value) => setParam('collection', value)
+  const setEdition = (value) => setParam('edition', value)
   const setUniverse = (value) => setParam('universe', value)
   const setType = (value) => setParam('type', value)
   const setStatus = (value) => setParam('status', value)
@@ -185,6 +188,14 @@ export default function Collection() {
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
   }, [books])
 
+  const editions = useMemo(() => {
+    const set = new Set()
+    for (const book of books) {
+      for (const e of book.edition ?? []) set.add(e)
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [books])
+
   const seriesList = useMemo(() => {
     const set = new Set()
     for (const book of books) {
@@ -241,6 +252,7 @@ export default function Collection() {
         return false
       if (publisher && book.publisher !== publisher) return false
       if (collection && book.collection !== collection) return false
+      if (edition && !book.edition?.includes(edition)) return false
       if (series && book.series !== series) return false
       if (universe && book.universe !== universe) return false
       if (type && book.type !== type) return false
@@ -253,6 +265,7 @@ export default function Collection() {
     selectedTags,
     publisher,
     collection,
+    edition,
     series,
     universe,
     type,
@@ -288,6 +301,7 @@ export default function Collection() {
       selectedTags.length > 0 ||
       publisher ||
       collection ||
+      edition ||
       series ||
       universe ||
       type ||
@@ -303,6 +317,7 @@ export default function Collection() {
           'tag',
           'publisher',
           'collection',
+          'edition',
           'series',
           'universe',
           'type',
@@ -386,18 +401,24 @@ export default function Collection() {
     return runBulkAction(() => bulkDeleteBooks([...selectedIds]))
   }
 
-  function handleBulkStatus(newStatus) {
-    return runBulkAction(() =>
-      bulkUpdateBooks(
-        [...selectedIds].map((id) => ({ id, patch: { status: newStatus } })),
-      ),
-    )
+  // Statut/Type ne sont jamais vides (des select avec valeur par défaut) :
+  // seuls les champs texte/tableau ont besoin d'être normalisés en null
+  // pour rester cohérents avec la fiche livre (BookForm.jsx) plutôt que de
+  // stocker une chaîne ou un tableau vide.
+  function normalizeBulkValue(targetField, raw) {
+    if (targetField === 'edition') {
+      const clean = (raw ?? []).filter(Boolean)
+      return clean.length > 0 ? clean : null
+    }
+    if (typeof raw === 'string') return raw.trim() || null
+    return raw
   }
 
-  function handleBulkType(newType) {
+  function handleBulkApplyField(targetField, raw) {
+    const patchValue = normalizeBulkValue(targetField, raw)
     return runBulkAction(() =>
       bulkUpdateBooks(
-        [...selectedIds].map((id) => ({ id, patch: { type: newType } })),
+        [...selectedIds].map((id) => ({ id, patch: { [targetField]: patchValue } })),
       ),
     )
   }
@@ -457,7 +478,7 @@ export default function Collection() {
             )}
             <Link
               to="/stats"
-              className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+              className={`rounded-sm px-3 py-2 text-sm ${secondaryButtonClass}`}
             >
               Statistiques
             </Link>
@@ -515,7 +536,7 @@ export default function Collection() {
             {isMine && (
               <Link
                 to="/books/new"
-                className="hidden sm:inline-flex items-center gap-1.5 shrink-0 rounded-sm bg-library-fill text-white font-medium px-4 py-1.5 text-sm shadow-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+                className={`hidden sm:inline-flex items-center gap-1.5 shrink-0 rounded-sm px-4 py-1.5 text-sm shadow-sm ${primaryButtonClass}`}
               >
                 <span className="text-base leading-none" aria-hidden="true">
                   +
@@ -555,6 +576,9 @@ export default function Collection() {
             collection={collection}
             onCollectionChange={setCollection}
             collections={collections}
+            edition={edition}
+            onEditionChange={setEdition}
+            editions={editions}
             series={series}
             onSeriesChange={handleSeriesChange}
             seriesList={seriesList}
@@ -590,7 +614,7 @@ export default function Collection() {
                 </p>
                 <Link
                   to="/books/new"
-                  className="inline-block rounded-sm bg-library-fill text-white font-medium px-4 py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+                  className={`inline-block rounded-sm px-4 py-2 text-sm ${primaryButtonClass}`}
                 >
                   Ajouter un livre
                 </Link>
@@ -619,7 +643,7 @@ export default function Collection() {
             <button
               type="button"
               onClick={resetFilters}
-              className="rounded-sm border border-ink/20 px-4 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+              className={`rounded-sm px-4 py-2 text-sm ${secondaryButtonClass}`}
             >
               Réinitialiser les filtres
             </button>
@@ -691,7 +715,7 @@ export default function Collection() {
                 item.type === 'header' ? (
                   <p
                     key={item.renderKey}
-                    className="col-span-full font-mono text-xs uppercase tracking-widest text-ink/70 border-b border-ink/10 pb-1 mt-2 first:mt-0"
+                    className={`col-span-full ${labelClass} border-b border-ink/10 pb-1 mt-2 first:mt-0`}
                   >
                     {item.label}
                   </p>
@@ -717,9 +741,12 @@ export default function Collection() {
           working={bulkWorking}
           error={bulkError}
           tags={selectedBooksTags}
+          publishers={publishers}
+          collections={collections}
+          series={seriesList}
+          universes={universeList}
           onDelete={handleBulkDelete}
-          onChangeStatus={handleBulkStatus}
-          onChangeType={handleBulkType}
+          onApplyField={handleBulkApplyField}
           onAddTag={handleBulkAddTag}
           onRemoveTag={handleBulkRemoveTag}
           onCancel={exitSelectionMode}

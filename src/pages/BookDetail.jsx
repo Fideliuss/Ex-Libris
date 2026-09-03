@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getBook, getSeriesSiblings, updateBook } from '../lib/books'
+import { sortEditions, SPECIAL_EDITION_TYPES } from '../lib/editionTypes'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import {
@@ -9,7 +10,8 @@ import {
   STATUS_LABELS,
 } from '../lib/statusLabels'
 import { describeError } from '../lib/errors'
-import { BOOK_TYPES } from '../lib/bookTypes'
+import { BOOK_TYPES, SERIES_DRIVEN_TYPES } from '../lib/bookTypes'
+import { primaryButtonClass } from '../lib/ui'
 import WishlistRibbon from '../components/WishlistRibbon'
 import { navigateWithViewTransition, useGoBack } from '../lib/navigation'
 import ReadingBookmark from '../components/ReadingBookmark'
@@ -303,6 +305,21 @@ export default function BookDetail() {
     )
   }
 
+  // Un manga/comics a quasi toujours le même titre que sa série (juste le
+  // tome qui change) : la série + le tome priment sur le titre pour ces
+  // types, comme sur la carte de la collection (BookCardVisual.jsx).
+  const isSeriesVolume = SERIES_DRIVEN_TYPES.includes(book.type) && book.series
+
+  // Les éditions "spéciale" (Collector, Illustrée...) sortent du lot des
+  // badges texte pour un ruban doré bien visible ; le reste (Format,
+  // Reliure) garde le traitement badge habituel.
+  const specialEditions = sortEditions(
+    (book.edition ?? []).filter((e) => SPECIAL_EDITION_TYPES.includes(e)),
+  )
+  const otherEditions = sortEditions(
+    (book.edition ?? []).filter((e) => !SPECIAL_EDITION_TYPES.includes(e)),
+  )
+
   return (
     <div className="min-h-svh p-6">
       <div className="max-w-2xl mx-auto">
@@ -318,7 +335,7 @@ export default function BookDetail() {
             <button
               type="button"
               onClick={() => navigate(`/books/${id}/edit`)}
-              className="shrink-0 rounded-sm bg-library-fill text-white font-medium px-4 py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+              className={`shrink-0 rounded-sm px-4 py-2 text-sm ${primaryButtonClass}`}
             >
               Modifier
             </button>
@@ -352,11 +369,11 @@ export default function BookDetail() {
             </button>
           )}
 
-          <div className="flex gap-6 flex-col sm:flex-row mt-3">
+          <div className="relative flex gap-6 flex-col sm:flex-row mt-3">
             <div className="relative w-40 aspect-[2/3] shrink-0 rounded-sm border border-ink/10 bg-paper overflow-hidden mx-auto sm:mx-0">
               {book.status === 'read' && (
                 <span className="absolute top-2 right-2 -rotate-6 border-2 border-library text-library font-mono text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm bg-card/90 z-10">
-                  Lu
+                  {STATUS_LABELS.read}
                 </span>
               )}
               {book.status === 'wishlist' && <WishlistRibbon />}
@@ -378,13 +395,13 @@ export default function BookDetail() {
                 <BookCoverPlaceholder
                   title={book.title}
                   author={book.author}
-                  volume={book.type === 'manga' && book.series ? book.series_index : null}
+                  volume={isSeriesVolume ? book.series_index : null}
                 />
               )}
             </div>
 
             <div className="flex-1 min-w-0">
-              {book.type === 'manga' && book.series ? (
+              {isSeriesVolume ? (
                 <>
                   <h1 className="font-serif text-2xl font-semibold">
                     {book.series}
@@ -401,10 +418,7 @@ export default function BookDetail() {
                     {book.title}
                   </h1>
                   {book.series && (
-                    <p className="text-sm text-brass mt-0.5">
-                      {book.series}
-                      {book.series_index != null && ` · Tome ${book.series_index}`}
-                    </p>
+                    <p className="text-sm text-brass mt-0.5">{book.series}</p>
                   )}
                 </>
               )}
@@ -443,11 +457,6 @@ export default function BookDetail() {
                   )}
                 </div>
               )}
-              {book.universe && (
-                <p className="text-sm text-brass mt-0.5">
-                  Univers : {book.universe}
-                </p>
-              )}
               <p className={`text-ink/70 mt-1 ${book.author ? '' : 'italic'}`}>
                 {book.author || 'Auteur non renseigné'}
               </p>
@@ -464,6 +473,18 @@ export default function BookDetail() {
                 </span>
                 {book.collection && ` · ${book.collection}`}
               </p>
+              {otherEditions.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-1.5">
+                  {otherEditions.map((e) => (
+                    <span
+                      key={e}
+                      className="text-xs px-2 py-0.5 rounded-full border border-brass/40 text-brass"
+                    >
+                      {e}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               <div className="flex flex-wrap items-center gap-2 mt-3">
                 {book.user_id === user?.id ? (
@@ -474,10 +495,11 @@ export default function BookDetail() {
                     aria-label="Changer le statut"
                     className={`font-mono text-xs uppercase rounded-full px-2 py-0.5 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 focus-visible:ring-library disabled:opacity-60 ${STATUS_BADGE_CLASS[book.status] ?? 'bg-ink/10 text-ink/70'}`}
                   >
-                    <option value="wishlist">Wishlist</option>
-                    <option value="to-read">À lire</option>
-                    <option value="reading">En cours</option>
-                    <option value="read">Lu</option>
+                    {Object.entries(STATUS_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
                   </select>
                 ) : (
                   <span
@@ -499,6 +521,21 @@ export default function BookDetail() {
                 )}
               </div>
 
+              {specialEditions.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {specialEditions.map((label, i) => (
+                    <span
+                      key={label}
+                      className={`inline-block border-2 border-brass text-brass font-mono text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-sm bg-card shadow-sm ${
+                        i % 2 === 0 ? '-rotate-3' : 'rotate-3'
+                      }`}
+                    >
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              )}
+
               {statusError && (
                 <p role="alert" className="text-xs text-stamp mt-2">
                   {statusError}
@@ -518,6 +555,15 @@ export default function BookDetail() {
                 </div>
               )}
             </div>
+
+            {book.universe && (
+              <span
+                className="absolute bottom-0 right-0 bg-ink text-paper font-mono text-[10px] uppercase tracking-widest px-2 py-1 rounded-sm"
+                aria-label={`Univers : ${book.universe}`}
+              >
+                {book.universe}
+              </span>
+            )}
           </div>
 
           <div className="mt-6 pt-6 border-t border-ink/10">
@@ -528,6 +574,16 @@ export default function BookDetail() {
               {book.description || 'Résumé non renseigné.'}
             </p>
           </div>
+
+          {book.favorite_quote && (
+            <div className="mt-6 pt-6 border-t border-ink/10">
+              <blockquote className="border-l-2 border-brass pl-4 py-1">
+                <p className="font-serif text-lg italic text-ink/80 whitespace-pre-line">
+                  « {book.favorite_quote} »
+                </p>
+              </blockquote>
+            </div>
+          )}
 
           <div className="mt-6 pt-6 border-t border-ink/10 grid grid-cols-2 sm:grid-cols-3 gap-4">
             <DetailField

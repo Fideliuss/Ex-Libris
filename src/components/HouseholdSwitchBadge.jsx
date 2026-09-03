@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { secondaryButtonClass } from '../lib/ui'
 
 // Bascule "Ma bibliothèque / celle de l'autre" en un seul badge déroulant,
 // plutôt que deux pastilles côte à côte — pensé pour la place réduite de
@@ -40,7 +41,7 @@ export default function HouseholdSwitchBadge({
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="listbox"
         aria-expanded={open}
-        className="flex items-center gap-1.5 rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:border-library hover:text-library focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+        className={`flex items-center gap-1.5 rounded-sm px-3 py-2 text-sm ${secondaryButtonClass}`}
       >
         {currentLabel}
         <span aria-hidden="true" className="text-xs">

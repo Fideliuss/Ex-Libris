@@ -9,6 +9,7 @@ import {
 import { mapMyLibraryRowToBook, parseMyLibraryXlsx } from '../lib/myLibraryImport'
 import { useAuth } from '../context/AuthContext'
 import { describeError } from '../lib/errors'
+import { primaryButtonClass } from '../lib/ui'
 
 export default function ImportPanel() {
   const { user } = useAuth()
@@ -195,7 +196,7 @@ export default function ImportPanel() {
             <button
               type="button"
               onClick={handleImport}
-              className="rounded-sm bg-library-fill text-white font-medium px-4 py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+              className={`rounded-sm px-4 py-2 text-sm ${primaryButtonClass}`}
             >
               Continuer
             </button>
@@ -235,7 +236,7 @@ export default function ImportPanel() {
           </div>
           <Link
             to="/"
-            className="inline-block rounded-sm bg-library-fill text-white font-medium px-4 py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+            className={`inline-block rounded-sm px-4 py-2 text-sm ${primaryButtonClass}`}
           >
             Voir ma collection
           </Link>

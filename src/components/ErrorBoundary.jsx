@@ -1,5 +1,6 @@
 import { Component } from 'react'
 import { useLocation } from 'react-router-dom'
+import { primaryButtonClass } from '../lib/ui'
 
 class ErrorBoundaryImpl extends Component {
   state = { error: null }
@@ -26,7 +27,7 @@ class ErrorBoundaryImpl extends Component {
             <button
               type="button"
               onClick={() => window.location.reload()}
-              className="rounded-sm bg-library-fill text-white font-medium px-4 py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library"
+              className={`rounded-sm px-4 py-2 text-sm ${primaryButtonClass}`}
             >
               Recharger
             </button>

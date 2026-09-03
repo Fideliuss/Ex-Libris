@@ -2,6 +2,8 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { navigateWithViewTransition } from '../lib/navigation'
 import BookCoverPlaceholder from '../components/BookCoverPlaceholder'
+import { STATUS_LABELS } from '../lib/statusLabels'
+import { primaryButtonClass } from '../lib/ui'
 
 const LANG_STORAGE_KEY = 'landing-lang'
 
@@ -223,7 +225,7 @@ function Nav() {
         </nav>
         <div className="flex items-center gap-3">
           <LangSwitch />
-          <LoginCta className="rounded-sm bg-library-fill text-white text-sm font-medium px-4 py-2 hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library">
+          <LoginCta className={`rounded-sm px-4 py-2 text-sm ${primaryButtonClass}`}>
             {t.nav.login}
           </LoginCta>
         </div>
@@ -310,7 +312,7 @@ function Hero() {
           {t.hero.subtitle}
         </p>
         <div className="hero-in mt-8" style={{ animationDelay: '240ms' }}>
-          <LoginCta className="inline-block rounded-sm bg-library-fill text-white font-medium px-6 py-3 hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library">
+          <LoginCta className={`inline-block rounded-sm px-6 py-3 ${primaryButtonClass}`}>
             {t.hero.cta}
           </LoginCta>
         </div>
@@ -452,12 +454,12 @@ function MiniBook({ title, author, status }) {
         <div className="relative aspect-2/3">
           {status === 'read' && (
             <span className="absolute top-1.5 right-1.5 -rotate-6 border border-library text-library font-mono text-[8px] font-bold uppercase px-1 py-px rounded-sm bg-cover/90 z-10">
-              Lu
+              {STATUS_LABELS.read}
             </span>
           )}
           {status === 'wishlist' && (
             <span className="absolute top-1.5 -left-7 w-24 -rotate-45 bg-wishlist-fill text-white font-mono text-[7px] font-bold uppercase text-center py-px z-10">
-              Wishlist
+              {STATUS_LABELS.wishlist}
             </span>
           )}
           <BookCoverPlaceholder title={title} author={author} />
@@ -682,7 +684,7 @@ function FinalCta() {
     <section className="relative z-10 max-w-5xl mx-auto px-6 py-20 text-center">
       <Reveal>
         <h2 className="font-serif text-3xl font-semibold mb-4">{t.finalCtaTitle}</h2>
-        <LoginCta className="inline-block rounded-sm bg-library-fill text-white font-medium px-6 py-3 hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library">
+        <LoginCta className={`inline-block rounded-sm px-6 py-3 ${primaryButtonClass}`}>
           {t.hero.cta}
         </LoginCta>
       </Reveal>

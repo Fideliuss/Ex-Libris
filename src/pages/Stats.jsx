@@ -18,12 +18,15 @@ import { describeError } from '../lib/errors'
 import { useGoBack } from '../lib/navigation'
 import { BOOK_TYPES } from '../lib/bookTypes'
 import { STATUS_LABELS } from '../lib/statusLabels'
+import { labelClass } from '../lib/ui'
+import { getMyProfile } from '../lib/friendCode'
 import HouseholdTabs from '../components/HouseholdTabs'
 import TabBar from '../components/TabBar'
 import StatusStackedBar from '../components/StatusStackedBar'
 import BarChart from '../components/BarChart'
 import DonutChart from '../components/DonutChart'
 import ReadingHeatmap from '../components/ReadingHeatmap'
+import AchievementsGallery from '../components/AchievementsGallery'
 import LoadingScreen from '../components/LoadingScreen'
 
 const PERIOD_OPTIONS = {
@@ -37,6 +40,7 @@ const STATS_TABS = [
   { key: 'overview', label: "Vue d'ensemble" },
   { key: 'activity', label: 'Activité de lecture' },
   { key: 'library', label: 'Bibliothèque' },
+  { key: 'achievements', label: 'Succès' },
 ]
 
 // Les champs date_started/date_finished sont des "date" Postgres (pas de
@@ -63,9 +67,30 @@ export default function Stats() {
   const [convertingTag, setConvertingTag] = useState(null)
   const [convertError, setConvertError] = useState(null)
   const [statsTab, setStatsTab] = useState('overview')
+  const [myFirstName, setMyFirstName] = useState(null)
   const [period, setPeriod] = useState('all')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
+
+  // Pour la ligne "Ex-Libris {prénom}" gravée sur les plaques de succès :
+  // le prénom du partenaire est déjà sur `partner.label`, mais le sien
+  // propre n'est nulle part ailleurs dans l'app à ce niveau.
+  useEffect(() => {
+    if (!user) return
+    let active = true
+    getMyProfile(user.id)
+      .then((profile) => {
+        if (active) setMyFirstName(profile?.first_name ?? null)
+      })
+      .catch(() => {})
+    return () => {
+      active = false
+    }
+  }, [user])
+
+  const ownerName = isMine
+    ? myFirstName ?? user?.email?.split('@')[0] ?? null
+    : partner?.label ?? null
 
   async function handleConvertTag(tag) {
     setConvertingTag(tag)
@@ -538,7 +563,7 @@ export default function Stats() {
                   ) : (
                     <div className="grid sm:grid-cols-2 gap-6">
                       <div>
-                        <h3 className="font-mono text-xs uppercase tracking-widest text-ink/70 mb-3">
+                        <h3 className={`${labelClass} mb-3`}>
                           Rythme de lecture
                         </h3>
                         <div className="grid grid-cols-2 gap-3">
@@ -586,7 +611,7 @@ export default function Stats() {
                       </div>
 
                       <div>
-                        <h3 className="font-mono text-xs uppercase tracking-widest text-ink/70 mb-3">
+                        <h3 className={`${labelClass} mb-3`}>
                           Notes
                           {avgRating != null &&
                             ` · moyenne ${avgRating.toFixed(1)} ★`}
@@ -799,6 +824,15 @@ export default function Stats() {
                   )}
                 </section>
               </div>
+            )}
+
+            {statsTab === 'achievements' && (
+              <AchievementsGallery
+                books={books}
+                partner={partner}
+                userId={user?.id}
+                ownerName={ownerName}
+              />
             )}
           </div>
         )}

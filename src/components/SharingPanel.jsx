@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { acceptLink, getMyLinks, getMyProfile, removeLink, sendFriendRequest } from '../lib/friendCode'
 import { describeError } from '../lib/errors'
+import { inputClass, labelClass, secondaryButtonClass } from '../lib/ui'
 import LoadingScreen from './LoadingScreen'
 
 export default function SharingPanel({ user }) {
@@ -71,9 +72,7 @@ export default function SharingPanel({ user }) {
       ) : (
         <>
           <div className="mb-4">
-            <p className="font-mono text-xs uppercase tracking-widest text-ink/70 mb-1">
-              Ton code ami
-            </p>
+            <p className={`${labelClass} mb-1`}>Ton code ami</p>
             <div className="flex items-center gap-2">
               <span className="font-mono text-lg tracking-widest text-library">
                 {profile.friend_code}
@@ -176,21 +175,19 @@ export default function SharingPanel({ user }) {
               {!links.outgoingPending && (
                 <form onSubmit={handleSendRequest} className="flex items-end gap-2">
                   <div className="flex-1">
-                    <label className="block font-mono text-xs uppercase tracking-widest text-ink/70 mb-1">
-                      Code d'un ami
-                    </label>
+                    <label className={`block ${labelClass} mb-1`}>Code d'un ami</label>
                     <input
                       type="text"
                       value={codeInput}
                       onChange={(e) => setCodeInput(e.target.value)}
                       placeholder="ABC123"
-                      className="w-full rounded-sm border border-ink/20 bg-surface px-3 py-2 text-sm uppercase focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                      className={`${inputClass} uppercase`}
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={working || !codeInput.trim()}
-                    className="rounded-sm border border-ink/20 px-3 py-2 text-sm text-ink/70 hover:border-library hover:text-library disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                    className={`rounded-sm px-3 py-2 text-sm ${secondaryButtonClass}`}
                   >
                     Envoyer
                   </button>

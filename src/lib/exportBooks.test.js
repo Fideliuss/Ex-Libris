@@ -8,7 +8,7 @@ describe('booksToCsv', () => {
     expect(header).toBe(
       'title,author,translator,illustrator,publisher,collection,series,' +
         'series_index,type,universe,tags,status,isbn,date_started,' +
-        'date_finished,rating,notes,page_count,price,purchase_date,created_at',
+        'date_finished,rating,notes,favorite_quote,page_count,price,purchase_date,created_at',
     )
   })
 
@@ -25,8 +25,8 @@ describe('booksToCsv', () => {
     const dataRow = csv.split('\r\n')[1]
     expect(dataRow).not.toContain('undefined')
     expect(dataRow).not.toContain('null')
-    // 21 columns total: title filled, the other 20 empty (20 commas)
-    expect(dataRow).toBe('Sans auteur' + ','.repeat(20))
+    // 22 columns total: title filled, the other 21 empty (21 commas)
+    expect(dataRow).toBe('Sans auteur' + ','.repeat(21))
   })
 
   it('keeps the column order regardless of the input object key order', () => {

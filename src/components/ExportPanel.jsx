@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { listBooks } from '../lib/books'
 import { booksToCsv, downloadTextFile } from '../lib/exportBooks'
 import { describeError } from '../lib/errors'
+import { secondaryButtonClass } from '../lib/ui'
 
 export default function ExportPanel() {
   const { user } = useAuth()
@@ -35,7 +36,7 @@ export default function ExportPanel() {
         type="button"
         onClick={handleExport}
         disabled={working}
-        className="rounded-sm border border-ink/20 px-4 py-2 text-sm text-ink/70 hover:border-library hover:text-library disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+        className={`rounded-sm px-4 py-2 text-sm ${secondaryButtonClass}`}
       >
         {working ? 'Export…' : 'Exporter ma bibliothèque (CSV)'}
       </button>

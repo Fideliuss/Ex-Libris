@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { inputClass } from '../lib/ui'
+import { inputClass, primaryButtonClass } from '../lib/ui'
 import LoadingScreen from '../components/LoadingScreen'
 
 export default function ResetPassword() {
@@ -112,7 +112,7 @@ export default function ResetPassword() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-sm bg-library-fill text-white font-medium py-2 text-sm hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
+            className={`w-full rounded-sm py-2 text-sm ${primaryButtonClass}`}
           >
             {submitting ? 'Mise à jour…' : 'Mettre à jour le mot de passe'}
           </button>
