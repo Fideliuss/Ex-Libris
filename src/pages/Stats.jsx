@@ -19,7 +19,7 @@ import { useGoBack } from '../lib/navigation'
 import { BOOK_TYPES } from '../lib/bookTypes'
 import { STATUS_LABELS } from '../lib/statusLabels'
 import { labelClass } from '../lib/ui'
-import { ACHIEVEMENTS } from '../lib/achievements'
+import { ACHIEVEMENT_CATEGORIES, evaluateAchievements } from '../lib/achievements'
 import HouseholdTabs from '../components/HouseholdTabs'
 import TabBar from '../components/TabBar'
 import StatusStackedBar from '../components/StatusStackedBar'
@@ -215,14 +215,21 @@ export default function Stats() {
       .sort((a, b) => b.count - a.count)
   }, [books])
 
-  const achievementResults = useMemo(
-    () =>
-      ACHIEVEMENTS.map((achievement) => ({
-        achievement,
-        result: achievement.evaluate(books, { partner }),
-      })),
+  const achievementBadges = useMemo(
+    () => evaluateAchievements(books, { partner }),
     [books, partner],
   )
+  const achievementsByCategory = useMemo(() => {
+    const map = new Map()
+    for (const badge of achievementBadges) {
+      if (!map.has(badge.category)) map.set(badge.category, [])
+      map.get(badge.category).push(badge)
+    }
+    return ACHIEVEMENT_CATEGORIES.map((category) => ({
+      category,
+      badges: map.get(category) ?? [],
+    })).filter((group) => group.badges.length > 0)
+  }, [achievementBadges])
 
   // Bornes de la période sélectionnée : pilote tout l'onglet "Activité de
   // lecture" (rythme, notes, couvertures, calendrier, livres finis par mois).
@@ -815,13 +822,18 @@ export default function Stats() {
             )}
 
             {statsTab === 'achievements' && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {achievementResults.map(({ achievement, result }) => (
-                  <ExLibrisPlate
-                    key={achievement.id}
-                    achievement={achievement}
-                    result={result}
-                  />
+              <div className="space-y-8">
+                {achievementsByCategory.map(({ category, badges }) => (
+                  <div key={category}>
+                    <p className={`${labelClass} border-b border-ink/10 pb-1 mb-3`}>
+                      {category}
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {badges.map((badge) => (
+                        <ExLibrisPlate key={badge.id} badge={badge} userId={user?.id} />
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             )}
