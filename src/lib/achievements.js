@@ -231,6 +231,69 @@ const SIMPLE_ACHIEVEMENTS = [
     },
   },
   {
+    id: 'manga-lecta',
+    category: 'Curiosité',
+    icon: 'compass',
+    motto: 'Manga Lecta',
+    translation: 'Mangas lus',
+    description: 'Termine la lecture de 10 mangas.',
+    evaluate(books) {
+      const target = 10
+      const qualifying = books.filter((b) => b.status === 'read' && b.type === 'manga')
+      return {
+        unlocked: qualifying.length >= target,
+        current: Math.min(qualifying.length, target),
+        target,
+        unlockedAt:
+          qualifying.length >= target
+            ? nthDate(qualifying, (b) => b.date_finished ?? b.created_at, target)
+            : null,
+      }
+    },
+  },
+  {
+    id: 'fabulae-lectae',
+    category: 'Curiosité',
+    icon: 'compass',
+    motto: 'Fabulae Lectae',
+    translation: 'Comics lus',
+    description: 'Termine la lecture de 10 comics.',
+    evaluate(books) {
+      const target = 10
+      const qualifying = books.filter((b) => b.status === 'read' && b.type === 'comics')
+      return {
+        unlocked: qualifying.length >= target,
+        current: Math.min(qualifying.length, target),
+        target,
+        unlockedAt:
+          qualifying.length >= target
+            ? nthDate(qualifying, (b) => b.date_finished ?? b.created_at, target)
+            : null,
+      }
+    },
+  },
+  {
+    id: 'chartae-lectae',
+    category: 'Curiosité',
+    icon: 'compass',
+    motto: 'Chartae Lectae',
+    translation: 'BD lues',
+    description: 'Termine la lecture de 10 BD.',
+    evaluate(books) {
+      const target = 10
+      const qualifying = books.filter((b) => b.status === 'read' && b.type === 'bd')
+      return {
+        unlocked: qualifying.length >= target,
+        current: Math.min(qualifying.length, target),
+        target,
+        unlockedAt:
+          qualifying.length >= target
+            ? nthDate(qualifying, (b) => b.date_finished ?? b.created_at, target)
+            : null,
+      }
+    },
+  },
+  {
     id: 'series-sine-lacuna',
     category: 'Curiosité',
     icon: 'links',

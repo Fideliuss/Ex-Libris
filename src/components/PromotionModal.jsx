@@ -24,10 +24,12 @@ export default function PromotionModal({ vm, onClose }) {
     headline,
     bigNumber,
     subLabel,
+    tierText,
     icon,
     tierRank,
     dateText,
     description,
+    nextTierHint,
     progressText,
     mystery,
     animate,
@@ -52,7 +54,7 @@ export default function PromotionModal({ vm, onClose }) {
           {headline}
         </p>
 
-        <div className="relative w-56 aspect-[2.4/1] mb-6">
+        <div className="relative w-72 aspect-[2.4/1] mb-6">
           {animate && (
             <span
               className="promote-flash absolute inset-0 rounded-full"
@@ -61,7 +63,7 @@ export default function PromotionModal({ vm, onClose }) {
             />
           )}
           <div
-            className={`relative w-full h-full rounded-sm px-4 py-3 flex flex-col items-center justify-center text-center ${animate ? 'promote-plate' : ''}`}
+            className={`relative w-full h-full rounded-sm px-5 py-4 flex flex-col items-center justify-center text-center ${animate ? 'promote-plate' : ''}`}
             style={{
               background: tier.background,
               boxShadow:
@@ -69,33 +71,41 @@ export default function PromotionModal({ vm, onClose }) {
             }}
           >
             {ownerLine && !mystery && (
-              <p className="font-mono text-[8px] uppercase tracking-[0.16em]" style={{ color: `${tier.ink}99` }}>
+              <p className="font-mono text-[9px] uppercase tracking-[0.16em]" style={{ color: `${tier.ink}99` }}>
                 {ownerLine}
               </p>
             )}
             <p
-              className="font-serif italic font-semibold text-base leading-tight mt-1"
+              className="font-serif italic font-semibold text-lg leading-tight mt-1"
               style={{ color: tier.ink, textShadow: mystery ? 'none' : `0 1px 0 ${shadow}` }}
             >
               {mystery ? 'Ex Libris' : motto}
             </p>
             {!mystery && bigNumber != null && (
-              <p className="font-mono font-bold text-3xl leading-none mt-1" style={{ color: tier.ink }}>
+              <p className="font-mono font-bold text-4xl leading-none mt-2" style={{ color: tier.ink }}>
                 {bigNumber}
               </p>
             )}
-            <p className="font-sans text-[11px] uppercase tracking-[0.08em] font-medium mt-1" style={{ color: tier.ink }}>
+            <p className="font-sans text-xs uppercase tracking-[0.08em] font-medium mt-2" style={{ color: tier.ink }}>
               {mystery ? 'En attente de déblocage' : subLabel}
             </p>
             {progressText && (
-              <p className="font-mono text-[10px] mt-1" style={{ color: `${tier.ink}cc` }}>
+              <p className="font-mono text-[11px] mt-1" style={{ color: `${tier.ink}cc` }}>
                 {progressText}
               </p>
+            )}
+            {!mystery && tierText && (
+              <span
+                className="absolute bottom-3 left-4 font-mono text-[10px] uppercase tracking-wide"
+                style={{ color: `${tier.ink}bb` }}
+              >
+                {tierText}
+              </span>
             )}
             {!mystery && (
               <svg
                 viewBox="0 0 20 20"
-                className="absolute bottom-2 right-2 w-5 h-5"
+                className="absolute bottom-3 right-4 w-6 h-6"
                 fill={icon === 'star' ? tier.ink : 'none'}
                 stroke={icon === 'star' ? 'none' : tier.ink}
                 strokeWidth="1.4"
@@ -110,15 +120,18 @@ export default function PromotionModal({ vm, onClose }) {
         </div>
 
         {mystery ? (
-          <p className="text-xs text-paper/70 mb-4 max-w-[220px]">
+          <p className="text-xs text-paper/70 mb-4 max-w-[240px]">
             Continue ta collection pour découvrir ce succès.
           </p>
         ) : (
           <>
             {description && (
-              <p className="text-xs text-paper/70 mb-2 max-w-[240px]">{description}</p>
+              <p className="text-xs text-paper/70 mb-1 max-w-[260px]">{description}</p>
             )}
-            {dateText && <p className="text-xs text-paper/50 mb-4">{dateText}</p>}
+            {nextTierHint && (
+              <p className="text-xs text-paper/70 mb-1 max-w-[260px]">{nextTierHint}</p>
+            )}
+            {dateText && <p className="text-xs text-paper/50 mb-4 mt-2">{dateText}</p>}
           </>
         )}
 

@@ -52,16 +52,19 @@ export default function ExLibrisPlate({ vm }) {
           : 'inset 1px 1px 2px rgba(255,255,255,0.35), inset -2px -2px 4px rgba(15,10,5,0.25), 0 10px 16px rgba(0,0,0,0.4)',
       }}
     >
-      <span
-        aria-hidden="true"
-        className="absolute -top-[5px] w-2 h-2 rounded-full"
-        style={{
-          left: `calc(50% + ${pinOffset}px)`,
-          transform: 'translateX(-50%)',
-          background: 'radial-gradient(circle at 35% 35%, #f0dcae, #8e7145 75%)',
-          boxShadow: '0 2px 3px rgba(0,0,0,0.5)',
-        }}
-      />
+      {big ? (
+        <>
+          <Pin className="-top-[5px] -left-[5px]" />
+          <Pin className="-top-[5px] -right-[5px]" />
+          <Pin className="-bottom-[5px] -left-[5px]" />
+          <Pin className="-bottom-[5px] -right-[5px]" />
+        </>
+      ) : (
+        <Pin
+          className="-top-[5px]"
+          style={{ left: `calc(50% + ${pinOffset}px)`, transform: 'translateX(-50%)' }}
+        />
+      )}
 
       {promotable && (
         <span className="absolute inset-0 flex items-center justify-center px-3 font-mono text-[10px] uppercase tracking-wide text-ink/85 bg-card/80 rounded-sm">
@@ -136,5 +139,19 @@ export default function ExLibrisPlate({ vm }) {
         </svg>
       )}
     </button>
+  )
+}
+
+function Pin({ className, style }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`absolute w-2 h-2 rounded-full ${className}`}
+      style={{
+        background: 'radial-gradient(circle at 35% 35%, #f0dcae, #8e7145 75%)',
+        boxShadow: '0 2px 3px rgba(0,0,0,0.5)',
+        ...style,
+      }}
+    />
   )
 }
