@@ -272,11 +272,11 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
               {i > 0 && (
                 <div
                   aria-hidden="true"
-                  className="h-px mb-4"
+                  className="h-2.5 rounded-full mb-12"
                   style={{
-                    background:
-                      'linear-gradient(90deg, transparent, rgba(0,0,0,0.4) 15%, rgba(0,0,0,0.4) 85%, transparent)',
-                    boxShadow: '0 1px 0 rgba(255,255,255,0.06)',
+                    background: 'linear-gradient(180deg, #8a6339 0%, #5c3f22 55%, #3a270f 100%)',
+                    boxShadow:
+                      'inset 0 1px 0 rgba(255,220,170,0.3), inset 0 -1px 1px rgba(0,0,0,0.4), 0 3px 5px rgba(0,0,0,0.45)',
                   }}
                 />
               )}
