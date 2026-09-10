@@ -9,6 +9,16 @@
 // prend du recul sur tout ce qui vient d'être livré d'un coup.
 export const WHATS_NEW = [
   {
+    id: '2026-09-wishlist-and-succes',
+    title: 'Wishlist séparée et page Succès',
+    items: [
+      'La Wishlist a maintenant son propre onglet dans la Collection, à part de ce que tu possèdes déjà.',
+      'Les succès ont leur propre page (bouton "Succès" à côté de "Statistiques"), avec les tiens et ceux de ton foyer.',
+      'Une petite fenêtre te propose de noter un livre juste après l’avoir marqué "Lu", et de renseigner son prix/sa date d’achat quand tu le sors de la wishlist.',
+      'Une barre alphabétique pour naviguer plus vite dans une grande collection, et un lien pour signaler un bug depuis ton compte.',
+    ],
+  },
+  {
     id: '2026-09-sort-and-badges',
     title: 'Succès et tri amélioré',
     items: [
