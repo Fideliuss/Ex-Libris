@@ -16,3 +16,16 @@ export const WHATS_NEW = [
 ]
 
 export const LATEST_CHANGELOG_ID = WHATS_NEW[0].id
+
+// Toutes les entrées plus récentes que la dernière vue (WHATS_NEW est
+// ordonné du plus récent au plus ancien) : un compte qui a raté plusieurs
+// nouveautés d'affilée les voit toutes au prochain lancement, pas juste la
+// dernière. `lastSeenId` inconnu ou introuvable (jamais vu ce pop-up, ou une
+// très vieille entrée qu'on a fini par retirer de la liste) : on ne montre
+// que la plus récente plutôt que de déverser tout l'historique d'un coup.
+export function getMissedEntries(lastSeenId) {
+  if (!lastSeenId) return WHATS_NEW.slice(0, 1)
+  const seenIndex = WHATS_NEW.findIndex((entry) => entry.id === lastSeenId)
+  if (seenIndex === -1) return WHATS_NEW.slice(0, 1)
+  return WHATS_NEW.slice(0, seenIndex)
+}

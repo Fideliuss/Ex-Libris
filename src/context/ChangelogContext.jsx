@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from './AuthContext'
 import { getMyProfile, markChangelogSeen } from '../lib/friendCode'
-import { LATEST_CHANGELOG_ID, WHATS_NEW } from '../lib/whatsNew'
+import { LATEST_CHANGELOG_ID, getMissedEntries } from '../lib/whatsNew'
 import ChangelogModal from '../components/ChangelogModal'
 
 // Pas de contexte exposé aux enfants (rien à leur fournir, contrairement à
@@ -9,7 +9,7 @@ import ChangelogModal from '../components/ChangelogModal'
 // pop-up "quoi de neuf" au bon moment.
 export function ChangelogProvider({ children }) {
   const { user } = useAuth()
-  const [open, setOpen] = useState(false)
+  const [missedEntries, setMissedEntries] = useState([])
 
   useEffect(() => {
     if (!user) return
@@ -18,11 +18,11 @@ export function ChangelogProvider({ children }) {
       .then((profile) => {
         if (!active || !profile) return
         // has_seen_tutorial=false : compte flambant neuf, TutorialContext
-        // s'occupe de le marquer à jour dès qu'il ferme le tutoriel — pas la
+        // s'occupe de le marquer à jour dès qu'il ferme le tutoriel : pas la
         // peine d'empiler ce pop-up par-dessus le tutoriel en plus.
-        if (profile.has_seen_tutorial && profile.last_seen_changelog !== LATEST_CHANGELOG_ID) {
-          setOpen(true)
-        }
+        if (!profile.has_seen_tutorial) return
+        const missed = getMissedEntries(profile.last_seen_changelog)
+        if (missed.length > 0) setMissedEntries(missed)
       })
       .catch(() => {
         // Optionnel : une erreur ici ne doit pas bloquer le reste de l'app.
@@ -33,14 +33,16 @@ export function ChangelogProvider({ children }) {
   }, [user])
 
   function close() {
-    setOpen(false)
+    setMissedEntries([])
     if (user) markChangelogSeen(user.id, LATEST_CHANGELOG_ID).catch(() => {})
   }
 
   return (
     <>
       {children}
-      {open && <ChangelogModal entry={WHATS_NEW[0]} onClose={close} />}
+      {missedEntries.length > 0 && (
+        <ChangelogModal entries={missedEntries} onClose={close} />
+      )}
     </>
   )
 }
