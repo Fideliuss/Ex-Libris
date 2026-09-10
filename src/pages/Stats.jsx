@@ -36,12 +36,17 @@ const PERIOD_OPTIONS = {
   custom: 'Personnalisé',
 }
 
+// "achievements" n'est volontairement pas dans cette liste : c'est elle qui
+// peuple la barre d'onglets visible (voir plus bas), et Succès n'est
+// atteignable que via le bouton dédié de la Collection (`?tab=achievements`,
+// voir VALID_STATS_TABS) pour ne pas dupliquer l'accès à deux endroits.
 const STATS_TABS = [
   { key: 'overview', label: "Vue d'ensemble" },
   { key: 'activity', label: 'Activité de lecture' },
   { key: 'library', label: 'Bibliothèque' },
-  { key: 'achievements', label: 'Succès' },
 ]
+
+const VALID_STATS_TABS = [...STATS_TABS.map((t) => t.key), 'achievements']
 
 // Les champs date_started/date_finished sont des "date" Postgres (pas de
 // composante horaire) : les parser avec `new Date(string)` les interprète en
@@ -70,7 +75,7 @@ export default function Stats() {
   // pointer directement sur cet onglet plutôt que sur la vue d'ensemble.
   const [searchParams] = useSearchParams()
   const [statsTab, setStatsTab] = useState(() =>
-    STATS_TABS.some((t) => t.key === searchParams.get('tab'))
+    VALID_STATS_TABS.includes(searchParams.get('tab'))
       ? searchParams.get('tab')
       : 'overview',
   )
