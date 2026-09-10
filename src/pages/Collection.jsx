@@ -23,8 +23,14 @@ const STATUS_ORDER = Object.keys(STATUS_LABELS)
 // Départage à l'alphabétique (titre) toute égalité de tri : deux livres du
 // même auteur, à la même note, etc. sinon leur ordre relatif ne voudrait
 // rien dire pour l'utilisateur (il refléterait juste l'ordre d'insertion).
+// Un manga/comics/BD a en général le même titre pour tous ses tomes (juste
+// le numéro qui change) : à titre égal, on affine donc par numéro de tome
+// pour que la série s'affiche dans l'ordre de lecture plutôt qu'au hasard.
 function titleCompare(a, b) {
-  return a.title.localeCompare(b.title, 'fr')
+  return (
+    a.title.localeCompare(b.title, 'fr') ||
+    (a.series_index ?? 0) - (b.series_index ?? 0)
+  )
 }
 
 const SORT_OPTIONS = {
