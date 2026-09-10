@@ -17,6 +17,10 @@ dist-ssr
 .env.*
 !.env.example
 
+# Sauvegardes locales avant une migration de données en production (contient
+# de vraies données utilisateur, jamais dans git)
+.backup/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

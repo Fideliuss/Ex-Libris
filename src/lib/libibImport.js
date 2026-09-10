@@ -48,7 +48,10 @@ export function mapLibibRowToBook(row) {
 
   return {
     title,
-    author: clean(row.creators),
+    author: clean(row.creators)
+      .split(',')
+      .map((a) => a.trim())
+      .filter(Boolean),
     publisher: clean(row.publisher),
     isbn,
     description: clean(row.description),

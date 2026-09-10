@@ -331,7 +331,7 @@ export default function Collection() {
   const authors = useMemo(() => {
     const set = new Set()
     for (const book of books) {
-      if (book.author) set.add(book.author)
+      for (const a of book.author ?? []) set.add(a)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
   }, [books])
@@ -394,7 +394,7 @@ export default function Collection() {
     return collectionBooks.filter(
       (book) =>
         !book.cover_url ||
-        !book.author ||
+        !book.author?.length ||
         !book.publisher ||
         !book.page_count ||
         !book.description,
@@ -421,7 +421,7 @@ export default function Collection() {
     return pool.filter((book) => {
       if (query) {
         const isbn = (book.isbn ?? '').replace(/[\s-]/g, '')
-        const haystack = `${book.title} ${book.author ?? ''} ${isbn}`.toLowerCase()
+        const haystack = `${book.title} ${(book.author ?? []).join(' ')} ${isbn}`.toLowerCase()
         if (!haystack.includes(query)) return false
       }
       if (
@@ -430,7 +430,7 @@ export default function Collection() {
       )
         return false
       if (publisher && book.publisher !== publisher) return false
-      if (author && book.author !== author) return false
+      if (author && !book.author?.includes(author)) return false
       if (collection && book.collection !== collection) return false
       if (edition && !book.edition?.includes(edition)) return false
       if (series && book.series !== series) return false

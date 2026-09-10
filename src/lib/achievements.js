@@ -79,6 +79,24 @@ function nthDistinctTagDate(books, n) {
   return dates.length < n ? null : dates[n - 1]
 }
 
+// Même principe, mais pour le champ auteur (lui aussi à valeurs multiples
+// par livre depuis son passage en tableau) et la date de fin de lecture
+// plutôt que la date d'ajout.
+function nthDistinctAuthorDate(books, n) {
+  const firstByAuthor = {}
+  for (const b of books) {
+    const date = b.date_finished ?? b.created_at
+    if (!date) continue
+    for (const author of b.author ?? []) {
+      if (!firstByAuthor[author] || new Date(date) < new Date(firstByAuthor[author])) {
+        firstByAuthor[author] = date
+      }
+    }
+  }
+  const dates = Object.values(firstByAuthor).sort((a, b) => new Date(a) - new Date(b))
+  return dates.length < n ? null : dates[n - 1]
+}
+
 // Rejoue les éléments triés chronologiquement et retourne la date du
 // premier moment où `isSatisfied(itemsSoFar)` devient vrai.
 function firstMomentWhere(items, dateOf, isSatisfied) {
@@ -120,9 +138,10 @@ function firstGaplessSeries(books) {
 function authorWithFiveBooksDate(books) {
   const byAuthor = new Map()
   for (const b of books) {
-    if (!b.author) continue
-    if (!byAuthor.has(b.author)) byAuthor.set(b.author, [])
-    byAuthor.get(b.author).push(b)
+    for (const author of b.author ?? []) {
+      if (!byAuthor.has(author)) byAuthor.set(author, [])
+      byAuthor.get(author).push(b)
+    }
   }
   let best = null
   for (const list of byAuthor.values()) {
@@ -258,13 +277,17 @@ const TIERED_ACHIEVEMENTS = [
     translation: 'Auteurs différents',
     description: "Lis des livres d'auteurs différents.",
     thresholds: [10, 30, 60, 100],
-    metric: (books) =>
-      new Set(books.filter((b) => b.status === 'read' && b.author).map((b) => b.author)).size,
+    metric: (books) => {
+      const set = new Set()
+      for (const b of books) {
+        if (b.status !== 'read') continue
+        for (const author of b.author ?? []) set.add(author)
+      }
+      return set.size
+    },
     dateForCount: (books, n) =>
-      nthDistinctGroupDate(
+      nthDistinctAuthorDate(
         books.filter((b) => b.status === 'read'),
-        (b) => b.author,
-        (b) => b.date_finished ?? b.created_at,
         n,
       ),
   },
@@ -583,7 +606,7 @@ const SIMPLE_ACHIEVEMENTS = [
     translation: 'Œuvre traduite',
     description: "Ajoute un livre dont le traducteur est renseigné.",
     evaluate(books) {
-      const qualifying = books.filter((b) => b.translator)
+      const qualifying = books.filter((b) => b.translator?.length > 0)
       const target = 1
       return {
         unlocked: qualifying.length > 0,
@@ -601,7 +624,7 @@ const SIMPLE_ACHIEVEMENTS = [
     translation: 'Œuvre illustrée',
     description: "Ajoute un livre dont l'illustrateur est renseigné.",
     evaluate(books) {
-      const qualifying = books.filter((b) => b.illustrator)
+      const qualifying = books.filter((b) => b.illustrator?.length > 0)
       const target = 1
       return {
         unlocked: qualifying.length > 0,

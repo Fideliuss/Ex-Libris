@@ -474,9 +474,9 @@ export default function Stats() {
                             <p className="font-serif text-base truncate">
                               {book.title}
                             </p>
-                            {book.author && (
+                            {book.author?.length > 0 && (
                               <p className="text-xs text-ink/70 truncate">
-                                {book.author}
+                                {book.author.join(', ')}
                               </p>
                             )}
                             <p className="text-xs text-ink/70 mt-0.5">

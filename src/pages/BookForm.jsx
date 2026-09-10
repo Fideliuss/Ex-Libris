@@ -34,9 +34,9 @@ const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 
 const emptyBook = {
   title: '',
-  author: '',
-  translator: '',
-  illustrator: '',
+  author: [],
+  translator: [],
+  illustrator: [],
   publisher: '',
   collection: '',
   edition: [],
@@ -104,6 +104,9 @@ export default function BookForm() {
           purchase_date: data.purchase_date ?? '',
           series_index: data.series_index ?? '',
           edition: data.edition ?? [],
+          author: data.author ?? [],
+          translator: data.translator ?? [],
+          illustrator: data.illustrator ?? [],
         }),
       )
       .catch((err) => setError(describeError(err)))
@@ -119,7 +122,7 @@ export default function BookForm() {
   // champs qu'un scan ISBN réussi remplit normalement tout seul.
   const missingFields = [
     !book.cover_url && 'Couverture',
-    !book.author && 'Auteur',
+    !book.author?.length && 'Auteur',
     !book.publisher && 'Éditeur',
     !book.page_count && 'Pages',
     !book.description && 'Résumé',
@@ -144,7 +147,7 @@ export default function BookForm() {
         setBook((b) => ({
           ...b,
           title: result.title || b.title,
-          author: result.author || b.author,
+          author: result.author?.length ? result.author : b.author,
           publisher: result.publisher || b.publisher,
           description: result.description || b.description,
           page_count: result.page_count ?? b.page_count,
@@ -199,6 +202,9 @@ export default function BookForm() {
     setSaving(true)
     setError(null)
     const cleanEdition = (book.edition ?? []).filter(Boolean)
+    const cleanAuthor = (book.author ?? []).filter(Boolean)
+    const cleanTranslator = (book.translator ?? []).filter(Boolean)
+    const cleanIllustrator = (book.illustrator ?? []).filter(Boolean)
     const payload = {
       ...book,
       date_started: book.date_started || null,
@@ -211,6 +217,9 @@ export default function BookForm() {
       series_index: book.series_index === '' ? null : Number(book.series_index),
       universe: book.universe?.trim() || null,
       edition: cleanEdition.length > 0 ? cleanEdition : null,
+      author: cleanAuthor.length > 0 ? cleanAuthor : null,
+      translator: cleanTranslator.length > 0 ? cleanTranslator : null,
+      illustrator: cleanIllustrator.length > 0 ? cleanIllustrator : null,
     }
     try {
       if (isEdit) {
@@ -352,26 +361,26 @@ export default function BookForm() {
 
           <FormSection title="Détails du livre" defaultOpen>
             <Field label="Auteur">
-              <input
-                value={book.author ?? ''}
-                onChange={(e) => set('author', e.target.value)}
-                className={inputClass}
+              <TagInput
+                value={book.author ?? []}
+                onChange={(v) => set('author', v)}
+                placeholder="Ajouter un auteur, Entrée pour valider"
               />
             </Field>
 
             <div className="grid grid-cols-2 gap-4">
               <Field label="Traducteur">
-                <input
-                  value={book.translator ?? ''}
-                  onChange={(e) => set('translator', e.target.value)}
-                  className={inputClass}
+                <TagInput
+                  value={book.translator ?? []}
+                  onChange={(v) => set('translator', v)}
+                  placeholder="Ajouter, Entrée pour valider"
                 />
               </Field>
               <Field label="Dessinateur">
-                <input
-                  value={book.illustrator ?? ''}
-                  onChange={(e) => set('illustrator', e.target.value)}
-                  className={inputClass}
+                <TagInput
+                  value={book.illustrator ?? []}
+                  onChange={(v) => set('illustrator', v)}
+                  placeholder="Ajouter, Entrée pour valider"
                 />
               </Field>
             </div>
