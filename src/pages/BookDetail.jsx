@@ -281,7 +281,7 @@ export default function BookDetail() {
   const missingFields = book
     ? [
         !book.cover_url && 'Couverture',
-        !book.author && 'Auteur',
+        !book.author?.length && 'Auteur',
         !book.publisher && 'Éditeur',
         !book.page_count && 'Pages',
         !book.description && 'Résumé',
@@ -515,14 +515,16 @@ export default function BookDetail() {
                   )}
                 </div>
               )}
-              <p className={`text-ink/70 mt-1 ${book.author ? '' : 'italic'}`}>
-                {book.author || 'Auteur non renseigné'}
+              <p className={`text-ink/70 mt-1 ${book.author?.length ? '' : 'italic'}`}>
+                {book.author?.length ? book.author.join(', ') : 'Auteur non renseigné'}
               </p>
-              {(book.translator || book.illustrator) && (
+              {(book.translator?.length > 0 || book.illustrator?.length > 0) && (
                 <p className="text-xs text-ink/70 mt-0.5">
-                  {book.translator && `Traduit par ${book.translator}`}
-                  {book.translator && book.illustrator && ' · '}
-                  {book.illustrator && `Illustré par ${book.illustrator}`}
+                  {book.translator?.length > 0 &&
+                    `Traduit par ${book.translator.join(', ')}`}
+                  {book.translator?.length > 0 && book.illustrator?.length > 0 && ' · '}
+                  {book.illustrator?.length > 0 &&
+                    `Illustré par ${book.illustrator.join(', ')}`}
                 </p>
               )}
               <p className="text-sm text-ink/70 mt-0.5">

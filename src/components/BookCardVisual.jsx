@@ -88,8 +88,8 @@ export default function BookCardVisual({ book }) {
             )}
           </>
         )}
-        {book.author && (
-          <p className="text-sm text-ink/70 mt-0.5 truncate">{book.author}</p>
+        {book.author?.length > 0 && (
+          <p className="text-sm text-ink/70 mt-0.5 truncate">{book.author.join(', ')}</p>
         )}
         {book.publisher && (
           <p className="text-xs text-ink/70 mt-0.5 truncate">

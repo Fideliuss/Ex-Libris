@@ -30,7 +30,7 @@ describe('booksToCsv', () => {
   })
 
   it('keeps the column order regardless of the input object key order', () => {
-    const csv = booksToCsv([{ author: 'Hugo', title: 'Les Misérables' }])
+    const csv = booksToCsv([{ author: ['Hugo'], title: 'Les Misérables' }])
     const dataRow = csv.split('\r\n')[1]
     expect(dataRow.startsWith('Les Misérables,Hugo,')).toBe(true)
   })

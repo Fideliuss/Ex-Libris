@@ -4,10 +4,13 @@ import {
   createBook,
   deleteBook,
   getBook,
+  listAllAuthors,
   listAllCollections,
+  listAllIllustrators,
   listAllPublishers,
   listAllSeries,
   listAllTags,
+  listAllTranslators,
   listAllUniverses,
   updateBook,
 } from '../lib/books'
@@ -34,9 +37,9 @@ const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 
 const emptyBook = {
   title: '',
-  author: '',
-  translator: '',
-  illustrator: '',
+  author: [],
+  translator: [],
+  illustrator: [],
   publisher: '',
   collection: '',
   edition: [],
@@ -67,6 +70,9 @@ export default function BookForm() {
 
   const [book, setBook] = useState(emptyBook)
   const [existingTags, setExistingTags] = useState([])
+  const [existingAuthors, setExistingAuthors] = useState([])
+  const [existingTranslators, setExistingTranslators] = useState([])
+  const [existingIllustrators, setExistingIllustrators] = useState([])
   const [existingCollections, setExistingCollections] = useState([])
   const [existingPublishers, setExistingPublishers] = useState([])
   const [existingSeries, setExistingSeries] = useState([])
@@ -83,6 +89,9 @@ export default function BookForm() {
 
   useEffect(() => {
     listAllTags().then(setExistingTags).catch(() => {})
+    listAllAuthors().then(setExistingAuthors).catch(() => {})
+    listAllTranslators().then(setExistingTranslators).catch(() => {})
+    listAllIllustrators().then(setExistingIllustrators).catch(() => {})
     listAllCollections().then(setExistingCollections).catch(() => {})
     listAllPublishers().then(setExistingPublishers).catch(() => {})
     listAllSeries().then(setExistingSeries).catch(() => {})
@@ -104,6 +113,9 @@ export default function BookForm() {
           purchase_date: data.purchase_date ?? '',
           series_index: data.series_index ?? '',
           edition: data.edition ?? [],
+          author: data.author ?? [],
+          translator: data.translator ?? [],
+          illustrator: data.illustrator ?? [],
         }),
       )
       .catch((err) => setError(describeError(err)))
@@ -119,7 +131,7 @@ export default function BookForm() {
   // champs qu'un scan ISBN réussi remplit normalement tout seul.
   const missingFields = [
     !book.cover_url && 'Couverture',
-    !book.author && 'Auteur',
+    !book.author?.length && 'Auteur',
     !book.publisher && 'Éditeur',
     !book.page_count && 'Pages',
     !book.description && 'Résumé',
@@ -144,7 +156,7 @@ export default function BookForm() {
         setBook((b) => ({
           ...b,
           title: result.title || b.title,
-          author: result.author || b.author,
+          author: result.author?.length ? result.author : b.author,
           publisher: result.publisher || b.publisher,
           description: result.description || b.description,
           page_count: result.page_count ?? b.page_count,
@@ -199,6 +211,9 @@ export default function BookForm() {
     setSaving(true)
     setError(null)
     const cleanEdition = (book.edition ?? []).filter(Boolean)
+    const cleanAuthor = (book.author ?? []).filter(Boolean)
+    const cleanTranslator = (book.translator ?? []).filter(Boolean)
+    const cleanIllustrator = (book.illustrator ?? []).filter(Boolean)
     const payload = {
       ...book,
       date_started: book.date_started || null,
@@ -211,6 +226,9 @@ export default function BookForm() {
       series_index: book.series_index === '' ? null : Number(book.series_index),
       universe: book.universe?.trim() || null,
       edition: cleanEdition.length > 0 ? cleanEdition : null,
+      author: cleanAuthor.length > 0 ? cleanAuthor : null,
+      translator: cleanTranslator.length > 0 ? cleanTranslator : null,
+      illustrator: cleanIllustrator.length > 0 ? cleanIllustrator : null,
     }
     try {
       if (isEdit) {
@@ -352,26 +370,29 @@ export default function BookForm() {
 
           <FormSection title="Détails du livre" defaultOpen>
             <Field label="Auteur">
-              <input
-                value={book.author ?? ''}
-                onChange={(e) => set('author', e.target.value)}
-                className={inputClass}
+              <TagInput
+                value={book.author ?? []}
+                onChange={(v) => set('author', v)}
+                suggestions={existingAuthors}
+                placeholder="Ajouter un auteur, Entrée pour valider"
               />
             </Field>
 
             <div className="grid grid-cols-2 gap-4">
               <Field label="Traducteur">
-                <input
-                  value={book.translator ?? ''}
-                  onChange={(e) => set('translator', e.target.value)}
-                  className={inputClass}
+                <TagInput
+                  value={book.translator ?? []}
+                  onChange={(v) => set('translator', v)}
+                  suggestions={existingTranslators}
+                  placeholder="Ajouter, Entrée pour valider"
                 />
               </Field>
               <Field label="Dessinateur">
-                <input
-                  value={book.illustrator ?? ''}
-                  onChange={(e) => set('illustrator', e.target.value)}
-                  className={inputClass}
+                <TagInput
+                  value={book.illustrator ?? []}
+                  onChange={(v) => set('illustrator', v)}
+                  suggestions={existingIllustrators}
+                  placeholder="Ajouter, Entrée pour valider"
                 />
               </Field>
             </div>
@@ -748,8 +769,15 @@ function FormSection({ title, defaultOpen = false, children }) {
           transition: reduceMotion ? 'none' : 'grid-template-rows 300ms ease-out',
         }}
       >
-        <div className="overflow-hidden" inert={!open}>
-          <div className="space-y-5 pt-4">{children}</div>
+        {/* -mx-1/px-1 : l'anneau de focus d'un champ (voir inputClass)
+            déborde de 1px hors de sa boîte ; sans cette marge de respiration,
+            ce conteneur (nécessairement overflow-hidden pour l'animation
+            d'ouverture/fermeture ci-dessus) le coupait net sur les côtés,
+            visible uniquement ici puisque Titre/Type restent hors section.
+            Le -mx-1 fait déborder la zone de découpe elle-même plutôt que de
+            décaler les champs, qui restent alignés avec Titre/Type. */}
+        <div className="-mx-1 overflow-hidden" inert={!open}>
+          <div className="space-y-5 px-1 pt-4 pb-1">{children}</div>
         </div>
       </div>
     </div>

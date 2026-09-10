@@ -1,7 +1,13 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
-export default function TagInput({ value, onChange, suggestions = [] }) {
+export default function TagInput({
+  value,
+  onChange,
+  suggestions = [],
+  placeholder = 'Ajouter un tag, Entrée pour valider',
+}) {
   const [draft, setDraft] = useState('')
+  const inputRef = useRef(null)
 
   const availableSuggestions = suggestions.filter(
     (tag) =>
@@ -21,6 +27,15 @@ export default function TagInput({ value, onChange, suggestions = [] }) {
     onChange(value.filter((t) => t !== tag))
   }
 
+  // Cliquer le texte d'une puce (pas sa croix) la retire et recharge son
+  // contenu dans le champ, prêt à être corrigé et revalidé — pour éviter
+  // d'avoir à la supprimer puis retaper tout le nom pour corriger une faute.
+  function editTag(tag) {
+    setDraft(tag)
+    onChange(value.filter((t) => t !== tag))
+    inputRef.current?.focus()
+  }
+
   function handleKeyDown(e) {
     if (e.key === 'Enter' || e.key === ',') {
       e.preventDefault()
@@ -36,25 +51,34 @@ export default function TagInput({ value, onChange, suggestions = [] }) {
         {value.map((tag) => (
           <span
             key={tag}
-            className="inline-flex items-center gap-1 bg-library-fill text-white text-xs px-2 py-1 rounded-full"
+            className="inline-flex items-center gap-1 border border-library/40 text-ink text-sm px-2 py-1 rounded-full"
           >
-            {tag}
+            <button
+              type="button"
+              onClick={() => editTag(tag)}
+              className="hover:underline focus:outline-none"
+              aria-label={`Modifier ${tag}`}
+              title="Modifier"
+            >
+              {tag}
+            </button>
             <button
               type="button"
               onClick={() => removeTag(tag)}
-              className="hover:text-stamp focus:outline-none"
-              aria-label={`Retirer le tag ${tag}`}
+              className="text-ink/50 hover:text-stamp focus:outline-none"
+              aria-label={`Retirer ${tag}`}
             >
               ×
             </button>
           </span>
         ))}
         <input
+          ref={inputRef}
           type="text"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={value.length === 0 ? 'Ajouter un tag, Entrée pour valider' : ''}
+          placeholder={value.length === 0 ? placeholder : ''}
           className="flex-1 min-w-[8ch] text-sm outline-none bg-transparent py-0.5"
         />
       </div>

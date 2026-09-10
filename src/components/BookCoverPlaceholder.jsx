@@ -4,11 +4,16 @@
 // ça n'a pas à ressembler à un état cassé. `volume` (tome) ne s'affiche que
 // pour un manga en série, comme le reste de la fiche.
 export default function BookCoverPlaceholder({ title, author, volume }) {
+  // `author` est un tableau côté vraies données (books.author), mais aussi
+  // parfois une simple chaîne (données de démo statiques de la landing page
+  // et du tutoriel) : on accepte les deux plutôt que d'imposer un format aux
+  // appelants.
+  const authorText = Array.isArray(author) ? author.join(', ') : author
   return (
     <div className="w-full h-full bg-cover flex items-center justify-center">
       <div className="absolute inset-3 border-t border-b border-ink-on-cover/80 flex flex-col items-center justify-between py-3">
         <span className="font-sans text-[9px] tracking-[0.14em] uppercase text-ink-on-cover/80 text-center px-1">
-          {author}
+          {authorText}
         </span>
         <span className="flex flex-col items-center gap-1 px-1">
           <span className="font-serif italic text-stamp-fill text-xs leading-snug text-center line-clamp-3">

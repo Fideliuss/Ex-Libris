@@ -68,7 +68,10 @@ export function mapMyLibraryRowToBook({ row, type }) {
 
   return {
     title: clean(row['Titre']),
-    author: clean(row['Auteurs']),
+    author: clean(row['Auteurs'])
+      .split(',')
+      .map((a) => a.trim())
+      .filter(Boolean),
     publisher: clean(row['Editeur']),
     isbn: clean(row['ISBN']),
     description: clean(row['Résumé']),
