@@ -4,6 +4,33 @@ Généré automatiquement par release-please jusqu'à la version 1.3.0 (outil
 retiré ensuite). Les entrées suivantes sont ajoutées à la main à chaque
 promotion `develop` -> `main`.
 
+Historique technique (commits, PR, hashes) : pas ce qui est montré dans
+l'app. Pour le pop-up "Quoi de neuf" vu par l'utilisateur, voir
+`src/lib/whatsNew.js`, à tenir à jour en parallèle (voir README.md,
+section GitFlow).
+
+## 2026-09-10
+
+Pas de tag/version release-please ici (outil retiré, voir plus haut) :
+juste la date de promotion `develop` -> `main`.
+
+### Features
+
+* consolidate every loose SQL file into the single baseline migration ([#103](https://github.com/Fideliuss/Ex-Libris/pull/103))
+* rework Collection sort and filters: author filter, ascending/descending toggle, tome tie-break for series, reorganized sort menu, remembered per-user default ([#104](https://github.com/Fideliuss/Ex-Libris/pull/104))
+* quick star-rating prompt right after marking a book "Lu" ([#105](https://github.com/Fideliuss/Ex-Libris/pull/105))
+* bug-report link on the Account page ([#105](https://github.com/Fideliuss/Ex-Libris/pull/105))
+* in-app "what's new" popup, shown once per account with full history and a permanent "Voir les nouveautes" entry point in Account ([#105](https://github.com/Fideliuss/Ex-Libris/pull/105))
+* purchase price/date prompt when a book leaves the Wishlist status, and automatic cleanup of now-stale dates/price when a status change goes backward ([#105](https://github.com/Fideliuss/Ex-Libris/pull/105))
+* dedicated "Succes" page at `/succes`, with the same mine/partner household toggle as Stats ([#106](https://github.com/Fideliuss/Ex-Libris/pull/106))
+* separate Wishlist tab on the Collection page, no longer mixed into the main grid ([#107](https://github.com/Fideliuss/Ex-Libris/pull/107))
+* scroll position restoration when returning to the Collection page ([#107](https://github.com/Fideliuss/Ex-Libris/pull/107))
+* A-Z scroll index for the Titre/Auteur sorts, collapsible to a tap-to-open handle on mobile ([#107](https://github.com/Fideliuss/Ex-Libris/pull/107))
+
+### Bug Fixes
+
+* alphabetical title/author grouping is now accent-insensitive, so an accented entry no longer splits a letter group in two ([#104](https://github.com/Fideliuss/Ex-Libris/pull/104))
+
 ## [1.4.0](https://github.com/Fideliuss/Ex-Libris/compare/ExLibris-v1.3.0...ExLibris-v1.4.0) (2026-08-28)
 
 

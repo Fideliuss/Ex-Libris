@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { bulkDeleteBooks, bulkUpdateBooks } from '../lib/books'
@@ -10,6 +10,7 @@ import BulkActionBar from '../components/BulkActionBar'
 import HouseholdSwitchBadge from '../components/HouseholdSwitchBadge'
 import TabBar from '../components/TabBar'
 import LoadingScreen from '../components/LoadingScreen'
+import AlphabetIndex from '../components/AlphabetIndex'
 import {
   STATUS_LABELS,
   STATUS_BADGE_CLASS,
@@ -20,38 +21,108 @@ import { primaryButtonClass, secondaryButtonClass, labelClass } from '../lib/ui'
 
 const STATUS_ORDER = Object.keys(STATUS_LABELS)
 
+// Départage à l'alphabétique (titre) toute égalité de tri : deux livres du
+// même auteur, à la même note, etc. sinon leur ordre relatif ne voudrait
+// rien dire pour l'utilisateur (il refléterait juste l'ordre d'insertion).
+// Un manga/comics/BD a en général le même titre pour tous ses tomes (juste
+// le numéro qui change) : à titre égal, on affine donc par numéro de tome
+// pour que la série s'affiche dans l'ordre de lecture plutôt qu'au hasard.
+function titleCompare(a, b) {
+  return (
+    a.title.localeCompare(b.title, 'fr') ||
+    (a.series_index ?? 0) - (b.series_index ?? 0)
+  )
+}
+
 const SORT_OPTIONS = {
-  recent: {
-    label: 'Récemment ajoutés',
-    compare: (a, b) => new Date(b.created_at) - new Date(a.created_at),
-  },
   title: {
-    label: 'Titre (A→Z)',
-    compare: (a, b) => a.title.localeCompare(b.title, 'fr'),
+    label: 'Titre',
+    compare: titleCompare,
   },
   author: {
-    label: 'Auteur (nom, A→Z)',
+    label: 'Auteur',
     compare: (a, b) =>
-      authorSortKey(a.author).localeCompare(authorSortKey(b.author), 'fr'),
+      authorSortKey(a.author).localeCompare(authorSortKey(b.author), 'fr') ||
+      titleCompare(a, b),
   },
-  rating: {
-    label: 'Note (meilleure d’abord)',
-    compare: (a, b) => (b.rating ?? 0) - (a.rating ?? 0),
+  recent: {
+    label: 'Date d’ajout',
+    compare: (a, b) =>
+      new Date(b.created_at) - new Date(a.created_at) || titleCompare(a, b),
   },
   finished: {
     label: 'Date de fin de lecture',
     compare: (a, b) =>
-      new Date(b.date_finished ?? 0) - new Date(a.date_finished ?? 0),
+      new Date(b.date_finished ?? 0) - new Date(a.date_finished ?? 0) ||
+      titleCompare(a, b),
   },
-  tome: {
-    label: 'Tome (croissant)',
-    compare: (a, b) => (a.series_index ?? 0) - (b.series_index ?? 0),
+  rating: {
+    label: 'Note',
+    compare: (a, b) => (b.rating ?? 0) - (a.rating ?? 0) || titleCompare(a, b),
   },
   status: {
     label: 'Statut',
     compare: (a, b) =>
-      STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status),
+      STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status) ||
+      titleCompare(a, b),
   },
+  // Trie d'abord par série (les livres sans série regroupés à part), puis
+  // par numéro de tome à l'intérieur de chaque série : trier par tome seul,
+  // toutes séries confondues, mélangerait les séries entre elles.
+  tome: {
+    label: 'Tome',
+    compare: (a, b) =>
+      (a.series ?? '').localeCompare(b.series ?? '', 'fr') ||
+      (a.series_index ?? 0) - (b.series_index ?? 0) ||
+      titleCompare(a, b),
+  },
+}
+
+const SORT_GROUPS = [
+  { label: 'Alphabétique', keys: ['title', 'author'] },
+  { label: 'Chronologique', keys: ['recent', 'finished'] },
+  { label: 'Évaluation & série', keys: ['rating', 'status', 'tome'] },
+]
+
+function sortStorageKey(userId) {
+  return `exlibris:${userId ?? 'anon'}:collectionSort`
+}
+
+function directionStorageKey(userId) {
+  return `exlibris:${userId ?? 'anon'}:collectionSortDir`
+}
+
+function readStored(key) {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function writeStored(key, value) {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // Stockage indisponible (navigation privée, quota plein...) : tant pis,
+    // ce n'est qu'une préférence de confort.
+  }
+}
+
+function readStoredSort(userId) {
+  return readStored(sortStorageKey(userId))
+}
+
+function writeStoredSort(userId, value) {
+  writeStored(sortStorageKey(userId), value)
+}
+
+function readStoredDirection(userId) {
+  return readStored(directionStorageKey(userId))
+}
+
+function writeStoredDirection(userId, value) {
+  writeStored(directionStorageKey(userId), value)
 }
 
 // Les champs date_finished sont des "date" Postgres (pas d'heure) : les
@@ -68,19 +139,41 @@ function monthLabel(date) {
   )
 }
 
+// `localeCompare('fr')` compare d'abord les lettres de base en ignorant les
+// accents ("e" ≈ "é" ≈ "ê", comme dans un vrai classement alphabétique de
+// bibliothèque) et ne s'en sert qu'en tout dernier recours pour départager :
+// "Ecotopia" < "Êtes-vous..." < "Étude..." est donc un ordre de tri
+// parfaitement correct. Regrouper par première lettre EXACTE (E ≠ Ê ≠ É)
+// est incohérent avec ça : un livre accentué peut se retrouver coincé entre
+// deux livres non accentués de la même lettre, cassant le groupe en deux
+// au lieu de le fusionner. On regroupe donc en ignorant les accents aussi.
+function letterGroupKey(str) {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')[0]
+    .toUpperCase()
+}
+
 // Détermine l'en-tête de section pour un livre selon le tri actif (lettre,
-// mois, statut), ou `null` si ce tri ne se groupe pas naturellement (note,
-// tome) ou si le champ concerné est vide pour ce livre.
+// mois, statut, série, note...). Toujours une étiquette explicite, y compris
+// pour les livres sans valeur pour le critère actif (contigus grâce au tri
+// ci-dessus) : les laisser sans en-tête donnait l'impression qu'ils étaient
+// rangés n'importe où plutôt que volontairement à part.
 function groupKeyFor(book, sortKey) {
-  if (sortKey === 'title') return book.title[0].toUpperCase()
+  if (sortKey === 'title') return letterGroupKey(book.title)
   if (sortKey === 'author') {
     const key = authorSortKey(book.author)
-    return key ? key[0].toUpperCase() : null
+    return key ? letterGroupKey(key) : 'Auteur inconnu'
   }
   if (sortKey === 'recent') return monthLabel(new Date(book.created_at))
   if (sortKey === 'finished')
-    return book.date_finished ? monthLabel(parseDateOnly(book.date_finished)) : null
+    return book.date_finished
+      ? monthLabel(parseDateOnly(book.date_finished))
+      : 'Non terminé'
   if (sortKey === 'status') return STATUS_LABELS[book.status] ?? null
+  if (sortKey === 'rating')
+    return book.rating > 0 ? '★'.repeat(book.rating) : 'Non noté'
+  if (sortKey === 'tome') return book.series || 'Sans série'
   return null
 }
 
@@ -103,13 +196,18 @@ export default function Collection() {
   const search = searchParams.get('q') ?? ''
   const selectedTags = searchParams.getAll('tag')
   const publisher = searchParams.get('publisher') ?? ''
+  const author = searchParams.get('author') ?? ''
   const collection = searchParams.get('collection') ?? ''
   const edition = searchParams.get('edition') ?? ''
   const series = searchParams.get('series') ?? ''
   const universe = searchParams.get('universe') ?? ''
   const type = searchParams.get('type') ?? ''
   const status = searchParams.get('status') ?? ''
-  const sort = searchParams.get('sort') ?? 'recent'
+  const sort = searchParams.get('sort') ?? readStoredSort(user?.id) ?? 'title'
+  const direction =
+    (searchParams.get('dir') ?? readStoredDirection(user?.id)) === 'desc'
+      ? 'desc'
+      : 'asc'
   const collectionTab = searchParams.get('tab') ?? 'collection'
 
   function setParam(key, value) {
@@ -126,12 +224,22 @@ export default function Collection() {
 
   const setSearch = (value) => setParam('q', value)
   const setPublisher = (value) => setParam('publisher', value)
+  const setAuthor = (value) => setParam('author', value)
   const setCollection = (value) => setParam('collection', value)
   const setEdition = (value) => setParam('edition', value)
   const setUniverse = (value) => setParam('universe', value)
   const setType = (value) => setParam('type', value)
   const setStatus = (value) => setParam('status', value)
-  const setSort = (value) => setParam('sort', value)
+  function setSort(value) {
+    setParam('sort', value)
+    writeStoredSort(user?.id, value)
+  }
+
+  function toggleDirection() {
+    const next = direction === 'desc' ? 'asc' : 'desc'
+    setParam('dir', next === 'asc' ? null : next)
+    writeStoredDirection(user?.id, next)
+  }
 
   function setCollectionTab(next) {
     setParam('tab', next === 'collection' ? null : next)
@@ -155,6 +263,46 @@ export default function Collection() {
   const [bulkWorking, setBulkWorking] = useState(false)
   const [bulkError, setBulkError] = useState(null)
 
+  // Retrouve la position de scroll en revenant d'une fiche livre, plutôt que
+  // de repartir en haut de la page à chaque retour. Sauvegardée en continu
+  // pendant le scroll plutôt qu'au démontage : `navigateWithViewTransition`
+  // remplace le DOM de la page (via flushSync) avant que le nettoyage de cet
+  // effet ne s'exécute, et la nouvelle page (BookDetail, bien plus courte le
+  // temps de son propre chargement) fait retomber `window.scrollY` à 0 avant
+  // même qu'on ait pu le lire — confirmé en pratique (valeur toujours à 0 au
+  // démontage). D'où le throttle par rAF : un listener de scroll simple sans
+  // ça écrirait dans le storage à chaque pixel défilé.
+  useEffect(() => {
+    let ticking = false
+    function handleScroll() {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        try {
+          sessionStorage.setItem('exlibris:collectionScroll', String(window.scrollY))
+        } catch {
+          // Stockage indisponible (navigation privée...) : tant pis.
+        }
+        ticking = false
+      })
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  useEffect(() => {
+    if (loading) return
+    let saved
+    try {
+      saved = sessionStorage.getItem('exlibris:collectionScroll')
+      if (saved !== null) sessionStorage.removeItem('exlibris:collectionScroll')
+    } catch {
+      saved = null
+    }
+    if (saved === null) return
+    requestAnimationFrame(() => window.scrollTo(0, Number(saved)))
+  }, [loading])
+
   const tags = useMemo(() => {
     const set = new Set()
     for (const book of books) {
@@ -176,6 +324,14 @@ export default function Collection() {
     const set = new Set()
     for (const book of books) {
       if (book.publisher) set.add(book.publisher)
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [books])
+
+  const authors = useMemo(() => {
+    const set = new Set()
+    for (const book of books) {
+      if (book.author) set.add(book.author)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
   }, [books])
@@ -218,11 +374,24 @@ export default function Collection() {
     return counts
   }, [books])
 
+  // La wishlist a son propre onglet (voir plus bas) : la Collection
+  // elle-même ne montre que ce qui est vraiment possédé, pas ce qu'on
+  // aimerait avoir un jour.
+  const collectionBooks = useMemo(
+    () => books.filter((book) => book.status !== 'wishlist'),
+    [books],
+  )
+  const wishlistBooks = useMemo(
+    () => books.filter((book) => book.status === 'wishlist'),
+    [books],
+  )
+
   // Livres sans couverture ou sans les champs qu'un scan ISBN réussi remplit
   // normalement tout seul (auteur, éditeur, pages, description) : à
-  // compléter à la main.
+  // compléter à la main. Basé sur ce qu'on possède : un livre encore en
+  // wishlist n'a pas vocation à être "complété" avant d'être acheté.
   const incompleteBooks = useMemo(() => {
-    return books.filter(
+    return collectionBooks.filter(
       (book) =>
         !book.cover_url ||
         !book.author ||
@@ -230,16 +399,26 @@ export default function Collection() {
         !book.page_count ||
         !book.description,
     )
-  }, [books])
+  }, [collectionBooks])
+
+  // Chaque option de tri reste "croissante" par nature (compare() ci-dessus) ;
+  // inverser le signe du résultat inverse aussi bien le critère principal que
+  // le départage alphabétique (les deux sont chaînés par `||`), donc ça
+  // retourne bien tout l'ordre plutôt que juste le premier critère.
+  const effectiveCompare = useMemo(() => {
+    const compare = SORT_OPTIONS[sort].compare
+    return direction === 'desc' ? (a, b) => -compare(a, b) : compare
+  }, [sort, direction])
 
   const sortedIncompleteBooks = useMemo(
-    () => [...incompleteBooks].sort(SORT_OPTIONS[sort].compare),
-    [incompleteBooks, sort],
+    () => [...incompleteBooks].sort(effectiveCompare),
+    [incompleteBooks, effectiveCompare],
   )
 
   const filteredBooks = useMemo(() => {
+    const pool = collectionTab === 'wishlist' ? wishlistBooks : collectionBooks
     const query = search.trim().toLowerCase()
-    return books.filter((book) => {
+    return pool.filter((book) => {
       if (query) {
         const isbn = (book.isbn ?? '').replace(/[\s-]/g, '')
         const haystack = `${book.title} ${book.author ?? ''} ${isbn}`.toLowerCase()
@@ -251,6 +430,7 @@ export default function Collection() {
       )
         return false
       if (publisher && book.publisher !== publisher) return false
+      if (author && book.author !== author) return false
       if (collection && book.collection !== collection) return false
       if (edition && !book.edition?.includes(edition)) return false
       if (series && book.series !== series) return false
@@ -260,10 +440,13 @@ export default function Collection() {
       return true
     })
   }, [
-    books,
+    collectionTab,
+    collectionBooks,
+    wishlistBooks,
     search,
     selectedTags,
     publisher,
+    author,
     collection,
     edition,
     series,
@@ -273,8 +456,8 @@ export default function Collection() {
   ])
 
   const sortedBooks = useMemo(
-    () => [...filteredBooks].sort(SORT_OPTIONS[sort].compare),
-    [filteredBooks, sort],
+    () => [...filteredBooks].sort(effectiveCompare),
+    [filteredBooks, effectiveCompare],
   )
 
   const visibleBooks =
@@ -296,10 +479,68 @@ export default function Collection() {
     return items
   }, [visibleBooks, sort])
 
+  // La barre alphabétique n'a de sens que pour les tris Titre/Auteur : ce
+  // sont les seuls où l'en-tête de groupe est une simple lettre (voir
+  // groupKeyFor). Sur les autres tris, elle reste masquée.
+  const availableLetters = useMemo(() => {
+    if (sort !== 'title' && sort !== 'author') return null
+    const set = new Set()
+    for (const item of gridItems) {
+      if (item.type === 'header' && item.label.length === 1) set.add(item.label)
+    }
+    return set
+  }, [gridItems, sort])
+
+  // Surligne dans la barre la lettre du groupe actuellement en haut de
+  // l'écran, pour se repérer pendant le scroll. `availableLetters` respecte
+  // déjà l'ordre d'affichage réel (A->Z ou Z->A selon `direction`, puisqu'il
+  // est construit depuis gridItems) : on peut donc s'y fier tel quel plutôt
+  // que de forcer un tri alphabétique qui casserait le cas décroissant.
+  const [activeLetter, setActiveLetter] = useState(null)
+  useEffect(() => {
+    // Rien à observer, et de toute façon la barre ne s'affiche pas dans ce
+    // cas (voir plus bas) : `activeLetter` peut rester tel quel, il sera
+    // recalculé dès qu'il y aura de nouveau des lettres à suivre.
+    if (!availableLetters || availableLetters.size === 0) return
+    const letters = [...availableLetters]
+    let ticking = false
+    function computeActive() {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        let current = null
+        for (const letter of letters) {
+          const el = document.getElementById(`h-${letter}`)
+          if (el && el.getBoundingClientRect().top <= 96) {
+            current = letter
+          } else {
+            break
+          }
+        }
+        setActiveLetter(current)
+        ticking = false
+      })
+    }
+    computeActive()
+    window.addEventListener('scroll', computeActive, { passive: true })
+    return () => window.removeEventListener('scroll', computeActive)
+  }, [availableLetters])
+
+  function scrollToLetter(letter) {
+    const reduceMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    document.getElementById(`h-${letter}`)?.scrollIntoView({
+      behavior: reduceMotion ? 'auto' : 'smooth',
+      block: 'start',
+    })
+  }
+
   const hasActiveFilters = Boolean(
     search ||
       selectedTags.length > 0 ||
       publisher ||
+      author ||
       collection ||
       edition ||
       series ||
@@ -316,6 +557,7 @@ export default function Collection() {
           'q',
           'tag',
           'publisher',
+          'author',
           'collection',
           'edition',
           'series',
@@ -482,6 +724,12 @@ export default function Collection() {
             >
               Statistiques
             </Link>
+            <Link
+              to="/succes"
+              className={`rounded-sm px-3 py-2 text-sm ${secondaryButtonClass}`}
+            >
+              Succès
+            </Link>
           </div>
           <div className="relative group shrink-0">
             <Link
@@ -520,6 +768,13 @@ export default function Collection() {
               tabs={[
                 { key: 'collection', label: 'Collection' },
                 {
+                  key: 'wishlist',
+                  label:
+                    wishlistBooks.length > 0
+                      ? `Wishlist (${wishlistBooks.length})`
+                      : 'Wishlist',
+                },
+                {
                   key: 'todo',
                   label:
                     incompleteBooks.length > 0
@@ -549,7 +804,7 @@ export default function Collection() {
 
         {!loading && !error && books.length > 0 && collectionTab === 'collection' && (
           <div className="flex flex-wrap gap-2 mb-4" role="group" aria-label="Filtrer par statut">
-            {STATUS_ORDER.map((key) => (
+            {STATUS_ORDER.filter((key) => key !== 'wishlist').map((key) => (
               <StatusChip
                 key={key}
                 active={status === key}
@@ -563,35 +818,41 @@ export default function Collection() {
           </div>
         )}
 
-        {!loading && !error && books.length > 0 && collectionTab === 'collection' && (
-          <CollectionFilters
-            search={search}
-            onSearchChange={setSearch}
-            selectedTags={selectedTags}
-            onSelectedTagsChange={setSelectedTags}
-            tags={tags}
-            publisher={publisher}
-            onPublisherChange={setPublisher}
-            publishers={publishers}
-            collection={collection}
-            onCollectionChange={setCollection}
-            collections={collections}
-            edition={edition}
-            onEditionChange={setEdition}
-            editions={editions}
-            series={series}
-            onSeriesChange={handleSeriesChange}
-            seriesList={seriesList}
-            universe={universe}
-            onUniverseChange={setUniverse}
-            universeList={universeList}
-            type={type}
-            onTypeChange={setType}
-            status={status}
-            hasActiveFilters={hasActiveFilters}
-            onReset={resetFilters}
-          />
-        )}
+        {!loading &&
+          !error &&
+          books.length > 0 &&
+          (collectionTab === 'collection' || collectionTab === 'wishlist') && (
+            <CollectionFilters
+              search={search}
+              onSearchChange={setSearch}
+              selectedTags={selectedTags}
+              onSelectedTagsChange={setSelectedTags}
+              tags={tags}
+              publisher={publisher}
+              onPublisherChange={setPublisher}
+              publishers={publishers}
+              author={author}
+              onAuthorChange={setAuthor}
+              authors={authors}
+              collection={collection}
+              onCollectionChange={setCollection}
+              collections={collections}
+              edition={edition}
+              onEditionChange={setEdition}
+              editions={editions}
+              series={series}
+              onSeriesChange={handleSeriesChange}
+              seriesList={seriesList}
+              universe={universe}
+              onUniverseChange={setUniverse}
+              universeList={universeList}
+              type={type}
+              onTypeChange={setType}
+              status={status}
+              hasActiveFilters={hasActiveFilters}
+              onReset={resetFilters}
+            />
+          )}
 
         {loading ? (
           <LoadingScreen fullScreen={false} />
@@ -632,7 +893,24 @@ export default function Collection() {
               Aucun livre à compléter pour l'instant.
             </p>
           </div>
-        ) : collectionTab === 'collection' && filteredBooks.length === 0 ? (
+        ) : collectionTab === 'wishlist' && wishlistBooks.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="font-serif text-xl mb-2">Ta wishlist est vide</p>
+            <p className="text-sm text-ink/70">
+              Ajoute un livre en statut Wishlist pour le retrouver ici.
+            </p>
+          </div>
+        ) : collectionTab === 'collection' && collectionBooks.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="font-serif text-xl mb-2">
+              Pas encore de livre en collection
+            </p>
+            <p className="text-sm text-ink/70">
+              Tout est encore dans la wishlist pour l'instant.
+            </p>
+          </div>
+        ) : (collectionTab === 'collection' || collectionTab === 'wishlist') &&
+          filteredBooks.length === 0 ? (
           <div className="text-center py-16">
             <p className="font-serif text-xl mb-2">
               Aucun livre ne correspond
@@ -673,11 +951,17 @@ export default function Collection() {
                       {visibleBooks.length} livre
                       {visibleBooks.length > 1 ? 's' : ''} à compléter
                     </>
+                  ) : collectionTab === 'wishlist' ? (
+                    <>
+                      {filteredBooks.length} livre
+                      {filteredBooks.length > 1 ? 's' : ''} dans la wishlist
+                      {hasActiveFilters ? ` sur ${wishlistBooks.length}` : ''}
+                    </>
                   ) : (
                     <>
                       {filteredBooks.length} livre
                       {filteredBooks.length > 1 ? 's' : ''}
-                      {hasActiveFilters ? ` sur ${books.length}` : ''}
+                      {hasActiveFilters ? ` sur ${collectionBooks.length}` : ''}
                     </>
                   )}
                 </p>
@@ -695,18 +979,37 @@ export default function Collection() {
                   </button>
                 )}
                 {!selectionMode && (
-                  <select
-                    value={sort}
-                    onChange={(e) => setSort(e.target.value)}
-                    aria-label="Trier par"
-                    className="rounded-sm border border-ink/20 bg-surface px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-                  >
-                    {Object.entries(SORT_OPTIONS).map(([key, { label }]) => (
-                      <option key={key} value={key}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex items-center gap-1">
+                    <select
+                      value={sort}
+                      onChange={(e) => setSort(e.target.value)}
+                      aria-label="Trier par"
+                      className="rounded-sm border border-ink/20 bg-surface px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                    >
+                      {SORT_GROUPS.map((group) => (
+                        <optgroup key={group.label} label={group.label}>
+                          {group.keys.map((key) => (
+                            <option key={key} value={key}>
+                              {SORT_OPTIONS[key].label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={toggleDirection}
+                      title={
+                        direction === 'desc'
+                          ? 'Ordre décroissant (cliquer pour inverser)'
+                          : 'Ordre croissant (cliquer pour inverser)'
+                      }
+                      aria-label="Inverser l'ordre du tri"
+                      className="rounded-sm border border-ink/20 bg-surface w-7 h-7 flex items-center justify-center text-ink/70 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                    >
+                      <span aria-hidden="true">{direction === 'desc' ? '↓' : '↑'}</span>
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -715,7 +1018,8 @@ export default function Collection() {
                 item.type === 'header' ? (
                   <p
                     key={item.renderKey}
-                    className={`col-span-full ${labelClass} border-b border-ink/10 pb-1 mt-2 first:mt-0`}
+                    id={item.renderKey}
+                    className={`col-span-full ${labelClass} border-b border-ink/10 pb-1 mt-2 first:mt-0 scroll-mt-4`}
                   >
                     {item.label}
                   </p>
@@ -734,6 +1038,14 @@ export default function Collection() {
           </>
         )}
       </main>
+
+      {availableLetters && (
+        <AlphabetIndex
+          availableLetters={availableLetters}
+          activeLetter={activeLetter}
+          onSelect={scrollToLetter}
+        />
+      )}
 
       {selectionMode ? (
         <BulkActionBar

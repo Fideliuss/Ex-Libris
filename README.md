@@ -169,6 +169,14 @@ crédits) en dehors d'un vrai merge sur `main` :
   `main`, branch deploys et previews désactivés). Pas de versionnage
   automatique : `CHANGELOG.md` est un historique figé, `package.json`
   n'est plus bumpé.
+- **Avant cette PR `develop → main`**, si les changements embarqués sont
+  visibles pour l'utilisateur (pas un refactor interne ou un fix invisible) :
+  ajouter une entrée à la main dans `CHANGELOG.md` (historique technique,
+  un paragraphe par version) **et** dans `src/lib/whatsNew.js` (texte
+  pensé pour l'utilisateur, affiché dans l'app via le pop-up "Quoi de
+  neuf" — voir son commentaire d'en-tête). Les deux sont volontairement
+  distincts et doivent être tenus à jour ensemble, pas l'un à la place de
+  l'autre.
 - Protection des branches via [Repository Rulesets](https://github.com/Fideliuss/Ex-Libris/rules)
   (pas l'ancienne "branch protection" classique, qui ne bloque pas
   vraiment les push directs quand 0 review est requise).
