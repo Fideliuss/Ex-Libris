@@ -10,6 +10,7 @@ import BulkActionBar from '../components/BulkActionBar'
 import HouseholdSwitchBadge from '../components/HouseholdSwitchBadge'
 import TabBar from '../components/TabBar'
 import LoadingScreen from '../components/LoadingScreen'
+import AlphabetIndex from '../components/AlphabetIndex'
 import {
   STATUS_LABELS,
   STATUS_BADGE_CLASS,
@@ -467,6 +468,28 @@ export default function Collection() {
     }
     return items
   }, [visibleBooks, sort])
+
+  // La barre alphabétique n'a de sens que pour les tris Titre/Auteur : ce
+  // sont les seuls où l'en-tête de groupe est une simple lettre (voir
+  // groupKeyFor). Sur les autres tris, elle reste masquée.
+  const availableLetters = useMemo(() => {
+    if (sort !== 'title' && sort !== 'author') return null
+    const set = new Set()
+    for (const item of gridItems) {
+      if (item.type === 'header' && item.label.length === 1) set.add(item.label)
+    }
+    return set
+  }, [gridItems, sort])
+
+  function scrollToLetter(letter) {
+    const reduceMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    document.getElementById(`h-${letter}`)?.scrollIntoView({
+      behavior: reduceMotion ? 'auto' : 'smooth',
+      block: 'start',
+    })
+  }
 
   const hasActiveFilters = Boolean(
     search ||
@@ -950,7 +973,8 @@ export default function Collection() {
                 item.type === 'header' ? (
                   <p
                     key={item.renderKey}
-                    className={`col-span-full ${labelClass} border-b border-ink/10 pb-1 mt-2 first:mt-0`}
+                    id={item.renderKey}
+                    className={`col-span-full ${labelClass} border-b border-ink/10 pb-1 mt-2 first:mt-0 scroll-mt-4`}
                   >
                     {item.label}
                   </p>
@@ -969,6 +993,10 @@ export default function Collection() {
           </>
         )}
       </main>
+
+      {availableLetters && (
+        <AlphabetIndex availableLetters={availableLetters} onSelect={scrollToLetter} />
+      )}
 
       {selectionMode ? (
         <BulkActionBar
