@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { bulkDeleteBooks, bulkUpdateBooks } from '../lib/books'
@@ -261,6 +261,36 @@ export default function Collection() {
   const [selectedIds, setSelectedIds] = useState(() => new Set())
   const [bulkWorking, setBulkWorking] = useState(false)
   const [bulkError, setBulkError] = useState(null)
+
+  // Retrouve la position de scroll en revenant d'une fiche livre, plutôt que
+  // de repartir en haut de la page à chaque retour. Sauvegardée au
+  // démontage (donc à toute navigation qui quitte cette page) et consommée
+  // une seule fois au remontage suivant ; `main` a une `key` sur mine/
+  // partner pour forcer un remontage au changement de foyer, mais cet effet
+  // vit dans le composant Collection lui-même, pas dans ce `main` : il ne se
+  // redéclenche donc pas à un simple changement de vue.
+  useEffect(() => {
+    return () => {
+      try {
+        sessionStorage.setItem('exlibris:collectionScroll', String(window.scrollY))
+      } catch {
+        // Stockage indisponible (navigation privée...) : tant pis.
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (loading) return
+    let saved
+    try {
+      saved = sessionStorage.getItem('exlibris:collectionScroll')
+      if (saved !== null) sessionStorage.removeItem('exlibris:collectionScroll')
+    } catch {
+      saved = null
+    }
+    if (saved === null) return
+    requestAnimationFrame(() => window.scrollTo(0, Number(saved)))
+  }, [loading])
 
   const tags = useMemo(() => {
     const set = new Set()
