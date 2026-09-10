@@ -4,6 +4,11 @@ Généré automatiquement par release-please jusqu'à la version 1.3.0 (outil
 retiré ensuite). Les entrées suivantes sont ajoutées à la main à chaque
 promotion `develop` -> `main`.
 
+Historique technique (commits, PR, hashes) : pas ce qui est montré dans
+l'app. Pour le pop-up "Quoi de neuf" vu par l'utilisateur, voir
+`src/lib/whatsNew.js`, à tenir à jour en parallèle (voir README.md,
+section GitFlow).
+
 ## [1.4.0](https://github.com/Fideliuss/Ex-Libris/compare/ExLibris-v1.3.0...ExLibris-v1.4.0) (2026-08-28)
 
 

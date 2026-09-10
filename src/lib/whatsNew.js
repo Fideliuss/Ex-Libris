@@ -3,7 +3,10 @@
 // fichier-là est le journal technique (commits, PR, hash) génère/tenu à la
 // main pour les releases, pas un texte pensé pour être lu par un·e
 // utilisateur·rice dans l'app. On ajoute une entrée en tête de liste à
-// chaque nouveauté qui mérite d'être annoncée (pas à chaque PR).
+// chaque nouveauté qui mérite d'être annoncée (pas à chaque PR), au moment
+// de la promotion `develop` -> `main`, en même temps que CHANGELOG.md
+// (voir README.md, section GitFlow) : c'est le seul moment fiable où on
+// prend du recul sur tout ce qui vient d'être livré d'un coup.
 export const WHATS_NEW = [
   {
     id: '2026-09-sort-and-badges',
