@@ -12,6 +12,9 @@ export default function CollectionFilters({
   publisher,
   onPublisherChange,
   publishers,
+  author,
+  onAuthorChange,
+  authors,
   collection,
   onCollectionChange,
   collections,
@@ -31,8 +34,9 @@ export default function CollectionFilters({
   onReset,
 }) {
   const activeCount =
-    [publisher, collection, edition, series, universe, type, status].filter(Boolean)
-      .length + (selectedTags.length > 0 ? 1 : 0)
+    [publisher, author, collection, edition, series, universe, type, status].filter(
+      Boolean,
+    ).length + (selectedTags.length > 0 ? 1 : 0)
   const [expanded, setExpanded] = useState(() => hasActiveFilters)
 
   return (
@@ -89,6 +93,20 @@ export default function CollectionFilters({
               {publishers.map((p) => (
                 <option key={p} value={p}>
                   {p}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={author}
+              onChange={(e) => onAuthorChange(e.target.value)}
+              aria-label="Filtrer par auteur"
+              className={selectClass}
+            >
+              <option value="">Tous les auteurs</option>
+              {authors.map((a) => (
+                <option key={a} value={a}>
+                  {a}
                 </option>
               ))}
             </select>
@@ -177,7 +195,7 @@ function FilterSection({ label, children }) {
   return (
     <div>
       <p className={`${labelClass} mb-2`}>{label}</p>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">{children}</div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">{children}</div>
     </div>
   )
 }
