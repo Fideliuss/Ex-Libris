@@ -610,6 +610,12 @@ export default function Collection() {
             >
               Statistiques
             </Link>
+            <Link
+              to="/stats?tab=achievements"
+              className={`rounded-sm px-3 py-2 text-sm ${secondaryButtonClass}`}
+            >
+              Succès
+            </Link>
           </div>
           <div className="relative group shrink-0">
             <Link

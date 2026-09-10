@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import {
@@ -66,7 +66,14 @@ export default function Stats() {
   const goBack = useGoBack('/')
   const [convertingTag, setConvertingTag] = useState(null)
   const [convertError, setConvertError] = useState(null)
-  const [statsTab, setStatsTab] = useState('overview')
+  // `?tab=achievements` permet au bouton "Succès" de la Collection de
+  // pointer directement sur cet onglet plutôt que sur la vue d'ensemble.
+  const [searchParams] = useSearchParams()
+  const [statsTab, setStatsTab] = useState(() =>
+    STATS_TABS.some((t) => t.key === searchParams.get('tab'))
+      ? searchParams.get('tab')
+      : 'overview',
+  )
   const [myFirstName, setMyFirstName] = useState(null)
   const [period, setPeriod] = useState('all')
   const [customFrom, setCustomFrom] = useState('')
