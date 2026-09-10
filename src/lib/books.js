@@ -101,36 +101,41 @@ export async function bulkDeleteBooks(ids) {
   if (error) throw error
 }
 
-export async function listAllTags() {
+// Valeurs distinctes d'une colonne à valeurs multiples (tags, author,
+// translator, illustrator...) sur les livres de l'utilisateur courant, pour
+// alimenter les suggestions de saisie (TagInput). Un seul aller-retour
+// réseau par colonne : on aplatit côté client plutôt que de demander à
+// Postgres de le faire, pour rester simple.
+async function listDistinctArrayValues(column) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
   const { data, error } = await supabase
     .from('books')
-    .select('tags')
+    .select(column)
     .eq('user_id', user.id)
   if (error) throw error
-  const tags = new Set()
+  const values = new Set()
   for (const row of data) {
-    for (const tag of row.tags ?? []) tags.add(tag)
+    for (const value of row[column] ?? []) values.add(value)
   }
-  return [...tags].sort((a, b) => a.localeCompare(b, 'fr'))
+  return [...values].sort((a, b) => a.localeCompare(b, 'fr'))
 }
 
-export async function listAllAuthors() {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const { data, error } = await supabase
-    .from('books')
-    .select('author')
-    .eq('user_id', user.id)
-  if (error) throw error
-  const authors = new Set()
-  for (const row of data) {
-    for (const author of row.author ?? []) authors.add(author)
-  }
-  return [...authors].sort((a, b) => a.localeCompare(b, 'fr'))
+export function listAllTags() {
+  return listDistinctArrayValues('tags')
+}
+
+export function listAllAuthors() {
+  return listDistinctArrayValues('author')
+}
+
+export function listAllTranslators() {
+  return listDistinctArrayValues('translator')
+}
+
+export function listAllIllustrators() {
+  return listDistinctArrayValues('illustrator')
 }
 
 export async function listAllCollections() {

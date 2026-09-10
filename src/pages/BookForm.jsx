@@ -6,9 +6,11 @@ import {
   getBook,
   listAllAuthors,
   listAllCollections,
+  listAllIllustrators,
   listAllPublishers,
   listAllSeries,
   listAllTags,
+  listAllTranslators,
   listAllUniverses,
   updateBook,
 } from '../lib/books'
@@ -69,6 +71,8 @@ export default function BookForm() {
   const [book, setBook] = useState(emptyBook)
   const [existingTags, setExistingTags] = useState([])
   const [existingAuthors, setExistingAuthors] = useState([])
+  const [existingTranslators, setExistingTranslators] = useState([])
+  const [existingIllustrators, setExistingIllustrators] = useState([])
   const [existingCollections, setExistingCollections] = useState([])
   const [existingPublishers, setExistingPublishers] = useState([])
   const [existingSeries, setExistingSeries] = useState([])
@@ -86,6 +90,8 @@ export default function BookForm() {
   useEffect(() => {
     listAllTags().then(setExistingTags).catch(() => {})
     listAllAuthors().then(setExistingAuthors).catch(() => {})
+    listAllTranslators().then(setExistingTranslators).catch(() => {})
+    listAllIllustrators().then(setExistingIllustrators).catch(() => {})
     listAllCollections().then(setExistingCollections).catch(() => {})
     listAllPublishers().then(setExistingPublishers).catch(() => {})
     listAllSeries().then(setExistingSeries).catch(() => {})
@@ -377,6 +383,7 @@ export default function BookForm() {
                 <TagInput
                   value={book.translator ?? []}
                   onChange={(v) => set('translator', v)}
+                  suggestions={existingTranslators}
                   placeholder="Ajouter, Entrée pour valider"
                 />
               </Field>
@@ -384,6 +391,7 @@ export default function BookForm() {
                 <TagInput
                   value={book.illustrator ?? []}
                   onChange={(v) => set('illustrator', v)}
+                  suggestions={existingIllustrators}
                   placeholder="Ajouter, Entrée pour valider"
                 />
               </Field>
