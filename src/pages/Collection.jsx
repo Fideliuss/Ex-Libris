@@ -264,20 +264,30 @@ export default function Collection() {
   const [bulkError, setBulkError] = useState(null)
 
   // Retrouve la position de scroll en revenant d'une fiche livre, plutôt que
-  // de repartir en haut de la page à chaque retour. Sauvegardée au
-  // démontage (donc à toute navigation qui quitte cette page) et consommée
-  // une seule fois au remontage suivant ; `main` a une `key` sur mine/
-  // partner pour forcer un remontage au changement de foyer, mais cet effet
-  // vit dans le composant Collection lui-même, pas dans ce `main` : il ne se
-  // redéclenche donc pas à un simple changement de vue.
+  // de repartir en haut de la page à chaque retour. Sauvegardée en continu
+  // pendant le scroll plutôt qu'au démontage : `navigateWithViewTransition`
+  // remplace le DOM de la page (via flushSync) avant que le nettoyage de cet
+  // effet ne s'exécute, et la nouvelle page (BookDetail, bien plus courte le
+  // temps de son propre chargement) fait retomber `window.scrollY` à 0 avant
+  // même qu'on ait pu le lire — confirmé en pratique (valeur toujours à 0 au
+  // démontage). D'où le throttle par rAF : un listener de scroll simple sans
+  // ça écrirait dans le storage à chaque pixel défilé.
   useEffect(() => {
-    return () => {
-      try {
-        sessionStorage.setItem('exlibris:collectionScroll', String(window.scrollY))
-      } catch {
-        // Stockage indisponible (navigation privée...) : tant pis.
-      }
+    let ticking = false
+    function handleScroll() {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        try {
+          sessionStorage.setItem('exlibris:collectionScroll', String(window.scrollY))
+        } catch {
+          // Stockage indisponible (navigation privée...) : tant pis.
+        }
+        ticking = false
+      })
     }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
   useEffect(() => {
@@ -480,6 +490,41 @@ export default function Collection() {
     }
     return set
   }, [gridItems, sort])
+
+  // Surligne dans la barre la lettre du groupe actuellement en haut de
+  // l'écran, pour se repérer pendant le scroll. `availableLetters` respecte
+  // déjà l'ordre d'affichage réel (A->Z ou Z->A selon `direction`, puisqu'il
+  // est construit depuis gridItems) : on peut donc s'y fier tel quel plutôt
+  // que de forcer un tri alphabétique qui casserait le cas décroissant.
+  const [activeLetter, setActiveLetter] = useState(null)
+  useEffect(() => {
+    // Rien à observer, et de toute façon la barre ne s'affiche pas dans ce
+    // cas (voir plus bas) : `activeLetter` peut rester tel quel, il sera
+    // recalculé dès qu'il y aura de nouveau des lettres à suivre.
+    if (!availableLetters || availableLetters.size === 0) return
+    const letters = [...availableLetters]
+    let ticking = false
+    function computeActive() {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        let current = null
+        for (const letter of letters) {
+          const el = document.getElementById(`h-${letter}`)
+          if (el && el.getBoundingClientRect().top <= 96) {
+            current = letter
+          } else {
+            break
+          }
+        }
+        setActiveLetter(current)
+        ticking = false
+      })
+    }
+    computeActive()
+    window.addEventListener('scroll', computeActive, { passive: true })
+    return () => window.removeEventListener('scroll', computeActive)
+  }, [availableLetters])
 
   function scrollToLetter(letter) {
     const reduceMotion =
@@ -995,7 +1040,11 @@ export default function Collection() {
       </main>
 
       {availableLetters && (
-        <AlphabetIndex availableLetters={availableLetters} onSelect={scrollToLetter} />
+        <AlphabetIndex
+          availableLetters={availableLetters}
+          activeLetter={activeLetter}
+          onSelect={scrollToLetter}
+        />
       )}
 
       {selectionMode ? (
