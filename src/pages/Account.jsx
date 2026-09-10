@@ -3,11 +3,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTutorial } from '../context/TutorialContext'
 import { useGoBack } from '../lib/navigation'
+import { markChangelogSeen } from '../lib/friendCode'
+import { LATEST_CHANGELOG_ID, WHATS_NEW } from '../lib/whatsNew'
 import SharingPanel from '../components/SharingPanel'
 import LoadingScreen from '../components/LoadingScreen'
 import ThemeToggle from '../components/ThemeToggle'
 import DeleteAccountSection from '../components/DeleteAccountSection'
 import PersonalInfoSection from '../components/PersonalInfoSection'
+import ChangelogModal from '../components/ChangelogModal'
 import { secondaryButtonClass } from '../lib/ui'
 
 const ImportPanel = lazy(() => import('../components/ImportPanel'))
@@ -34,6 +37,13 @@ function LibrarySection() {
 
 function SecuritySection() {
   const { replay } = useTutorial()
+  const { user } = useAuth()
+  const [showChangelog, setShowChangelog] = useState(false)
+
+  function closeChangelog() {
+    setShowChangelog(false)
+    if (user) markChangelogSeen(user.id, LATEST_CHANGELOG_ID).catch(() => {})
+  }
 
   return (
     <div className="space-y-4">
@@ -56,7 +66,30 @@ function SecuritySection() {
           Revoir le tutoriel
         </button>
       </div>
+      <div>
+        <h3 className="text-sm font-medium mb-2">Nouveautés</h3>
+        <button
+          type="button"
+          onClick={() => setShowChangelog(true)}
+          className={`rounded-sm px-4 py-2 text-sm ${secondaryButtonClass}`}
+        >
+          Voir les nouveautés
+        </button>
+      </div>
+      <div>
+        <h3 className="text-sm font-medium mb-2">Un bug ?</h3>
+        <a
+          href="https://github.com/Fideliuss/Ex-Libris/issues/new"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`inline-block rounded-sm px-4 py-2 text-sm ${secondaryButtonClass}`}
+        >
+          Signaler un problème
+        </a>
+      </div>
       <DeleteAccountSection />
+
+      {showChangelog && <ChangelogModal entries={WHATS_NEW} onClose={closeChangelog} />}
     </div>
   )
 }

@@ -21,6 +21,7 @@ create table profiles (
   email text not null,
   friend_code text not null unique,
   has_seen_tutorial boolean not null default false,
+  last_seen_changelog text,
   created_at timestamptz default now()
 );
 

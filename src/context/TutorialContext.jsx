@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { useAuth } from './AuthContext'
-import { getMyProfile, markTutorialSeen } from '../lib/friendCode'
+import { getMyProfile, markChangelogSeen, markTutorialSeen } from '../lib/friendCode'
+import { LATEST_CHANGELOG_ID } from '../lib/whatsNew'
 import OnboardingModal from '../components/OnboardingModal'
 
 const TutorialContext = createContext(undefined)
@@ -34,7 +35,12 @@ export function TutorialProvider({ children }) {
 
   function close() {
     setOpen(false)
-    if (user) markTutorialSeen(user.id).catch(() => {})
+    if (!user) return
+    markTutorialSeen(user.id).catch(() => {})
+    // Un compte qui vient de finir le tutoriel part avec tout ce qui existe
+    // déjà : pas la peine de lui montrer un pop-up "quoi de neuf" juste
+    // après, ce n'est nouveau que pour les comptes existants.
+    markChangelogSeen(user.id, LATEST_CHANGELOG_ID).catch(() => {})
   }
 
   const replay = useCallback(() => {
