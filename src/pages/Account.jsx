@@ -56,6 +56,17 @@ function SecuritySection() {
           Revoir le tutoriel
         </button>
       </div>
+      <div>
+        <h3 className="text-sm font-medium mb-2">Un bug ?</h3>
+        <a
+          href="https://github.com/Fideliuss/Ex-Libris/issues/new"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`inline-block rounded-sm px-4 py-2 text-sm ${secondaryButtonClass}`}
+        >
+          Signaler un problème
+        </a>
+      </div>
       <DeleteAccountSection />
     </div>
   )

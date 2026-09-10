@@ -17,6 +17,7 @@ import { navigateWithViewTransition, useGoBack } from '../lib/navigation'
 import ReadingBookmark from '../components/ReadingBookmark'
 import LoadingScreen from '../components/LoadingScreen'
 import BookCoverPlaceholder from '../components/BookCoverPlaceholder'
+import QuickRatingModal from '../components/QuickRatingModal'
 
 // Au-delà de ce nombre de tomes manquants d'affilée, on compresse le trou en
 // une seule chip "···" plutôt que d'en afficher une par tome manquant :
@@ -153,6 +154,7 @@ export default function BookDetail() {
   const [statusSaving, setStatusSaving] = useState(false)
   const [statusError, setStatusError] = useState(null)
   const [seriesSiblings, setSeriesSiblings] = useState([])
+  const [showRatingPrompt, setShowRatingPrompt] = useState(false)
 
   async function handleStatusChange(newStatus) {
     setStatusSaving(true)
@@ -165,12 +167,26 @@ export default function BookDetail() {
       if (newStatus === 'read' && !book.date_finished) {
         patch.date_finished = todayDateOnly()
       }
+      const wasUnrated = !book.rating
       const updated = await updateBook(id, patch)
       setBook(updated)
+      if (newStatus === 'read' && wasUnrated) {
+        setShowRatingPrompt(true)
+      }
     } catch (err) {
       setStatusError(describeError(err))
     } finally {
       setStatusSaving(false)
+    }
+  }
+
+  async function handleQuickRate(rating) {
+    setShowRatingPrompt(false)
+    try {
+      const updated = await updateBook(id, { rating })
+      setBook(updated)
+    } catch (err) {
+      setStatusError(describeError(err))
     }
   }
 
@@ -654,6 +670,14 @@ export default function BookDetail() {
             className="max-w-full max-h-full rounded-sm shadow-lg cursor-zoom-out"
           />
         </div>
+      )}
+
+      {showRatingPrompt && (
+        <QuickRatingModal
+          bookTitle={book.title}
+          onRate={handleQuickRate}
+          onSkip={() => setShowRatingPrompt(false)}
+        />
       )}
     </div>
   )
