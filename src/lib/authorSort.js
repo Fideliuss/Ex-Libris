@@ -8,5 +8,11 @@ export function authorSortKey(author) {
   if (!author) return ''
   const firstAuthor = author.split(',')[0].trim()
   const words = firstAuthor.split(/\s+/)
-  return words[words.length - 1] ?? ''
+  // Les noms d'auteur viennent de 3 sources ISBN différentes (Google Books,
+  // OpenLibrary, BNF) qui n'encodent pas forcément les lettres accentuées de
+  // la même façon (forme composée "é" vs décomposée "e" + accent séparé) :
+  // visuellement identiques, ces deux formes sont des chaînes différentes.
+  // Sans normalisation, deux auteurs affichés pareil (ex. "Éluard") peuvent
+  // finir dans des groupes distincts lors du tri par auteur.
+  return (words[words.length - 1] ?? '').normalize('NFC')
 }

@@ -20,38 +20,102 @@ import { primaryButtonClass, secondaryButtonClass, labelClass } from '../lib/ui'
 
 const STATUS_ORDER = Object.keys(STATUS_LABELS)
 
+// Départage à l'alphabétique (titre) toute égalité de tri : deux livres du
+// même auteur, à la même note, etc. sinon leur ordre relatif ne voudrait
+// rien dire pour l'utilisateur (il refléterait juste l'ordre d'insertion).
+function titleCompare(a, b) {
+  return a.title.localeCompare(b.title, 'fr')
+}
+
 const SORT_OPTIONS = {
-  recent: {
-    label: 'Récemment ajoutés',
-    compare: (a, b) => new Date(b.created_at) - new Date(a.created_at),
-  },
   title: {
     label: 'Titre (A→Z)',
-    compare: (a, b) => a.title.localeCompare(b.title, 'fr'),
+    compare: titleCompare,
   },
   author: {
     label: 'Auteur (nom, A→Z)',
     compare: (a, b) =>
-      authorSortKey(a.author).localeCompare(authorSortKey(b.author), 'fr'),
+      authorSortKey(a.author).localeCompare(authorSortKey(b.author), 'fr') ||
+      titleCompare(a, b),
   },
-  rating: {
-    label: 'Note (meilleure d’abord)',
-    compare: (a, b) => (b.rating ?? 0) - (a.rating ?? 0),
+  recent: {
+    label: 'Récemment ajoutés',
+    compare: (a, b) =>
+      new Date(b.created_at) - new Date(a.created_at) || titleCompare(a, b),
   },
   finished: {
     label: 'Date de fin de lecture',
     compare: (a, b) =>
-      new Date(b.date_finished ?? 0) - new Date(a.date_finished ?? 0),
+      new Date(b.date_finished ?? 0) - new Date(a.date_finished ?? 0) ||
+      titleCompare(a, b),
   },
-  tome: {
-    label: 'Tome (croissant)',
-    compare: (a, b) => (a.series_index ?? 0) - (b.series_index ?? 0),
+  rating: {
+    label: 'Note (meilleure d’abord)',
+    compare: (a, b) => (b.rating ?? 0) - (a.rating ?? 0) || titleCompare(a, b),
   },
   status: {
     label: 'Statut',
     compare: (a, b) =>
-      STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status),
+      STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status) ||
+      titleCompare(a, b),
   },
+  // Trie d'abord par série (les livres sans série regroupés à part), puis
+  // par numéro de tome à l'intérieur de chaque série : trier par tome seul,
+  // toutes séries confondues, mélangerait les séries entre elles.
+  tome: {
+    label: 'Tome (croissant)',
+    compare: (a, b) =>
+      (a.series ?? '').localeCompare(b.series ?? '', 'fr') ||
+      (a.series_index ?? 0) - (b.series_index ?? 0) ||
+      titleCompare(a, b),
+  },
+}
+
+const SORT_GROUPS = [
+  { label: 'Alphabétique', keys: ['title', 'author'] },
+  { label: 'Chronologique', keys: ['recent', 'finished'] },
+  { label: 'Évaluation & série', keys: ['rating', 'status', 'tome'] },
+]
+
+function sortStorageKey(userId) {
+  return `exlibris:${userId ?? 'anon'}:collectionSort`
+}
+
+function directionStorageKey(userId) {
+  return `exlibris:${userId ?? 'anon'}:collectionSortDir`
+}
+
+function readStored(key) {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function writeStored(key, value) {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // Stockage indisponible (navigation privée, quota plein...) : tant pis,
+    // ce n'est qu'une préférence de confort.
+  }
+}
+
+function readStoredSort(userId) {
+  return readStored(sortStorageKey(userId))
+}
+
+function writeStoredSort(userId, value) {
+  writeStored(sortStorageKey(userId), value)
+}
+
+function readStoredDirection(userId) {
+  return readStored(directionStorageKey(userId))
+}
+
+function writeStoredDirection(userId, value) {
+  writeStored(directionStorageKey(userId), value)
 }
 
 // Les champs date_finished sont des "date" Postgres (pas d'heure) : les
@@ -69,18 +133,25 @@ function monthLabel(date) {
 }
 
 // Détermine l'en-tête de section pour un livre selon le tri actif (lettre,
-// mois, statut), ou `null` si ce tri ne se groupe pas naturellement (note,
-// tome) ou si le champ concerné est vide pour ce livre.
+// mois, statut, série, note...). Toujours une étiquette explicite, y compris
+// pour les livres sans valeur pour le critère actif (contigus grâce au tri
+// ci-dessus) : les laisser sans en-tête donnait l'impression qu'ils étaient
+// rangés n'importe où plutôt que volontairement à part.
 function groupKeyFor(book, sortKey) {
-  if (sortKey === 'title') return book.title[0].toUpperCase()
+  if (sortKey === 'title') return book.title.normalize('NFC')[0].toUpperCase()
   if (sortKey === 'author') {
     const key = authorSortKey(book.author)
-    return key ? key[0].toUpperCase() : null
+    return key ? key[0].toUpperCase() : 'Auteur inconnu'
   }
   if (sortKey === 'recent') return monthLabel(new Date(book.created_at))
   if (sortKey === 'finished')
-    return book.date_finished ? monthLabel(parseDateOnly(book.date_finished)) : null
+    return book.date_finished
+      ? monthLabel(parseDateOnly(book.date_finished))
+      : 'Non terminé'
   if (sortKey === 'status') return STATUS_LABELS[book.status] ?? null
+  if (sortKey === 'rating')
+    return book.rating > 0 ? '★'.repeat(book.rating) : 'Non noté'
+  if (sortKey === 'tome') return book.series || 'Sans série'
   return null
 }
 
@@ -103,13 +174,18 @@ export default function Collection() {
   const search = searchParams.get('q') ?? ''
   const selectedTags = searchParams.getAll('tag')
   const publisher = searchParams.get('publisher') ?? ''
+  const author = searchParams.get('author') ?? ''
   const collection = searchParams.get('collection') ?? ''
   const edition = searchParams.get('edition') ?? ''
   const series = searchParams.get('series') ?? ''
   const universe = searchParams.get('universe') ?? ''
   const type = searchParams.get('type') ?? ''
   const status = searchParams.get('status') ?? ''
-  const sort = searchParams.get('sort') ?? 'recent'
+  const sort = searchParams.get('sort') ?? readStoredSort(user?.id) ?? 'title'
+  const direction =
+    (searchParams.get('dir') ?? readStoredDirection(user?.id)) === 'desc'
+      ? 'desc'
+      : 'asc'
   const collectionTab = searchParams.get('tab') ?? 'collection'
 
   function setParam(key, value) {
@@ -126,12 +202,22 @@ export default function Collection() {
 
   const setSearch = (value) => setParam('q', value)
   const setPublisher = (value) => setParam('publisher', value)
+  const setAuthor = (value) => setParam('author', value)
   const setCollection = (value) => setParam('collection', value)
   const setEdition = (value) => setParam('edition', value)
   const setUniverse = (value) => setParam('universe', value)
   const setType = (value) => setParam('type', value)
   const setStatus = (value) => setParam('status', value)
-  const setSort = (value) => setParam('sort', value)
+  function setSort(value) {
+    setParam('sort', value)
+    writeStoredSort(user?.id, value)
+  }
+
+  function toggleDirection() {
+    const next = direction === 'desc' ? 'asc' : 'desc'
+    setParam('dir', next === 'asc' ? null : next)
+    writeStoredDirection(user?.id, next)
+  }
 
   function setCollectionTab(next) {
     setParam('tab', next === 'collection' ? null : next)
@@ -176,6 +262,14 @@ export default function Collection() {
     const set = new Set()
     for (const book of books) {
       if (book.publisher) set.add(book.publisher)
+    }
+    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+  }, [books])
+
+  const authors = useMemo(() => {
+    const set = new Set()
+    for (const book of books) {
+      if (book.author) set.add(book.author)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
   }, [books])
@@ -232,9 +326,18 @@ export default function Collection() {
     )
   }, [books])
 
+  // Chaque option de tri reste "croissante" par nature (compare() ci-dessus) ;
+  // inverser le signe du résultat inverse aussi bien le critère principal que
+  // le départage alphabétique (les deux sont chaînés par `||`), donc ça
+  // retourne bien tout l'ordre plutôt que juste le premier critère.
+  const effectiveCompare = useMemo(() => {
+    const compare = SORT_OPTIONS[sort].compare
+    return direction === 'desc' ? (a, b) => -compare(a, b) : compare
+  }, [sort, direction])
+
   const sortedIncompleteBooks = useMemo(
-    () => [...incompleteBooks].sort(SORT_OPTIONS[sort].compare),
-    [incompleteBooks, sort],
+    () => [...incompleteBooks].sort(effectiveCompare),
+    [incompleteBooks, effectiveCompare],
   )
 
   const filteredBooks = useMemo(() => {
@@ -251,6 +354,7 @@ export default function Collection() {
       )
         return false
       if (publisher && book.publisher !== publisher) return false
+      if (author && book.author !== author) return false
       if (collection && book.collection !== collection) return false
       if (edition && !book.edition?.includes(edition)) return false
       if (series && book.series !== series) return false
@@ -264,6 +368,7 @@ export default function Collection() {
     search,
     selectedTags,
     publisher,
+    author,
     collection,
     edition,
     series,
@@ -273,8 +378,8 @@ export default function Collection() {
   ])
 
   const sortedBooks = useMemo(
-    () => [...filteredBooks].sort(SORT_OPTIONS[sort].compare),
-    [filteredBooks, sort],
+    () => [...filteredBooks].sort(effectiveCompare),
+    [filteredBooks, effectiveCompare],
   )
 
   const visibleBooks =
@@ -300,6 +405,7 @@ export default function Collection() {
     search ||
       selectedTags.length > 0 ||
       publisher ||
+      author ||
       collection ||
       edition ||
       series ||
@@ -316,6 +422,7 @@ export default function Collection() {
           'q',
           'tag',
           'publisher',
+          'author',
           'collection',
           'edition',
           'series',
@@ -573,6 +680,9 @@ export default function Collection() {
             publisher={publisher}
             onPublisherChange={setPublisher}
             publishers={publishers}
+            author={author}
+            onAuthorChange={setAuthor}
+            authors={authors}
             collection={collection}
             onCollectionChange={setCollection}
             collections={collections}
@@ -695,18 +805,37 @@ export default function Collection() {
                   </button>
                 )}
                 {!selectionMode && (
-                  <select
-                    value={sort}
-                    onChange={(e) => setSort(e.target.value)}
-                    aria-label="Trier par"
-                    className="rounded-sm border border-ink/20 bg-surface px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-                  >
-                    {Object.entries(SORT_OPTIONS).map(([key, { label }]) => (
-                      <option key={key} value={key}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex items-center gap-1">
+                    <select
+                      value={sort}
+                      onChange={(e) => setSort(e.target.value)}
+                      aria-label="Trier par"
+                      className="rounded-sm border border-ink/20 bg-surface px-2 py-1 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                    >
+                      {SORT_GROUPS.map((group) => (
+                        <optgroup key={group.label} label={group.label}>
+                          {group.keys.map((key) => (
+                            <option key={key} value={key}>
+                              {SORT_OPTIONS[key].label}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={toggleDirection}
+                      title={
+                        direction === 'desc'
+                          ? 'Ordre décroissant (cliquer pour inverser)'
+                          : 'Ordre croissant (cliquer pour inverser)'
+                      }
+                      aria-label="Inverser l'ordre du tri"
+                      className="rounded-sm border border-ink/20 bg-surface w-7 h-7 flex items-center justify-center text-ink/70 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                    >
+                      <span aria-hidden="true">{direction === 'desc' ? '↓' : '↑'}</span>
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
