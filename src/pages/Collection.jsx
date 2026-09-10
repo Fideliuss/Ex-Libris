@@ -611,7 +611,7 @@ export default function Collection() {
               Statistiques
             </Link>
             <Link
-              to="/stats?tab=achievements"
+              to="/succes"
               className={`rounded-sm px-3 py-2 text-sm ${secondaryButtonClass}`}
             >
               Succès

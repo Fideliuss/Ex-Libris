@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import {
@@ -19,14 +19,12 @@ import { useGoBack } from '../lib/navigation'
 import { BOOK_TYPES } from '../lib/bookTypes'
 import { STATUS_LABELS } from '../lib/statusLabels'
 import { labelClass } from '../lib/ui'
-import { getMyProfile } from '../lib/friendCode'
 import HouseholdTabs from '../components/HouseholdTabs'
 import TabBar from '../components/TabBar'
 import StatusStackedBar from '../components/StatusStackedBar'
 import BarChart from '../components/BarChart'
 import DonutChart from '../components/DonutChart'
 import ReadingHeatmap from '../components/ReadingHeatmap'
-import AchievementsGallery from '../components/AchievementsGallery'
 import LoadingScreen from '../components/LoadingScreen'
 
 const PERIOD_OPTIONS = {
@@ -36,17 +34,11 @@ const PERIOD_OPTIONS = {
   custom: 'Personnalisé',
 }
 
-// "achievements" n'est volontairement pas dans cette liste : c'est elle qui
-// peuple la barre d'onglets visible (voir plus bas), et Succès n'est
-// atteignable que via le bouton dédié de la Collection (`?tab=achievements`,
-// voir VALID_STATS_TABS) pour ne pas dupliquer l'accès à deux endroits.
 const STATS_TABS = [
   { key: 'overview', label: "Vue d'ensemble" },
   { key: 'activity', label: 'Activité de lecture' },
   { key: 'library', label: 'Bibliothèque' },
 ]
-
-const VALID_STATS_TABS = [...STATS_TABS.map((t) => t.key), 'achievements']
 
 // Les champs date_started/date_finished sont des "date" Postgres (pas de
 // composante horaire) : les parser avec `new Date(string)` les interprète en
@@ -71,38 +63,10 @@ export default function Stats() {
   const goBack = useGoBack('/')
   const [convertingTag, setConvertingTag] = useState(null)
   const [convertError, setConvertError] = useState(null)
-  // `?tab=achievements` permet au bouton "Succès" de la Collection de
-  // pointer directement sur cet onglet plutôt que sur la vue d'ensemble.
-  const [searchParams] = useSearchParams()
-  const [statsTab, setStatsTab] = useState(() =>
-    VALID_STATS_TABS.includes(searchParams.get('tab'))
-      ? searchParams.get('tab')
-      : 'overview',
-  )
-  const [myFirstName, setMyFirstName] = useState(null)
+  const [statsTab, setStatsTab] = useState('overview')
   const [period, setPeriod] = useState('all')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
-
-  // Pour la ligne "Ex-Libris {prénom}" gravée sur les plaques de succès :
-  // le prénom du partenaire est déjà sur `partner.label`, mais le sien
-  // propre n'est nulle part ailleurs dans l'app à ce niveau.
-  useEffect(() => {
-    if (!user) return
-    let active = true
-    getMyProfile(user.id)
-      .then((profile) => {
-        if (active) setMyFirstName(profile?.first_name ?? null)
-      })
-      .catch(() => {})
-    return () => {
-      active = false
-    }
-  }, [user])
-
-  const ownerName = isMine
-    ? myFirstName ?? user?.email?.split('@')[0] ?? null
-    : partner?.label ?? null
 
   async function handleConvertTag(tag) {
     setConvertingTag(tag)
@@ -836,15 +800,6 @@ export default function Stats() {
                   )}
                 </section>
               </div>
-            )}
-
-            {statsTab === 'achievements' && (
-              <AchievementsGallery
-                books={books}
-                partner={partner}
-                userId={user?.id}
-                ownerName={ownerName}
-              />
             )}
           </div>
         )}
