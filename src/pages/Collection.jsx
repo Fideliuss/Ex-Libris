@@ -29,17 +29,17 @@ function titleCompare(a, b) {
 
 const SORT_OPTIONS = {
   title: {
-    label: 'Titre (A→Z)',
+    label: 'Titre',
     compare: titleCompare,
   },
   author: {
-    label: 'Auteur (nom, A→Z)',
+    label: 'Auteur',
     compare: (a, b) =>
       authorSortKey(a.author).localeCompare(authorSortKey(b.author), 'fr') ||
       titleCompare(a, b),
   },
   recent: {
-    label: 'Récemment ajoutés',
+    label: 'Date d’ajout',
     compare: (a, b) =>
       new Date(b.created_at) - new Date(a.created_at) || titleCompare(a, b),
   },
@@ -50,7 +50,7 @@ const SORT_OPTIONS = {
       titleCompare(a, b),
   },
   rating: {
-    label: 'Note (meilleure d’abord)',
+    label: 'Note',
     compare: (a, b) => (b.rating ?? 0) - (a.rating ?? 0) || titleCompare(a, b),
   },
   status: {
@@ -63,7 +63,7 @@ const SORT_OPTIONS = {
   // par numéro de tome à l'intérieur de chaque série : trier par tome seul,
   // toutes séries confondues, mélangerait les séries entre elles.
   tome: {
-    label: 'Tome (croissant)',
+    label: 'Tome',
     compare: (a, b) =>
       (a.series ?? '').localeCompare(b.series ?? '', 'fr') ||
       (a.series_index ?? 0) - (b.series_index ?? 0) ||
