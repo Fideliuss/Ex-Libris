@@ -12,12 +12,18 @@ import {
 import { describeError } from '../lib/errors'
 import { BOOK_TYPES, SERIES_DRIVEN_TYPES } from '../lib/bookTypes'
 import { primaryButtonClass } from '../lib/ui'
+import { todayDateOnly } from '../lib/dates'
 import WishlistRibbon from '../components/WishlistRibbon'
 import { navigateWithViewTransition, useGoBack } from '../lib/navigation'
 import ReadingBookmark from '../components/ReadingBookmark'
 import LoadingScreen from '../components/LoadingScreen'
 import BookCoverPlaceholder from '../components/BookCoverPlaceholder'
 import QuickRatingModal from '../components/QuickRatingModal'
+import QuickPurchaseModal from '../components/QuickPurchaseModal'
+
+// Ordre de progression d'un livre, du moins au plus avancé : sert à détecter
+// un changement de statut qui recule (voir handleStatusChange).
+const STATUS_ORDER = Object.keys(STATUS_LABELS)
 
 // Au-delà de ce nombre de tomes manquants d'affilée, on compresse le trou en
 // une seule chip "···" plutôt que d'en afficher une par tome manquant :
@@ -155,6 +161,7 @@ export default function BookDetail() {
   const [statusError, setStatusError] = useState(null)
   const [seriesSiblings, setSeriesSiblings] = useState([])
   const [showRatingPrompt, setShowRatingPrompt] = useState(false)
+  const [showPurchasePrompt, setShowPurchasePrompt] = useState(false)
 
   async function handleStatusChange(newStatus) {
     setStatusSaving(true)
@@ -167,11 +174,36 @@ export default function BookDetail() {
       if (newStatus === 'read' && !book.date_finished) {
         patch.date_finished = todayDateOnly()
       }
+
+      // Un statut qui recule (ex. "Lu" -> "PAL" par erreur) rend les dates
+      // déjà posées obsolètes : plutôt que de laisser une date de fin sur un
+      // livre plus marqué comme lu (à corriger à la main sur la fiche), on
+      // les efface automatiquement selon jusqu'où on recule.
+      const oldRank = STATUS_ORDER.indexOf(book.status)
+      const newRank = STATUS_ORDER.indexOf(newStatus)
+      if (newRank < oldRank) {
+        if (newRank < STATUS_ORDER.indexOf('reading')) {
+          patch.date_started = null
+          patch.date_finished = null
+        } else {
+          patch.date_finished = null
+        }
+        // Retour à la wishlist : le livre n'est plus (encore) possédé, un
+        // prix/date d'achat n'a plus de sens non plus.
+        if (newStatus === 'wishlist') {
+          patch.price = null
+          patch.purchase_date = null
+        }
+      }
+
       const wasUnrated = !book.rating
+      const leavingWishlist = book.status === 'wishlist' && newStatus !== 'wishlist'
       const updated = await updateBook(id, patch)
       setBook(updated)
       if (newStatus === 'read' && wasUnrated) {
         setShowRatingPrompt(true)
+      } else if (leavingWishlist && !book.purchase_date) {
+        setShowPurchasePrompt(true)
       }
     } catch (err) {
       setStatusError(describeError(err))
@@ -184,6 +216,16 @@ export default function BookDetail() {
     setShowRatingPrompt(false)
     try {
       const updated = await updateBook(id, { rating })
+      setBook(updated)
+    } catch (err) {
+      setStatusError(describeError(err))
+    }
+  }
+
+  async function handleQuickPurchase(patch) {
+    setShowPurchasePrompt(false)
+    try {
+      const updated = await updateBook(id, patch)
       setBook(updated)
     } catch (err) {
       setStatusError(describeError(err))
@@ -679,6 +721,14 @@ export default function BookDetail() {
           onSkip={() => setShowRatingPrompt(false)}
         />
       )}
+
+      {showPurchasePrompt && (
+        <QuickPurchaseModal
+          bookTitle={book.title}
+          onConfirm={handleQuickPurchase}
+          onSkip={() => setShowPurchasePrompt(false)}
+        />
+      )}
     </div>
   )
 }
@@ -702,12 +752,4 @@ function formatDate(value) {
   if (!value) return null
   const [y, m, d] = value.split('-')
   return `${d}/${m}/${y}`
-}
-
-// `new Date().toISOString()` convertit en UTC et peut décaler d'un jour en
-// soirée selon le fuseau ; on construit la date locale à la main, comme
-// formatDate() ci-dessus.
-function todayDateOnly() {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 }
