@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { bulkDeleteBooks, bulkUpdateBooks } from '../lib/books'
@@ -10,6 +10,7 @@ import BulkActionBar from '../components/BulkActionBar'
 import HouseholdSwitchBadge from '../components/HouseholdSwitchBadge'
 import TabBar from '../components/TabBar'
 import LoadingScreen from '../components/LoadingScreen'
+import AlphabetIndex from '../components/AlphabetIndex'
 import {
   STATUS_LABELS,
   STATUS_BADGE_CLASS,
@@ -262,6 +263,46 @@ export default function Collection() {
   const [bulkWorking, setBulkWorking] = useState(false)
   const [bulkError, setBulkError] = useState(null)
 
+  // Retrouve la position de scroll en revenant d'une fiche livre, plutôt que
+  // de repartir en haut de la page à chaque retour. Sauvegardée en continu
+  // pendant le scroll plutôt qu'au démontage : `navigateWithViewTransition`
+  // remplace le DOM de la page (via flushSync) avant que le nettoyage de cet
+  // effet ne s'exécute, et la nouvelle page (BookDetail, bien plus courte le
+  // temps de son propre chargement) fait retomber `window.scrollY` à 0 avant
+  // même qu'on ait pu le lire — confirmé en pratique (valeur toujours à 0 au
+  // démontage). D'où le throttle par rAF : un listener de scroll simple sans
+  // ça écrirait dans le storage à chaque pixel défilé.
+  useEffect(() => {
+    let ticking = false
+    function handleScroll() {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        try {
+          sessionStorage.setItem('exlibris:collectionScroll', String(window.scrollY))
+        } catch {
+          // Stockage indisponible (navigation privée...) : tant pis.
+        }
+        ticking = false
+      })
+    }
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  useEffect(() => {
+    if (loading) return
+    let saved
+    try {
+      saved = sessionStorage.getItem('exlibris:collectionScroll')
+      if (saved !== null) sessionStorage.removeItem('exlibris:collectionScroll')
+    } catch {
+      saved = null
+    }
+    if (saved === null) return
+    requestAnimationFrame(() => window.scrollTo(0, Number(saved)))
+  }, [loading])
+
   const tags = useMemo(() => {
     const set = new Set()
     for (const book of books) {
@@ -333,11 +374,24 @@ export default function Collection() {
     return counts
   }, [books])
 
+  // La wishlist a son propre onglet (voir plus bas) : la Collection
+  // elle-même ne montre que ce qui est vraiment possédé, pas ce qu'on
+  // aimerait avoir un jour.
+  const collectionBooks = useMemo(
+    () => books.filter((book) => book.status !== 'wishlist'),
+    [books],
+  )
+  const wishlistBooks = useMemo(
+    () => books.filter((book) => book.status === 'wishlist'),
+    [books],
+  )
+
   // Livres sans couverture ou sans les champs qu'un scan ISBN réussi remplit
   // normalement tout seul (auteur, éditeur, pages, description) : à
-  // compléter à la main.
+  // compléter à la main. Basé sur ce qu'on possède : un livre encore en
+  // wishlist n'a pas vocation à être "complété" avant d'être acheté.
   const incompleteBooks = useMemo(() => {
-    return books.filter(
+    return collectionBooks.filter(
       (book) =>
         !book.cover_url ||
         !book.author ||
@@ -345,7 +399,7 @@ export default function Collection() {
         !book.page_count ||
         !book.description,
     )
-  }, [books])
+  }, [collectionBooks])
 
   // Chaque option de tri reste "croissante" par nature (compare() ci-dessus) ;
   // inverser le signe du résultat inverse aussi bien le critère principal que
@@ -362,8 +416,9 @@ export default function Collection() {
   )
 
   const filteredBooks = useMemo(() => {
+    const pool = collectionTab === 'wishlist' ? wishlistBooks : collectionBooks
     const query = search.trim().toLowerCase()
-    return books.filter((book) => {
+    return pool.filter((book) => {
       if (query) {
         const isbn = (book.isbn ?? '').replace(/[\s-]/g, '')
         const haystack = `${book.title} ${book.author ?? ''} ${isbn}`.toLowerCase()
@@ -385,7 +440,9 @@ export default function Collection() {
       return true
     })
   }, [
-    books,
+    collectionTab,
+    collectionBooks,
+    wishlistBooks,
     search,
     selectedTags,
     publisher,
@@ -421,6 +478,63 @@ export default function Collection() {
     }
     return items
   }, [visibleBooks, sort])
+
+  // La barre alphabétique n'a de sens que pour les tris Titre/Auteur : ce
+  // sont les seuls où l'en-tête de groupe est une simple lettre (voir
+  // groupKeyFor). Sur les autres tris, elle reste masquée.
+  const availableLetters = useMemo(() => {
+    if (sort !== 'title' && sort !== 'author') return null
+    const set = new Set()
+    for (const item of gridItems) {
+      if (item.type === 'header' && item.label.length === 1) set.add(item.label)
+    }
+    return set
+  }, [gridItems, sort])
+
+  // Surligne dans la barre la lettre du groupe actuellement en haut de
+  // l'écran, pour se repérer pendant le scroll. `availableLetters` respecte
+  // déjà l'ordre d'affichage réel (A->Z ou Z->A selon `direction`, puisqu'il
+  // est construit depuis gridItems) : on peut donc s'y fier tel quel plutôt
+  // que de forcer un tri alphabétique qui casserait le cas décroissant.
+  const [activeLetter, setActiveLetter] = useState(null)
+  useEffect(() => {
+    // Rien à observer, et de toute façon la barre ne s'affiche pas dans ce
+    // cas (voir plus bas) : `activeLetter` peut rester tel quel, il sera
+    // recalculé dès qu'il y aura de nouveau des lettres à suivre.
+    if (!availableLetters || availableLetters.size === 0) return
+    const letters = [...availableLetters]
+    let ticking = false
+    function computeActive() {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(() => {
+        let current = null
+        for (const letter of letters) {
+          const el = document.getElementById(`h-${letter}`)
+          if (el && el.getBoundingClientRect().top <= 96) {
+            current = letter
+          } else {
+            break
+          }
+        }
+        setActiveLetter(current)
+        ticking = false
+      })
+    }
+    computeActive()
+    window.addEventListener('scroll', computeActive, { passive: true })
+    return () => window.removeEventListener('scroll', computeActive)
+  }, [availableLetters])
+
+  function scrollToLetter(letter) {
+    const reduceMotion =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    document.getElementById(`h-${letter}`)?.scrollIntoView({
+      behavior: reduceMotion ? 'auto' : 'smooth',
+      block: 'start',
+    })
+  }
 
   const hasActiveFilters = Boolean(
     search ||
@@ -654,6 +768,13 @@ export default function Collection() {
               tabs={[
                 { key: 'collection', label: 'Collection' },
                 {
+                  key: 'wishlist',
+                  label:
+                    wishlistBooks.length > 0
+                      ? `Wishlist (${wishlistBooks.length})`
+                      : 'Wishlist',
+                },
+                {
                   key: 'todo',
                   label:
                     incompleteBooks.length > 0
@@ -683,7 +804,7 @@ export default function Collection() {
 
         {!loading && !error && books.length > 0 && collectionTab === 'collection' && (
           <div className="flex flex-wrap gap-2 mb-4" role="group" aria-label="Filtrer par statut">
-            {STATUS_ORDER.map((key) => (
+            {STATUS_ORDER.filter((key) => key !== 'wishlist').map((key) => (
               <StatusChip
                 key={key}
                 active={status === key}
@@ -697,38 +818,41 @@ export default function Collection() {
           </div>
         )}
 
-        {!loading && !error && books.length > 0 && collectionTab === 'collection' && (
-          <CollectionFilters
-            search={search}
-            onSearchChange={setSearch}
-            selectedTags={selectedTags}
-            onSelectedTagsChange={setSelectedTags}
-            tags={tags}
-            publisher={publisher}
-            onPublisherChange={setPublisher}
-            publishers={publishers}
-            author={author}
-            onAuthorChange={setAuthor}
-            authors={authors}
-            collection={collection}
-            onCollectionChange={setCollection}
-            collections={collections}
-            edition={edition}
-            onEditionChange={setEdition}
-            editions={editions}
-            series={series}
-            onSeriesChange={handleSeriesChange}
-            seriesList={seriesList}
-            universe={universe}
-            onUniverseChange={setUniverse}
-            universeList={universeList}
-            type={type}
-            onTypeChange={setType}
-            status={status}
-            hasActiveFilters={hasActiveFilters}
-            onReset={resetFilters}
-          />
-        )}
+        {!loading &&
+          !error &&
+          books.length > 0 &&
+          (collectionTab === 'collection' || collectionTab === 'wishlist') && (
+            <CollectionFilters
+              search={search}
+              onSearchChange={setSearch}
+              selectedTags={selectedTags}
+              onSelectedTagsChange={setSelectedTags}
+              tags={tags}
+              publisher={publisher}
+              onPublisherChange={setPublisher}
+              publishers={publishers}
+              author={author}
+              onAuthorChange={setAuthor}
+              authors={authors}
+              collection={collection}
+              onCollectionChange={setCollection}
+              collections={collections}
+              edition={edition}
+              onEditionChange={setEdition}
+              editions={editions}
+              series={series}
+              onSeriesChange={handleSeriesChange}
+              seriesList={seriesList}
+              universe={universe}
+              onUniverseChange={setUniverse}
+              universeList={universeList}
+              type={type}
+              onTypeChange={setType}
+              status={status}
+              hasActiveFilters={hasActiveFilters}
+              onReset={resetFilters}
+            />
+          )}
 
         {loading ? (
           <LoadingScreen fullScreen={false} />
@@ -769,7 +893,24 @@ export default function Collection() {
               Aucun livre à compléter pour l'instant.
             </p>
           </div>
-        ) : collectionTab === 'collection' && filteredBooks.length === 0 ? (
+        ) : collectionTab === 'wishlist' && wishlistBooks.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="font-serif text-xl mb-2">Ta wishlist est vide</p>
+            <p className="text-sm text-ink/70">
+              Ajoute un livre en statut Wishlist pour le retrouver ici.
+            </p>
+          </div>
+        ) : collectionTab === 'collection' && collectionBooks.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="font-serif text-xl mb-2">
+              Pas encore de livre en collection
+            </p>
+            <p className="text-sm text-ink/70">
+              Tout est encore dans la wishlist pour l'instant.
+            </p>
+          </div>
+        ) : (collectionTab === 'collection' || collectionTab === 'wishlist') &&
+          filteredBooks.length === 0 ? (
           <div className="text-center py-16">
             <p className="font-serif text-xl mb-2">
               Aucun livre ne correspond
@@ -810,11 +951,17 @@ export default function Collection() {
                       {visibleBooks.length} livre
                       {visibleBooks.length > 1 ? 's' : ''} à compléter
                     </>
+                  ) : collectionTab === 'wishlist' ? (
+                    <>
+                      {filteredBooks.length} livre
+                      {filteredBooks.length > 1 ? 's' : ''} dans la wishlist
+                      {hasActiveFilters ? ` sur ${wishlistBooks.length}` : ''}
+                    </>
                   ) : (
                     <>
                       {filteredBooks.length} livre
                       {filteredBooks.length > 1 ? 's' : ''}
-                      {hasActiveFilters ? ` sur ${books.length}` : ''}
+                      {hasActiveFilters ? ` sur ${collectionBooks.length}` : ''}
                     </>
                   )}
                 </p>
@@ -871,7 +1018,8 @@ export default function Collection() {
                 item.type === 'header' ? (
                   <p
                     key={item.renderKey}
-                    className={`col-span-full ${labelClass} border-b border-ink/10 pb-1 mt-2 first:mt-0`}
+                    id={item.renderKey}
+                    className={`col-span-full ${labelClass} border-b border-ink/10 pb-1 mt-2 first:mt-0 scroll-mt-4`}
                   >
                     {item.label}
                   </p>
@@ -890,6 +1038,14 @@ export default function Collection() {
           </>
         )}
       </main>
+
+      {availableLetters && (
+        <AlphabetIndex
+          availableLetters={availableLetters}
+          activeLetter={activeLetter}
+          onSelect={scrollToLetter}
+        />
+      )}
 
       {selectionMode ? (
         <BulkActionBar
