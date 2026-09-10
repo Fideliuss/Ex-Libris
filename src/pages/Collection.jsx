@@ -333,11 +333,24 @@ export default function Collection() {
     return counts
   }, [books])
 
+  // La wishlist a son propre onglet (voir plus bas) : la Collection
+  // elle-même ne montre que ce qui est vraiment possédé, pas ce qu'on
+  // aimerait avoir un jour.
+  const collectionBooks = useMemo(
+    () => books.filter((book) => book.status !== 'wishlist'),
+    [books],
+  )
+  const wishlistBooks = useMemo(
+    () => books.filter((book) => book.status === 'wishlist'),
+    [books],
+  )
+
   // Livres sans couverture ou sans les champs qu'un scan ISBN réussi remplit
   // normalement tout seul (auteur, éditeur, pages, description) : à
-  // compléter à la main.
+  // compléter à la main. Basé sur ce qu'on possède : un livre encore en
+  // wishlist n'a pas vocation à être "complété" avant d'être acheté.
   const incompleteBooks = useMemo(() => {
-    return books.filter(
+    return collectionBooks.filter(
       (book) =>
         !book.cover_url ||
         !book.author ||
@@ -345,7 +358,7 @@ export default function Collection() {
         !book.page_count ||
         !book.description,
     )
-  }, [books])
+  }, [collectionBooks])
 
   // Chaque option de tri reste "croissante" par nature (compare() ci-dessus) ;
   // inverser le signe du résultat inverse aussi bien le critère principal que
@@ -362,8 +375,9 @@ export default function Collection() {
   )
 
   const filteredBooks = useMemo(() => {
+    const pool = collectionTab === 'wishlist' ? wishlistBooks : collectionBooks
     const query = search.trim().toLowerCase()
-    return books.filter((book) => {
+    return pool.filter((book) => {
       if (query) {
         const isbn = (book.isbn ?? '').replace(/[\s-]/g, '')
         const haystack = `${book.title} ${book.author ?? ''} ${isbn}`.toLowerCase()
@@ -385,7 +399,9 @@ export default function Collection() {
       return true
     })
   }, [
-    books,
+    collectionTab,
+    collectionBooks,
+    wishlistBooks,
     search,
     selectedTags,
     publisher,
@@ -654,6 +670,13 @@ export default function Collection() {
               tabs={[
                 { key: 'collection', label: 'Collection' },
                 {
+                  key: 'wishlist',
+                  label:
+                    wishlistBooks.length > 0
+                      ? `Wishlist (${wishlistBooks.length})`
+                      : 'Wishlist',
+                },
+                {
                   key: 'todo',
                   label:
                     incompleteBooks.length > 0
@@ -683,7 +706,7 @@ export default function Collection() {
 
         {!loading && !error && books.length > 0 && collectionTab === 'collection' && (
           <div className="flex flex-wrap gap-2 mb-4" role="group" aria-label="Filtrer par statut">
-            {STATUS_ORDER.map((key) => (
+            {STATUS_ORDER.filter((key) => key !== 'wishlist').map((key) => (
               <StatusChip
                 key={key}
                 active={status === key}
@@ -697,38 +720,41 @@ export default function Collection() {
           </div>
         )}
 
-        {!loading && !error && books.length > 0 && collectionTab === 'collection' && (
-          <CollectionFilters
-            search={search}
-            onSearchChange={setSearch}
-            selectedTags={selectedTags}
-            onSelectedTagsChange={setSelectedTags}
-            tags={tags}
-            publisher={publisher}
-            onPublisherChange={setPublisher}
-            publishers={publishers}
-            author={author}
-            onAuthorChange={setAuthor}
-            authors={authors}
-            collection={collection}
-            onCollectionChange={setCollection}
-            collections={collections}
-            edition={edition}
-            onEditionChange={setEdition}
-            editions={editions}
-            series={series}
-            onSeriesChange={handleSeriesChange}
-            seriesList={seriesList}
-            universe={universe}
-            onUniverseChange={setUniverse}
-            universeList={universeList}
-            type={type}
-            onTypeChange={setType}
-            status={status}
-            hasActiveFilters={hasActiveFilters}
-            onReset={resetFilters}
-          />
-        )}
+        {!loading &&
+          !error &&
+          books.length > 0 &&
+          (collectionTab === 'collection' || collectionTab === 'wishlist') && (
+            <CollectionFilters
+              search={search}
+              onSearchChange={setSearch}
+              selectedTags={selectedTags}
+              onSelectedTagsChange={setSelectedTags}
+              tags={tags}
+              publisher={publisher}
+              onPublisherChange={setPublisher}
+              publishers={publishers}
+              author={author}
+              onAuthorChange={setAuthor}
+              authors={authors}
+              collection={collection}
+              onCollectionChange={setCollection}
+              collections={collections}
+              edition={edition}
+              onEditionChange={setEdition}
+              editions={editions}
+              series={series}
+              onSeriesChange={handleSeriesChange}
+              seriesList={seriesList}
+              universe={universe}
+              onUniverseChange={setUniverse}
+              universeList={universeList}
+              type={type}
+              onTypeChange={setType}
+              status={status}
+              hasActiveFilters={hasActiveFilters}
+              onReset={resetFilters}
+            />
+          )}
 
         {loading ? (
           <LoadingScreen fullScreen={false} />
@@ -769,7 +795,24 @@ export default function Collection() {
               Aucun livre à compléter pour l'instant.
             </p>
           </div>
-        ) : collectionTab === 'collection' && filteredBooks.length === 0 ? (
+        ) : collectionTab === 'wishlist' && wishlistBooks.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="font-serif text-xl mb-2">Ta wishlist est vide</p>
+            <p className="text-sm text-ink/70">
+              Ajoute un livre en statut Wishlist pour le retrouver ici.
+            </p>
+          </div>
+        ) : collectionTab === 'collection' && collectionBooks.length === 0 ? (
+          <div className="text-center py-16">
+            <p className="font-serif text-xl mb-2">
+              Pas encore de livre en collection
+            </p>
+            <p className="text-sm text-ink/70">
+              Tout est encore dans la wishlist pour l'instant.
+            </p>
+          </div>
+        ) : (collectionTab === 'collection' || collectionTab === 'wishlist') &&
+          filteredBooks.length === 0 ? (
           <div className="text-center py-16">
             <p className="font-serif text-xl mb-2">
               Aucun livre ne correspond
@@ -810,11 +853,17 @@ export default function Collection() {
                       {visibleBooks.length} livre
                       {visibleBooks.length > 1 ? 's' : ''} à compléter
                     </>
+                  ) : collectionTab === 'wishlist' ? (
+                    <>
+                      {filteredBooks.length} livre
+                      {filteredBooks.length > 1 ? 's' : ''} dans la wishlist
+                      {hasActiveFilters ? ` sur ${wishlistBooks.length}` : ''}
+                    </>
                   ) : (
                     <>
                       {filteredBooks.length} livre
                       {filteredBooks.length > 1 ? 's' : ''}
-                      {hasActiveFilters ? ` sur ${books.length}` : ''}
+                      {hasActiveFilters ? ` sur ${collectionBooks.length}` : ''}
                     </>
                   )}
                 </p>
