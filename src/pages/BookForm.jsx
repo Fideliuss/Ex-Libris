@@ -4,6 +4,7 @@ import {
   createBook,
   deleteBook,
   getBook,
+  listAllAuthors,
   listAllCollections,
   listAllPublishers,
   listAllSeries,
@@ -67,6 +68,7 @@ export default function BookForm() {
 
   const [book, setBook] = useState(emptyBook)
   const [existingTags, setExistingTags] = useState([])
+  const [existingAuthors, setExistingAuthors] = useState([])
   const [existingCollections, setExistingCollections] = useState([])
   const [existingPublishers, setExistingPublishers] = useState([])
   const [existingSeries, setExistingSeries] = useState([])
@@ -83,6 +85,7 @@ export default function BookForm() {
 
   useEffect(() => {
     listAllTags().then(setExistingTags).catch(() => {})
+    listAllAuthors().then(setExistingAuthors).catch(() => {})
     listAllCollections().then(setExistingCollections).catch(() => {})
     listAllPublishers().then(setExistingPublishers).catch(() => {})
     listAllSeries().then(setExistingSeries).catch(() => {})
@@ -364,6 +367,7 @@ export default function BookForm() {
               <TagInput
                 value={book.author ?? []}
                 onChange={(v) => set('author', v)}
+                suggestions={existingAuthors}
                 placeholder="Ajouter un auteur, Entrée pour valider"
               />
             </Field>

@@ -51,7 +51,7 @@ export default function TagInput({
         {value.map((tag) => (
           <span
             key={tag}
-            className="inline-flex items-center gap-1 bg-library-fill text-white text-xs px-2 py-1 rounded-full"
+            className="inline-flex items-center gap-1 border border-library/40 text-ink text-sm px-2 py-1 rounded-full"
           >
             <button
               type="button"
@@ -65,7 +65,7 @@ export default function TagInput({
             <button
               type="button"
               onClick={() => removeTag(tag)}
-              className="hover:text-stamp focus:outline-none"
+              className="text-ink/50 hover:text-stamp focus:outline-none"
               aria-label={`Retirer ${tag}`}
             >
               ×

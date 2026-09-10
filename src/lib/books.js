@@ -117,6 +117,22 @@ export async function listAllTags() {
   return [...tags].sort((a, b) => a.localeCompare(b, 'fr'))
 }
 
+export async function listAllAuthors() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { data, error } = await supabase
+    .from('books')
+    .select('author')
+    .eq('user_id', user.id)
+  if (error) throw error
+  const authors = new Set()
+  for (const row of data) {
+    for (const author of row.author ?? []) authors.add(author)
+  }
+  return [...authors].sort((a, b) => a.localeCompare(b, 'fr'))
+}
+
 export async function listAllCollections() {
   const {
     data: { user },
