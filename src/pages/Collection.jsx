@@ -132,16 +132,31 @@ function monthLabel(date) {
   )
 }
 
+// `localeCompare('fr')` compare d'abord les lettres de base en ignorant les
+// accents ("e" ≈ "é" ≈ "ê", comme dans un vrai classement alphabétique de
+// bibliothèque) et ne s'en sert qu'en tout dernier recours pour départager :
+// "Ecotopia" < "Êtes-vous..." < "Étude..." est donc un ordre de tri
+// parfaitement correct. Regrouper par première lettre EXACTE (E ≠ Ê ≠ É)
+// est incohérent avec ça : un livre accentué peut se retrouver coincé entre
+// deux livres non accentués de la même lettre, cassant le groupe en deux
+// au lieu de le fusionner. On regroupe donc en ignorant les accents aussi.
+function letterGroupKey(str) {
+  return str
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')[0]
+    .toUpperCase()
+}
+
 // Détermine l'en-tête de section pour un livre selon le tri actif (lettre,
 // mois, statut, série, note...). Toujours une étiquette explicite, y compris
 // pour les livres sans valeur pour le critère actif (contigus grâce au tri
 // ci-dessus) : les laisser sans en-tête donnait l'impression qu'ils étaient
 // rangés n'importe où plutôt que volontairement à part.
 function groupKeyFor(book, sortKey) {
-  if (sortKey === 'title') return book.title.normalize('NFC')[0].toUpperCase()
+  if (sortKey === 'title') return letterGroupKey(book.title)
   if (sortKey === 'author') {
     const key = authorSortKey(book.author)
-    return key ? key[0].toUpperCase() : 'Auteur inconnu'
+    return key ? letterGroupKey(key) : 'Auteur inconnu'
   }
   if (sortKey === 'recent') return monthLabel(new Date(book.created_at))
   if (sortKey === 'finished')
