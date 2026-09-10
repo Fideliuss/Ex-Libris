@@ -1,14 +1,10 @@
-// Anneau de focus volontairement plus fin que sur les boutons (ring-1 au
-// lieu de ring-2, couleur atténuée) : sur un champ de texte, un ring-2 plein
-// se voyait comme une grosse bordure verte disproportionnée plutôt qu'un
-// simple indicateur de focus discret.
 export const inputClass =
-  'w-full rounded-sm border border-ink/20 bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink/70 focus:outline-none focus-visible:ring-1 focus-visible:ring-library/70'
+  'w-full rounded-sm border border-ink/20 bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-library'
 
 // Comme inputClass, sans le style de placeholder : pour les <select>, qui
 // n'en ont pas.
 export const selectClass =
-  'w-full rounded-sm border border-ink/20 bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus-visible:ring-1 focus-visible:ring-library/70'
+  'w-full rounded-sm border border-ink/20 bg-surface px-3 py-2 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library'
 
 // Couleur + interaction uniquement (pas de padding/taille/forme, qui varient
 // légitimement d'un bouton à l'autre) : à combiner avec les utilitaires de
