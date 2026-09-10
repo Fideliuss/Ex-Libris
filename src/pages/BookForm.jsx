@@ -769,8 +769,15 @@ function FormSection({ title, defaultOpen = false, children }) {
           transition: reduceMotion ? 'none' : 'grid-template-rows 300ms ease-out',
         }}
       >
-        <div className="overflow-hidden" inert={!open}>
-          <div className="space-y-5 pt-4">{children}</div>
+        {/* -mx-1/px-1 : l'anneau de focus d'un champ (voir inputClass)
+            déborde de 1px hors de sa boîte ; sans cette marge de respiration,
+            ce conteneur (nécessairement overflow-hidden pour l'animation
+            d'ouverture/fermeture ci-dessus) le coupait net sur les côtés,
+            visible uniquement ici puisque Titre/Type restent hors section.
+            Le -mx-1 fait déborder la zone de découpe elle-même plutôt que de
+            décaler les champs, qui restent alignés avec Titre/Type. */}
+        <div className="-mx-1 overflow-hidden" inert={!open}>
+          <div className="space-y-5 px-1 pt-4 pb-1">{children}</div>
         </div>
       </div>
     </div>
