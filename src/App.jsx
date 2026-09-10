@@ -17,6 +17,7 @@ const Account = lazy(() => import('./pages/Account'))
 const BookForm = lazy(() => import('./pages/BookForm'))
 const BookDetail = lazy(() => import('./pages/BookDetail'))
 const Stats = lazy(() => import('./pages/Stats'))
+const Achievements = lazy(() => import('./pages/Achievements'))
 const LegalNotice = lazy(() => import('./pages/LegalNotice'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 
@@ -38,6 +39,7 @@ function App() {
                 <Route path="/books/:id" element={<BookDetail />} />
                 <Route path="/books/:id/edit" element={<BookForm />} />
                 <Route path="/stats" element={<Stats />} />
+                <Route path="/succes" element={<Achievements />} />
               </Route>
             </Routes>
           </Suspense>
