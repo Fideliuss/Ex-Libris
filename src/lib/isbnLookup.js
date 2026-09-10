@@ -12,7 +12,7 @@ async function lookupGoogleBooks(isbn) {
   if (!info) return null
   return {
     title: info.title ?? '',
-    author: info.authors?.join(', ') ?? '',
+    author: info.authors ?? [],
     publisher: info.publisher ?? '',
     page_count: info.pageCount ?? null,
     cover_url: info.imageLinks?.thumbnail?.replace('http://', 'https://') ?? '',
@@ -30,7 +30,7 @@ async function lookupOpenLibrary(isbn) {
   if (!book) return null
   return {
     title: book.title ?? '',
-    author: book.authors?.map((a) => a.name).join(', ') ?? '',
+    author: book.authors?.map((a) => a.name) ?? [],
     publisher: book.publishers?.map((p) => p.name).join(', ') ?? '',
     page_count: book.number_of_pages ?? null,
     cover_url: book.cover?.large ?? book.cover?.medium ?? '',
@@ -58,8 +58,15 @@ function parseBnfRecord(record) {
   const title = titleField ? bnfSubfield(titleField, 'a') : ''
   if (!title) return null
 
-  let author = titleField ? bnfSubfield(titleField, 'f') : ''
-  if (!author) {
+  // Le sous-champ "f" du champ titre (200$f) est déjà une seule chaîne
+  // construite par la BNF elle-même (souvent plusieurs noms à la suite,
+  // ex. "Jean Dupont, Marie Martin") : on ne peut pas la re-découper
+  // fiablement, donc elle reste un seul élément du tableau. Les champs
+  // 700/701/702 (auteur secondaire), eux, sont un vrai champ MARC par
+  // personne : un élément de tableau par champ.
+  const titleFieldAuthor = titleField ? bnfSubfield(titleField, 'f') : ''
+  let author = titleFieldAuthor ? [titleFieldAuthor] : []
+  if (author.length === 0) {
     const authorFields = [
       ...bnfFields(record, '700'),
       ...bnfFields(record, '701'),
@@ -70,7 +77,6 @@ function parseBnfRecord(record) {
         [bnfSubfield(df, 'b'), bnfSubfield(df, 'a')].filter(Boolean).join(' '),
       )
       .filter(Boolean)
-      .join(', ')
   }
 
   const publisherField = bnfFields(record, '210')[0] ?? bnfFields(record, '214')[0]

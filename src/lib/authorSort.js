@@ -1,12 +1,13 @@
-// Le champ "author" est du texte libre au format "Prénom Nom" (toutes les
-// sources de lookup ISBN sont normalisées ainsi), parfois plusieurs auteurs
-// séparés par une virgule. On trie par nom de famille plutôt que prénom :
-// c'est ce dont les gens se souviennent le plus souvent d'un auteur. Simple
-// heuristique (dernier mot du premier auteur listé) plutôt qu'un vrai
-// parsing de nom — suffisant pour la grande majorité des cas.
+// "author" est un tableau de noms au format "Prénom Nom" chacun (toutes les
+// sources de lookup ISBN sont normalisées ainsi) : plusieurs auteurs sont
+// des entrées séparées, pas une chaîne à découper. On trie par nom de
+// famille du premier auteur listé plutôt que prénom : c'est ce dont les
+// gens se souviennent le plus souvent d'un auteur. Simple heuristique
+// (dernier mot du nom) plutôt qu'un vrai parsing de nom — suffisant pour la
+// grande majorité des cas.
 export function authorSortKey(author) {
-  if (!author) return ''
-  const firstAuthor = author.split(',')[0].trim()
+  const firstAuthor = author?.[0]?.trim()
+  if (!firstAuthor) return ''
   const words = firstAuthor.split(/\s+/)
   // Les noms d'auteur viennent de 3 sources ISBN différentes (Google Books,
   // OpenLibrary, BNF) qui n'encodent pas forcément les lettres accentuées de

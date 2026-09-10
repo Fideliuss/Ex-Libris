@@ -20,7 +20,7 @@ describe('mapLibibRowToBook', () => {
       upc_isbn10: '2070360531',
     })
     expect(book.title).toBe('Fondation')
-    expect(book.author).toBe('Isaac Asimov')
+    expect(book.author).toEqual(['Isaac Asimov'])
     expect(book.publisher).toBe('Folio SF')
     expect(book.isbn).toBe('9782070360536')
   })
