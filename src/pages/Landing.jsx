@@ -4,7 +4,7 @@ import { navigateWithViewTransition } from '../lib/navigation'
 import BookCoverPlaceholder from '../components/BookCoverPlaceholder'
 import { STATUS_LABELS } from '../lib/statusLabels'
 import { primaryButtonClass } from '../lib/ui'
-import { TIER_METAL } from '../lib/achievementVisuals'
+import { TIER_METAL, SEAL_WAX } from '../lib/achievementVisuals'
 
 const LANG_STORAGE_KEY = 'landing-lang'
 
@@ -732,9 +732,7 @@ function PricingCard({ tier, price, tierIndex }) {
   const metal = TIER_METAL[tierIndex]
   return (
     <div
-      className={`relative h-full flex flex-col items-center text-center rounded-sm px-6 pb-8 ${
-        tier.badge ? 'pt-14' : 'pt-8'
-      }`}
+      className="relative h-full flex flex-col items-center text-center rounded-sm px-6 py-8"
       style={{
         background: metal.background,
         boxShadow:
@@ -746,13 +744,34 @@ function PricingCard({ tier, price, tierIndex }) {
       <Pin className="-bottom-[5px] -left-[5px]" />
       <Pin className="-bottom-[5px] -right-[5px]" />
 
+      {/* Cachet de cire (même matière que les succès à obtention unique,
+          SEAL_WAX) plutôt qu'un tampon de coin en diagonale : celui-ci
+          empiétait sur la tagline dès qu'elle se repliait sur 2 lignes. En
+          bas à droite, sous la liste de fonctionnalités et au-dessus du
+          filigrane "Ex Libris" : cette zone reste vide sur les 4 cartes
+          (la liste est alignée à gauche), donc rien à chevaucher. */}
       {tier.badge && (
-        // pt-14 ci-dessus réserve la place : sinon, tourné et collé au
-        // coin, le tampon empiète sur la tagline en dessous dès qu'elle
-        // se replie sur 2 lignes (largeurs de carte étroites).
-        <span className="absolute top-3 right-3 -rotate-6 border-2 border-stamp text-stamp font-mono text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm bg-card/90 pointer-events-none z-10">
-          {tier.badge}
-        </span>
+        <div className="absolute bottom-3 right-4 flex flex-col items-center gap-1">
+          <span
+            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+            style={{
+              background: SEAL_WAX.background,
+              boxShadow:
+                'inset 1px 1px 2px rgba(255,255,255,0.3), inset -2px -2px 3px rgba(0,0,0,0.35), 0 2px 4px rgba(0,0,0,0.35)',
+            }}
+            aria-hidden="true"
+          >
+            <span className="text-xs" style={{ color: SEAL_WAX.ink }}>
+              ★
+            </span>
+          </span>
+          <p
+            className="font-mono uppercase tracking-[0.14em] text-[7px] whitespace-nowrap"
+            style={{ color: metal.ink }}
+          >
+            {tier.badge}
+          </p>
+        </div>
       )}
 
       <p
