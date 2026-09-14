@@ -217,6 +217,31 @@ create policy "Members can view their own household"
 -- (un seul foyer par utilisateur, transfert de propriété, etc.) au même
 -- endroit plutôt que de les éparpiller dans des policies RLS complexes.
 
+-- Une policy sur profiles ne peut pas se référencer elle-même directement
+-- (une sous-requête "select ... from profiles" dans une policy de
+-- profiles fait planter Postgres avec "infinite recursion detected in
+-- policy" dès qu'on touche la table, même pour une condition simple) :
+-- même contournement que find_user_by_code plus haut, une fonction
+-- security definer qui lit profiles hors RLS.
+create or replace function is_household_member(other_user_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from profiles me
+    join profiles other on other.household_id = me.household_id
+    where me.user_id = auth.uid()
+      and me.household_id is not null
+      and other.user_id = other_user_id
+  );
+$$;
+
+revoke execute on function is_household_member(uuid) from public, anon, service_role;
+grant execute on function is_household_member(uuid) to authenticated;
+
 -- La policy "Users can view their own or linked profiles" plus haut ne
 -- connaît que household_links (l'ancien modèle) : sans celle-ci, deux
 -- membres d'un même foyer ne pourraient pas voir le nom l'un de l'autre
@@ -225,14 +250,7 @@ create policy "Members can view their own household"
 -- à l'existante plutôt que de la remplacer.
 create policy "Household members can view each other's profiles"
   on profiles for select
-  using (
-    exists (
-      select 1 from profiles as me
-      where me.user_id = auth.uid()
-        and me.household_id is not null
-        and me.household_id = profiles.household_id
-    )
-  );
+  using (is_household_member(user_id));
 
 create table household_invites (
   id uuid primary key default gen_random_uuid(),
