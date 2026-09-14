@@ -179,8 +179,10 @@ function groupKeyFor(book, sortKey) {
 
 export default function Collection() {
   const { user, signOut } = useAuth()
-  const { partner, isMine, books, loading, error, refresh, setView } =
+  const { members, ownerId, isMine, books, loading, error, refresh, setOwnerId } =
     useHouseholdBooks()
+  const selectedMember = members.find((m) => m.userId === ownerId)
+  const selectedLabel = selectedMember?.displayName ?? selectedMember?.email
   const navigate = useNavigate()
 
   async function handleSignOut() {
@@ -591,8 +593,8 @@ export default function Collection() {
     )
   }
 
-  function switchView(next) {
-    setView(next)
+  function switchView(memberId) {
+    setOwnerId(memberId)
     resetFilters()
     exitSelectionMode()
   }
@@ -710,12 +712,12 @@ export default function Collection() {
         </Link>
         <div className="flex items-start gap-2 w-full sm:w-auto">
           <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
-            {partner && (
+            {members.length > 1 && (
               <HouseholdSwitchBadge
-                isMine={isMine}
-                onSelectMine={() => switchView('mine')}
-                onSelectPartner={() => switchView('partner')}
-                partnerLabel={partner.label}
+                members={members}
+                selectedId={ownerId}
+                onSelect={switchView}
+                currentUserId={user.id}
               />
             )}
             <Link
@@ -761,7 +763,7 @@ export default function Collection() {
         </div>
       </header>
 
-      <main key={isMine ? 'mine' : 'partner'} className="max-w-5xl mx-auto px-6 fade-in">
+      <main key={ownerId} className="max-w-5xl mx-auto px-6 fade-in">
         {!loading && !error && books.length > 0 && (
           <div className="flex items-start justify-between gap-3">
             <TabBar
@@ -865,7 +867,7 @@ export default function Collection() {
             <p className="font-serif text-xl mb-2">
               {isMine
                 ? 'Ta bibliothèque est vide'
-                : `La bibliothèque de ${partner?.label} est vide`}
+                : `La bibliothèque de ${selectedLabel} est vide`}
             </p>
             {isMine ? (
               <>

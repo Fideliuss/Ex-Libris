@@ -1,16 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { listBooks } from '../lib/books'
-import { getAcceptedPartner } from '../lib/friendCode'
+import { getMyHousehold } from '../lib/household'
 import { describeError } from '../lib/errors'
 
-// Charge tous les livres visibles (les miens + ceux du partenaire, autorisés
-// par la RLS), puis expose une bascule "mine" / "partner" pour filtrer côté
-// client sans refaire de requête à chaque changement d'onglet.
+// Charge tous les livres visibles (les miens + ceux des membres du foyer,
+// autorisés par la RLS), puis expose une bascule sur l'un d'eux pour
+// filtrer côté client sans refaire de requête à chaque changement.
 export function useHouseholdBooks() {
   const { user } = useAuth()
-  const [partner, setPartner] = useState(null)
-  const [view, setView] = useState('mine') // 'mine' | 'partner'
+  const [members, setMembers] = useState([])
+  // null = pas de choix explicite, on regarde ses propres livres par
+  // défaut ; évite d'avoir à synchroniser ownerId sur user.id dans un
+  // effet (user n'est pas connu tout de suite au montage).
+  const [selectedId, setSelectedId] = useState(null)
   const [allBooks, setAllBooks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -18,9 +21,9 @@ export function useHouseholdBooks() {
   useEffect(() => {
     if (!user) return
     let active = true
-    getAcceptedPartner(user.id)
-      .then((p) => {
-        if (active) setPartner(p)
+    getMyHousehold(user.id)
+      .then((h) => {
+        if (active) setMembers(h.members)
       })
       .catch(() => {
         // Le partage reste optionnel : une erreur ici ne doit pas bloquer
@@ -52,12 +55,12 @@ export function useHouseholdBooks() {
     setAllBooks(await listBooks())
   }
 
-  const isMine = view === 'mine'
-  const ownerId = isMine ? user?.id : partner?.id
+  const ownerId = selectedId ?? user?.id ?? null
+  const isMine = ownerId === user?.id
   const books = useMemo(
     () => allBooks.filter((b) => b.user_id === ownerId),
     [allBooks, ownerId],
   )
 
-  return { partner, view, setView, isMine, books, loading, error, refresh }
+  return { members, ownerId, setOwnerId: setSelectedId, isMine, books, loading, error, refresh }
 }
