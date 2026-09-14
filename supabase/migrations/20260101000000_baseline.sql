@@ -188,6 +188,24 @@ create table households (
   created_at timestamptz default now()
 );
 
+-- Un utilisateur appartient à au plus un foyer à la fois (comme un plan
+-- Spotify Family) : une simple colonne nullable sur profiles suffit, pas
+-- besoin d'une table de jointure household_members. Ajoutée avant la RLS
+-- de households ci-dessous, qui s'appuie dessus.
+alter table profiles add column household_id uuid references households(id) on delete set null;
+
+create index profiles_household_id_idx on profiles(household_id);
+
+-- La policy "Users can update their own profile" existante autorise déjà
+-- la mise à jour de n'importe quelle colonne de sa propre ligne (with
+-- check sur auth.uid() = user_id seulement) : sans ce revoke, n'importe
+-- quel compte pourrait s'auto-assigner le household_id d'un foyer
+-- étranger et hériter de la visibilité de ses livres, sans jamais passer
+-- par une invitation. Seules les fonctions security definer plus bas
+-- (qui tournent avec les privilèges du propriétaire de la table, donc
+-- contournent ce revoke) peuvent modifier cette colonne.
+revoke update (household_id) on profiles from authenticated;
+
 alter table households enable row level security;
 
 create policy "Members can view their own household"
@@ -204,23 +222,6 @@ create policy "Members can view their own household"
 -- par les fonctions security definer plus bas, qui appliquent les règles
 -- (un seul foyer par utilisateur, transfert de propriété, etc.) au même
 -- endroit plutôt que de les éparpiller dans des policies RLS complexes.
-
--- Un utilisateur appartient à au plus un foyer à la fois (comme un plan
--- Spotify Family) : une simple colonne nullable sur profiles suffit, pas
--- besoin d'une table de jointure household_members.
-alter table profiles add column household_id uuid references households(id) on delete set null;
-
-create index profiles_household_id_idx on profiles(household_id);
-
--- La policy "Users can update their own profile" existante autorise déjà
--- la mise à jour de n'importe quelle colonne de sa propre ligne (with
--- check sur auth.uid() = user_id seulement) : sans ce revoke, n'importe
--- quel compte pourrait s'auto-assigner le household_id d'un foyer
--- étranger et hériter de la visibilité de ses livres, sans jamais passer
--- par une invitation. Seules les fonctions security definer plus bas
--- (qui tournent avec les privilèges du propriétaire de la table, donc
--- contournent ce revoke) peuvent modifier cette colonne.
-revoke update (household_id) on profiles from authenticated;
 
 create table household_invites (
   id uuid primary key default gen_random_uuid(),
