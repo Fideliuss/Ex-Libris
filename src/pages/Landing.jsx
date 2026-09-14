@@ -744,34 +744,28 @@ function PricingCard({ tier, price, tierIndex }) {
       <Pin className="-bottom-[5px] -left-[5px]" />
       <Pin className="-bottom-[5px] -right-[5px]" />
 
-      {/* Cachet de cire (même matière que les succès à obtention unique,
-          SEAL_WAX) plutôt qu'un tampon de coin en diagonale : celui-ci
-          empiétait sur la tagline dès qu'elle se repliait sur 2 lignes. En
-          bas à droite, sous la liste de fonctionnalités et au-dessus du
-          filigrane "Ex Libris" : cette zone reste vide sur les 4 cartes
-          (la liste est alignée à gauche), donc rien à chevaucher. */}
+      {/* Sticker (étiquette plate, bord clair, légère rotation) plutôt
+          qu'un cachet de cire ou un tampon en diagonale. En bas à droite,
+          sous la liste de fonctionnalités et au-dessus du filigrane "Ex
+          Libris" (zone vide sur les 4 cartes, liste alignée à gauche) :
+          rien à chevaucher. Un seul élément à largeur variable (pas de
+          texte replié sur plusieurs lignes), donc sa hauteur ne bouge
+          jamais entre FR et EN. */}
       {tier.badge && (
-        <div className="absolute bottom-3 right-4 flex flex-col items-center gap-1">
+        <span
+          className="absolute bottom-4 right-4 inline-block rounded-md px-2.5 py-1 -rotate-2 ring-2 ring-card"
+          style={{
+            background: SEAL_WAX.background,
+            boxShadow: '0 3px 6px rgba(0,0,0,0.3)',
+          }}
+        >
           <span
-            className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-            style={{
-              background: SEAL_WAX.background,
-              boxShadow:
-                'inset 1px 1px 2px rgba(255,255,255,0.3), inset -2px -2px 3px rgba(0,0,0,0.35), 0 2px 4px rgba(0,0,0,0.35)',
-            }}
-            aria-hidden="true"
-          >
-            <span className="text-xs" style={{ color: SEAL_WAX.ink }}>
-              ★
-            </span>
-          </span>
-          <p
-            className="font-mono uppercase tracking-[0.14em] text-[7px] whitespace-nowrap"
-            style={{ color: metal.ink }}
+            className="font-mono text-[9px] font-bold uppercase tracking-wide whitespace-nowrap"
+            style={{ color: SEAL_WAX.ink }}
           >
             {tier.badge}
-          </p>
-        </div>
+          </span>
+        </span>
       )}
 
       <p
