@@ -636,18 +636,24 @@ alter default privileges in schema public
 alter default privileges in schema public
   grant all on sequences to anon, authenticated, service_role;
 
--- La policy "Users can update their own profile" (plus haut) autorise déjà
--- la mise à jour de n'importe quelle colonne de sa propre ligne (with
--- check sur auth.uid() = user_id seulement), et le grant all sur toutes
--- les tables ci-dessus la confirme. Sans ce revoke ciblé, n'importe quel
--- compte pourrait s'auto-assigner le household_id d'un foyer étranger et
--- hériter de la visibilité de ses livres, sans jamais passer par une
--- invitation. Doit rester APRÈS le grant all ci-dessus : un grant plus
--- permissif exécuté après annulerait silencieusement un revoke placé
--- avant lui. Seules les fonctions security definer du modèle foyer (qui
--- tournent avec les privilèges du propriétaire de la table, donc
--- contournent ce revoke) peuvent modifier cette colonne.
-revoke update (household_id) on profiles from authenticated;
+-- Un revoke ciblé sur une seule colonne (`revoke update (household_id)
+-- ...`) ne suffit PAS ici : un privilège table-level (comme le grant all
+-- ci-dessus) et un privilège column-level ne se soustraient pas, ils
+-- s'additionnent (vérifié empiriquement, pas juste supposé) — le
+-- table-level continue de tout autoriser quoi que dise le revoke sur une
+-- colonne précise. Pour restreindre réellement household_id il faut
+-- retirer le privilège UPDATE table-level et le regranter explicitement
+-- colonne par colonne, sur exactement celles que le client met à jour
+-- aujourd'hui (voir updateMyProfile/markTutorialSeen/markChangelogSeen
+-- dans src/lib/friendCode.js). Sans ça, n'importe quel compte pourrait
+-- s'auto-assigner le household_id d'un foyer étranger et hériter de la
+-- visibilité de ses livres, sans jamais passer par une invitation.
+-- Seules les fonctions security definer du modèle foyer (qui tournent
+-- avec les privilèges du propriétaire de la table, donc contournent ce
+-- revoke) peuvent modifier household_id.
+revoke update on profiles from authenticated;
+grant update (display_name, first_name, last_name, has_seen_tutorial, last_seen_changelog)
+  on profiles to authenticated;
 
 -- Suppression de compte en libre-service (droit à l'effacement). security
 -- definer : auth.users n'est pas modifiable par le rôle authenticated
