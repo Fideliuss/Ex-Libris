@@ -167,8 +167,15 @@ crédits) en dehors d'un vrai merge sur `main` :
 - Quand `develop` est stable, ouvrir une PR de `develop` vers `main`. Le
   merge de cette PR déclenche le déploiement (Netlify ne surveille que
   `main`, branch deploys et previews désactivés). Pas de versionnage
-  automatique : `CHANGELOG.md` est un historique figé, `package.json`
-  n'est plus bumpé.
+  automatique (release-please retiré), mais un versionnage manuel a
+  repris depuis le 2026-09-14 : à chaque promotion, bump `package.json`
+  à la main (semver : MINOR si le lot contient au moins une vraie
+  fonctionnalité, PATCH si fixes seulement) et créer la
+  [GitHub Release](https://github.com/Fideliuss/Ex-Libris/releases)
+  correspondante (tag léger `ExLibris-vX.Y.Z`, pour le badge "Verified"
+  signé par le commit de merge plutôt qu'un tag annoté non signé).
+  `CHANGELOG.md` reste tenu à la main (voir plus bas), indépendamment de
+  ce tag.
 - **Avant cette PR `develop → main`**, si les changements embarqués sont
   visibles pour l'utilisateur (pas un refactor interne ou un fix invisible) :
   ajouter une entrée à la main dans `CHANGELOG.md` (historique technique,
