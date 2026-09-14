@@ -768,8 +768,12 @@ function PricingCard({ tier, price, tierIndex }) {
         </span>
       )}
 
+      {/* Hauteur réservée fixe (pas juste centrée) : la tagline ne tient
+          pas forcément sur le même nombre de lignes d'une carte à l'autre,
+          ni d'une langue à l'autre pour la même carte — sans ça, tout ce
+          qui suit (titre, prix, liste) se décale selon le texte. */}
       <p
-        className="font-mono uppercase tracking-[0.16em] text-[10px]"
+        className="font-mono uppercase tracking-[0.16em] text-[10px] min-h-[32px] flex items-center justify-center px-2"
         style={{ color: `${metal.ink}99` }}
       >
         {tier.tagline}
