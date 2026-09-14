@@ -33,8 +33,8 @@ const STRINGS = {
         text: "Un objectif de lecture par an, un système de points, un calendrier. Tu sais où tu en es sans avoir à compter toi-même.",
       },
       {
-        title: 'Qui partage à deux',
-        text: 'Toi et ton binôme gardez chacun vos livres, mais vous voyez tout côte à côte — sans jamais les mélanger.',
+        title: 'Qui partage en foyer',
+        text: 'Chacun garde ses livres, mais vous voyez tout le foyer côte à côte, sans jamais les mélanger.',
       },
     ],
     howTitle: 'Comment ça marche',
@@ -53,33 +53,38 @@ const STRINGS = {
       },
     ],
     pricingTitle: 'Tarifs',
-    pricingNote: "Aperçu — l'application n'est pas encore ouverte au public.",
+    pricingNote: "Aperçu, l'application n'est pas encore ouverte au public.",
+    billingToggle: { monthly: 'Mensuel', annual: 'Annuel', save: "Jusqu'à -28%" },
     pricing: [
       {
         name: 'Basic',
-        price: 'Gratuit',
+        priceMonthly: 'Gratuit',
+        priceAnnual: 'Gratuit',
         tagline: 'Pour découvrir ta bibliothèque perso.',
-        items: ['Collection limitée', 'Scan ISBN', 'Statuts de base'],
+        items: ['Collection limitée (1000 livres)', 'Scan ISBN', 'Statuts de lecture de base'],
       },
       {
         name: 'Premium',
-        price: 'Bientôt',
+        priceMonthly: '1,99€/mois',
+        priceAnnual: '19,99€/an',
         tagline: 'Pour les lecteurs assidus.',
-        items: ['Collection illimitée', 'Statistiques & objectifs', 'Historique complet'],
+        items: ['Collection illimitée', 'Statistiques, objectifs & succès Ex Libris', 'Historique de lecture complet'],
       },
       {
         name: 'Duo',
-        price: 'Bientôt',
+        priceMonthly: '2,99€/mois',
+        priceAnnual: '25,99€/an',
         tagline: 'Pour partager à deux.',
-        items: ['Tout Premium', 'Partage à deux', "Activité de l'autre"],
+        items: ['Tout Premium', 'Partage à deux (foyer de 2)', 'Vue croisée des bibliothèques'],
         highlighted: true,
         badge: 'Recommandé',
       },
       {
         name: 'Family',
-        price: 'Bientôt',
+        priceMonthly: '3,49€/mois',
+        priceAnnual: '33,99€/an',
         tagline: 'Pour toute la famille.',
-        items: ['Tout Duo', 'Comptes multiples', 'Gestion des permissions'],
+        items: ['Tout Duo', "Foyer jusqu'à 6 comptes", 'Gestion des permissions'],
       },
     ],
     finalCtaTitle: 'Prêt·e à ranger ta bibliothèque ?',
@@ -112,8 +117,8 @@ const STRINGS = {
         text: 'A yearly reading goal, a points system, a calendar. You always know where you stand, without counting it yourself.',
       },
       {
-        title: 'Sharing as a pair',
-        text: 'You and your partner each keep your own books, but see it all side by side — never mixed up.',
+        title: 'Sharing with your household',
+        text: 'Everyone keeps their own books, but you see the whole household side by side, never mixed up.',
       },
     ],
     howTitle: 'How it works',
@@ -132,33 +137,38 @@ const STRINGS = {
       },
     ],
     pricingTitle: 'Pricing',
-    pricingNote: "Preview — the app isn't open to the public yet.",
+    pricingNote: "Preview, the app isn't open to the public yet.",
+    billingToggle: { monthly: 'Monthly', annual: 'Annual', save: 'Up to -28%' },
     pricing: [
       {
         name: 'Basic',
-        price: 'Free',
+        priceMonthly: 'Free',
+        priceAnnual: 'Free',
         tagline: 'To discover your personal library.',
-        items: ['Limited collection', 'ISBN scan', 'Basic statuses'],
+        items: ['Limited collection (1,000 books)', 'ISBN scan', 'Basic reading statuses'],
       },
       {
         name: 'Premium',
-        price: 'Coming soon',
+        priceMonthly: '€1.99/mo',
+        priceAnnual: '€19.99/yr',
         tagline: 'For dedicated readers.',
-        items: ['Unlimited collection', 'Stats & goals', 'Full history'],
+        items: ['Unlimited collection', 'Stats, goals & Ex Libris achievements', 'Full reading history'],
       },
       {
         name: 'Duo',
-        price: 'Coming soon',
+        priceMonthly: '€2.99/mo',
+        priceAnnual: '€25.99/yr',
         tagline: 'To share with one other person.',
-        items: ['Everything in Premium', 'Sharing for two', "See their activity"],
+        items: ['Everything in Premium', 'Sharing for two (a household of 2)', "A shared view of both libraries"],
         highlighted: true,
         badge: 'Recommended',
       },
       {
         name: 'Family',
-        price: 'Coming soon',
+        priceMonthly: '€3.49/mo',
+        priceAnnual: '€33.99/yr',
         tagline: 'For the whole family.',
-        items: ['Everything in Duo', 'Multiple accounts', 'Permission management'],
+        items: ['Everything in Duo', 'A household of up to 6', 'Permission management'],
       },
     ],
     finalCtaTitle: 'Ready to organize your library?',
@@ -624,56 +634,137 @@ function HowItWorks() {
   )
 }
 
+// Bascule mensuel/annuel : un pilule coulissante plutôt que deux boutons
+// séparés, pour que le choix actif reste visible d'un coup d'œil sans
+// dupliquer la mise en forme "actif/inactif" deux fois.
+function BillingToggle({ billing, onChange, labels }) {
+  const isAnnual = billing === 'annual'
+  return (
+    <div className="flex justify-center mb-10">
+      <div
+        role="tablist"
+        aria-label={labels.monthly + ' / ' + labels.annual}
+        className="relative inline-flex items-center rounded-full border border-ink/15 bg-card p-1"
+      >
+        <span
+          aria-hidden="true"
+          className={`absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-library-fill transition-transform duration-200 ease-out ${
+            isAnnual ? 'translate-x-full' : 'translate-x-0'
+          }`}
+        />
+        <button
+          type="button"
+          role="tab"
+          aria-selected={!isAnnual}
+          onClick={() => onChange('monthly')}
+          className={`relative z-10 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+            isAnnual ? 'text-ink/70' : 'text-white'
+          }`}
+        >
+          {labels.monthly}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={isAnnual}
+          onClick={() => onChange('annual')}
+          className={`relative z-10 flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+            isAnnual ? 'text-white' : 'text-ink/70'
+          }`}
+        >
+          {labels.annual}
+          <span className="rounded-full bg-brass-fill text-white text-[10px] font-mono uppercase tracking-wide px-1.5 py-0.5">
+            {labels.save}
+          </span>
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function PricingCard({ tier, price, roundedClass }) {
+  const on = tier.highlighted
+  return (
+    <div
+      className={`relative h-full p-6 border-t-4 border-dashed ${roundedClass} ${
+        on ? 'bg-library-fill text-white border-white/50' : 'bg-card text-ink border-brass'
+      }`}
+    >
+      {tier.badge && (
+        <span className="absolute -top-3 right-4 bg-stamp-fill text-white text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded-sm shadow-sm">
+          {tier.badge}
+        </span>
+      )}
+      <div
+        className={`w-8 h-8 rounded-full border flex items-center justify-center font-serif font-semibold text-sm mb-3 ${
+          on ? 'border-white text-white' : 'border-brass text-brass'
+        }`}
+      >
+        {tier.name[0]}
+      </div>
+      <h3 className="font-serif text-xl mb-1">{tier.name}</h3>
+      <p className={`font-mono text-2xl font-semibold mb-1 ${on ? 'text-white' : 'text-library'}`}>{price}</p>
+      <p className={`text-sm mb-4 ${on ? 'text-white/80' : 'text-ink/70'}`}>{tier.tagline}</p>
+      <ul className="space-y-2 text-sm">
+        {tier.items.map((item) => (
+          <li key={item} className={on ? 'text-white/90' : 'text-ink/70'}>
+            · {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 function Pricing() {
   const t = useT()
+  const [billing, setBilling] = useState('monthly')
+
   return (
     <section id="pricing" className="max-w-5xl mx-auto px-6 py-20">
       <Reveal>
         <h2 className="font-serif text-3xl font-semibold text-center mb-3">
           {t.pricingTitle}
         </h2>
-        <p className="text-center text-sm text-ink/70 mb-12">{t.pricingNote}</p>
+        <p className="text-center text-sm text-ink/70 mb-6">{t.pricingNote}</p>
+        <BillingToggle billing={billing} onChange={setBilling} labels={t.billingToggle} />
       </Reveal>
-      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {t.pricing.map((tier, i) => (
-          <Reveal key={tier.name} delay={i * 100}>
-            <div
-              className={`relative rounded-sm p-6 h-full border-t-4 border-dashed shadow-sm ${
-                tier.highlighted
-                  ? 'bg-library-fill text-white border-brass'
-                  : 'bg-card border-brass'
-              }`}
-            >
-              {tier.badge && (
-                <span className="absolute -top-3 right-4 bg-brass-fill text-white text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded-sm">
-                  {tier.badge}
-                </span>
+
+      {/* En dessous de lg, la métaphore "feuille perforée" (cartes
+          fusionnées + pointillés entre elles) ne survit pas au passage en
+          grille 2 colonnes : on retombe sur des cartes indépendantes,
+          arrondies chacune de leur côté. */}
+      <Reveal delay={100}>
+        <div className="grid sm:grid-cols-2 gap-6 lg:hidden">
+          {t.pricing.map((tier) => (
+            <PricingCard
+              key={tier.name}
+              tier={tier}
+              price={billing === 'annual' ? tier.priceAnnual : tier.priceMonthly}
+              roundedClass="rounded-sm shadow-sm"
+            />
+          ))}
+        </div>
+
+        <div className="hidden lg:flex rounded-sm shadow-sm overflow-hidden">
+          {t.pricing.map((tier, i) => (
+            <div key={tier.name} className="flex flex-1">
+              {i > 0 && (
+                <div aria-hidden="true" className="w-px shrink-0 border-l border-dashed border-ink/25" />
               )}
-              <h3 className="font-serif text-xl mb-1">{tier.name}</h3>
-              <p
-                className={`font-mono text-2xl font-semibold mb-2 ${tier.highlighted ? 'text-white' : 'text-library'}`}
-              >
-                {tier.price}
-              </p>
-              <p
-                className={`text-sm mb-4 ${tier.highlighted ? 'text-white/80' : 'text-ink/70'}`}
-              >
-                {tier.tagline}
-              </p>
-              <ul className="space-y-2 text-sm">
-                {tier.items.map((item) => (
-                  <li
-                    key={item}
-                    className={tier.highlighted ? 'text-white/90' : 'text-ink/70'}
-                  >
-                    · {item}
-                  </li>
-                ))}
-              </ul>
+              <div className="flex-1">
+                <PricingCard
+                  tier={tier}
+                  price={billing === 'annual' ? tier.priceAnnual : tier.priceMonthly}
+                  roundedClass={
+                    i === 0 ? 'rounded-l-sm' : i === t.pricing.length - 1 ? 'rounded-r-sm' : ''
+                  }
+                />
+              </div>
             </div>
-          </Reveal>
-        ))}
-      </div>
+          ))}
+        </div>
+      </Reveal>
     </section>
   )
 }
