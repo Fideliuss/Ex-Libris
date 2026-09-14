@@ -57,9 +57,11 @@ function formatDate(value) {
 
 export default function Stats() {
   const { user } = useAuth()
-  const { partner, isMine, books, loading, error, refresh, setView } =
+  const { members, ownerId, isMine, books, loading, error, refresh, setOwnerId } =
     useHouseholdBooks()
-  const viewedUserId = isMine ? user?.id : partner?.id
+  const viewedUserId = ownerId
+  const selectedMember = members.find((m) => m.userId === ownerId)
+  const selectedLabel = selectedMember?.displayName ?? selectedMember?.email
   const goBack = useGoBack('/')
   const [convertingTag, setConvertingTag] = useState(null)
   const [convertError, setConvertError] = useState(null)
@@ -369,13 +371,14 @@ export default function Stats() {
           Statistiques
         </h1>
 
-        {partner && (
+        {members.length > 1 && (
           <HouseholdTabs
-            isMine={isMine}
-            onSelectMine={() => setView('mine')}
-            onSelectPartner={() => setView('partner')}
-            mineLabel="Mes statistiques"
-            partnerLabel={`Statistiques de ${partner.label}`}
+            members={members}
+            selectedId={ownerId}
+            onSelect={setOwnerId}
+            labelFor={(m) =>
+              m.userId === user.id ? 'Mes statistiques' : `Statistiques de ${m.displayName ?? m.email}`
+            }
             ariaLabel="Statistiques à afficher"
           />
         )}
@@ -390,7 +393,7 @@ export default function Stats() {
           <p className="text-sm text-ink/70 text-center py-16">
             {isMine
               ? "Ajoute des livres à ta collection pour voir apparaître tes statistiques."
-              : `${partner?.label} n'a pas encore de livres.`}
+              : `${selectedLabel} n'a pas encore de livres.`}
           </p>
         ) : (
           <div className="space-y-6">
