@@ -9,6 +9,18 @@ l'app. Pour le pop-up "Quoi de neuf" vu par l'utilisateur, voir
 `src/lib/whatsNew.js`, à tenir à jour en parallèle (voir README.md,
 section GitFlow).
 
+## 2026-09-14
+
+Pas de tag/version release-please ici (outil retiré, voir plus haut) :
+juste la date de promotion `develop` -> `main`.
+
+### Features
+
+* replace the hardcoded 1:1 household pairing with a real multi-person household model (more than 2 members per household), with security-definer RPCs for invite/accept/decline/cancel/leave/remove-member/rename ([#112](https://github.com/Fideliuss/Ex-Libris/pull/112), [#113](https://github.com/Fideliuss/Ex-Libris/pull/113))
+* redesign the sharing panel (Compte > Partage) around the new household model: member list, invite by friend code, pending invitations tab ([#114](https://github.com/Fideliuss/Ex-Libris/pull/114))
+* generalize the "whose books" switcher on Collection and Stats from a binary mine/partner toggle to a dropdown/tab list covering every household member ([#115](https://github.com/Fideliuss/Ex-Libris/pull/115))
+* add a Duo/Family pricing panel to the landing page (preview only, the app stays free), styled as Ex Libris plates (bronze/silver/gold/platinum) with a monthly/annual billing toggle ([#116](https://github.com/Fideliuss/Ex-Libris/pull/116))
+
 ## 2026-09-10
 
 Pas de tag/version release-please ici (outil retiré, voir plus haut) :
@@ -26,6 +38,7 @@ juste la date de promotion `develop` -> `main`.
 * separate Wishlist tab on the Collection page, no longer mixed into the main grid ([#107](https://github.com/Fideliuss/Ex-Libris/pull/107))
 * scroll position restoration when returning to the Collection page ([#107](https://github.com/Fideliuss/Ex-Libris/pull/107))
 * A-Z scroll index for the Titre/Auteur sorts, collapsible to a tap-to-open handle on mobile ([#107](https://github.com/Fideliuss/Ex-Libris/pull/107))
+* migrate author/translator/illustrator from free-text to arrays, enabling multi-person credits (co-authors, multiple translators) with per-person filtering and autocomplete suggestions in the book form ([#110](https://github.com/Fideliuss/Ex-Libris/pull/110)); missed in the original 2026-09-10 entry, backfilled on 2026-09-14
 
 ### Bug Fixes
 

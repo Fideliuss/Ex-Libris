@@ -9,6 +9,22 @@
 // prend du recul sur tout ce qui vient d'être livré d'un coup.
 export const WHATS_NEW = [
   {
+    id: '2026-09-household',
+    title: 'Un foyer à plusieurs personnes',
+    items: [
+      'Le partage n’est plus limité à deux comptes : invite tout ton foyer (famille, colocataires...) et voyez toutes vos collections côte à côte.',
+      'Le panneau Partage (dans Compte) a été refait : liste des membres, code ami pour inviter, invitations en attente, tout au même endroit.',
+    ],
+  },
+  {
+    id: '2026-09-multi-author',
+    title: 'Plusieurs auteurs, traducteurs, illustrateurs par livre',
+    items: [
+      'Tu peux maintenant ajouter plusieurs auteurs, traducteurs ou illustrateurs par livre, avec des suggestions basées sur ceux déjà dans ta collection.',
+      'Le filtre par auteur dans la Collection cible maintenant chaque personne individuellement, plus seulement la chaîne de texte complète.',
+    ],
+  },
+  {
     id: '2026-09-wishlist-and-succes',
     title: 'Wishlist séparée et page Succès',
     items: [

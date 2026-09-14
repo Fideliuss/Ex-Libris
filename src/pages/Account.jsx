@@ -1,8 +1,9 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTutorial } from '../context/TutorialContext'
 import { useGoBack } from '../lib/navigation'
+import { useEdgeFade } from '../hooks/useEdgeFade'
 import { markChangelogSeen } from '../lib/friendCode'
 import { LATEST_CHANGELOG_ID, WHATS_NEW } from '../lib/whatsNew'
 import SharingPanel from '../components/SharingPanel'
@@ -92,34 +93,6 @@ function SecuritySection() {
       {showChangelog && <ChangelogModal entries={WHATS_NEW} onClose={closeChangelog} />}
     </div>
   )
-}
-
-// Indique de quel côté la rangée d'onglets déborde encore, pour afficher un
-// dégradé de fondu uniquement là où il y a vraiment plus de contenu à
-// atteindre (pas un dégradé permanent qui laisserait croire à du contenu
-// caché même une fois arrivé au bout).
-function useEdgeFade(ref) {
-  const [fade, setFade] = useState({ left: false, right: false })
-
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    function update() {
-      setFade({
-        left: el.scrollLeft > 4,
-        right: el.scrollLeft < el.scrollWidth - el.clientWidth - 4,
-      })
-    }
-    update()
-    el.addEventListener('scroll', update, { passive: true })
-    window.addEventListener('resize', update)
-    return () => {
-      el.removeEventListener('scroll', update)
-      window.removeEventListener('resize', update)
-    }
-  }, [ref])
-
-  return fade
 }
 
 export default function Account() {
