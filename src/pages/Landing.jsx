@@ -640,15 +640,21 @@ function HowItWorks() {
 function BillingToggle({ billing, onChange, labels }) {
   const isAnnual = billing === 'annual'
   return (
-    <div className="flex justify-center mb-10">
+    <div className="flex justify-center items-center gap-2 mb-10">
       <div
         role="tablist"
         aria-label={labels.monthly + ' / ' + labels.annual}
         className="relative inline-flex items-center rounded-full border border-ink/15 bg-card p-1"
       >
+        {/* Les deux boutons ont une largeur fixe identique (au lieu de
+            suivre leur contenu) : le fond coulissant est calé sur cette
+            même largeur, donc les deux restent synchronisés quel que soit
+            le texte (FR/EN n'ont pas la même longueur). Le badge de remise
+            est sorti de la pilule plutôt que dans le bouton Annuel, qui
+            aurait alors été plus large que Mensuel et cassé cette symétrie. */}
         <span
           aria-hidden="true"
-          className={`absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-full bg-library-fill transition-transform duration-200 ease-out ${
+          className={`absolute inset-y-1 left-1 w-24 rounded-full bg-library-fill transition-transform duration-200 ease-out ${
             isAnnual ? 'translate-x-full' : 'translate-x-0'
           }`}
         />
@@ -657,7 +663,7 @@ function BillingToggle({ billing, onChange, labels }) {
           role="tab"
           aria-selected={!isAnnual}
           onClick={() => onChange('monthly')}
-          className={`relative z-10 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+          className={`relative z-10 w-24 rounded-full py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
             isAnnual ? 'text-ink/70' : 'text-white'
           }`}
         >
@@ -668,16 +674,16 @@ function BillingToggle({ billing, onChange, labels }) {
           role="tab"
           aria-selected={isAnnual}
           onClick={() => onChange('annual')}
-          className={`relative z-10 flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+          className={`relative z-10 w-24 rounded-full py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
             isAnnual ? 'text-white' : 'text-ink/70'
           }`}
         >
           {labels.annual}
-          <span className="rounded-full bg-brass-fill text-white text-[10px] font-mono uppercase tracking-wide px-1.5 py-0.5">
-            {labels.save}
-          </span>
         </button>
       </div>
+      <span className="rounded-full bg-brass-fill text-white text-[10px] font-mono uppercase tracking-wide px-2 py-1 whitespace-nowrap">
+        {labels.save}
+      </span>
     </div>
   )
 }
@@ -691,7 +697,7 @@ function PricingCard({ tier, price, roundedClass }) {
       }`}
     >
       {tier.badge && (
-        <span className="absolute -top-3 right-4 bg-stamp-fill text-white text-[10px] font-mono uppercase tracking-widest px-2 py-1 rounded-sm shadow-sm">
+        <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-stamp-fill text-white text-[10px] font-mono uppercase tracking-widest px-2.5 py-1 shadow-sm">
           {tier.badge}
         </span>
       )}
