@@ -170,6 +170,277 @@ create trigger on_auth_user_created
   for each row
   execute function handle_new_user_profile();
 
+-- Modèle "foyer" (households) : remplace progressivement household_links
+-- (paires 1:1) par un vrai groupe à N membres. Migration délibérément
+-- additive pour l'instant : household_links reste en place et fonctionnel,
+-- rien ici ne change le comportement actuel. La bascule (peuplement de
+-- households/profiles.household_id depuis les paires acceptées, RLS de
+-- books/reading_goals sur household_id, puis suppression de
+-- household_links) se fera dans une migration séparée, au moment où le
+-- code applicatif sera prêt à l'utiliser.
+--
+-- Pas de colonne de limite de membres pour l'instant (pas de pricing réel
+-- à faire respecter encore) ; elle s'ajoutera plus tard sans rien casser.
+create table households (
+  id uuid primary key default gen_random_uuid(),
+  name text,
+  owner_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz default now()
+);
+
+alter table households enable row level security;
+
+create policy "Members can view their own household"
+  on households for select
+  using (
+    exists (
+      select 1 from profiles
+      where profiles.user_id = auth.uid()
+        and profiles.household_id = households.id
+    )
+  );
+
+-- Pas de policy insert/update/delete côté client : toute mutation passe
+-- par les fonctions security definer plus bas, qui appliquent les règles
+-- (un seul foyer par utilisateur, transfert de propriété, etc.) au même
+-- endroit plutôt que de les éparpiller dans des policies RLS complexes.
+
+-- Un utilisateur appartient à au plus un foyer à la fois (comme un plan
+-- Spotify Family) : une simple colonne nullable sur profiles suffit, pas
+-- besoin d'une table de jointure household_members.
+alter table profiles add column household_id uuid references households(id) on delete set null;
+
+create index profiles_household_id_idx on profiles(household_id);
+
+-- La policy "Users can update their own profile" existante autorise déjà
+-- la mise à jour de n'importe quelle colonne de sa propre ligne (with
+-- check sur auth.uid() = user_id seulement) : sans ce revoke, n'importe
+-- quel compte pourrait s'auto-assigner le household_id d'un foyer
+-- étranger et hériter de la visibilité de ses livres, sans jamais passer
+-- par une invitation. Seules les fonctions security definer plus bas
+-- (qui tournent avec les privilèges du propriétaire de la table, donc
+-- contournent ce revoke) peuvent modifier cette colonne.
+revoke update (household_id) on profiles from authenticated;
+
+create table household_invites (
+  id uuid primary key default gen_random_uuid(),
+  household_id uuid not null references households(id) on delete cascade,
+  invited_by uuid not null references auth.users(id) on delete cascade,
+  invitee_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz default now(),
+  unique (household_id, invitee_id)
+);
+
+alter table household_invites enable row level security;
+
+create index household_invites_invitee_idx on household_invites(invitee_id);
+create index household_invites_household_id_idx on household_invites(household_id);
+
+create policy "Invitee and household members can view relevant invites"
+  on household_invites for select
+  using (
+    invitee_id = auth.uid()
+    or exists (
+      select 1 from profiles
+      where profiles.user_id = auth.uid()
+        and profiles.household_id = household_invites.household_id
+    )
+  );
+
+-- Même logique que households : écriture uniquement via les fonctions
+-- ci-dessous.
+
+-- Invite quelqu'un dans son foyer via son code ami. Crée le foyer de
+-- l'appelant à la volée s'il n'en a pas encore (il en devient le
+-- fondateur) : pas de bouton "créer un foyer" séparé dans l'UI prévue.
+create or replace function invite_to_household(code text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  caller uuid := auth.uid();
+  target uuid;
+  hh_id uuid;
+begin
+  select user_id into target from profiles where friend_code = upper(trim(code));
+  if target is null then
+    raise exception 'Code ami introuvable.';
+  end if;
+  if target = caller then
+    raise exception 'Tu ne peux pas utiliser ton propre code.';
+  end if;
+
+  select household_id into hh_id from profiles where user_id = caller;
+  if hh_id is null then
+    insert into households (owner_id) values (caller) returning id into hh_id;
+    update profiles set household_id = hh_id where user_id = caller;
+  end if;
+
+  if exists (
+    select 1 from profiles where user_id = target and household_id = hh_id
+  ) then
+    raise exception 'Cette personne fait déjà partie de ton foyer.';
+  end if;
+
+  begin
+    insert into household_invites (household_id, invited_by, invitee_id)
+    values (hh_id, caller, target);
+  exception when unique_violation then
+    raise exception 'Une invitation est déjà en attente pour cette personne.';
+  end;
+end;
+$$;
+
+revoke execute on function invite_to_household(text) from public, anon, service_role;
+grant execute on function invite_to_household(text) to authenticated;
+
+create or replace function accept_household_invite(invite_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  hh_id uuid;
+begin
+  delete from household_invites
+  where id = invite_id and invitee_id = auth.uid()
+  returning household_id into hh_id;
+
+  if hh_id is null then
+    raise exception 'Invitation introuvable.';
+  end if;
+
+  update profiles set household_id = hh_id where user_id = auth.uid();
+end;
+$$;
+
+revoke execute on function accept_household_invite(uuid) from public, anon, service_role;
+grant execute on function accept_household_invite(uuid) to authenticated;
+
+create or replace function decline_household_invite(invite_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  delete from household_invites
+  where id = invite_id and invitee_id = auth.uid();
+end;
+$$;
+
+revoke execute on function decline_household_invite(uuid) from public, anon, service_role;
+grant execute on function decline_household_invite(uuid) to authenticated;
+
+create or replace function cancel_household_invite(invite_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  delete from household_invites
+  where id = invite_id and invited_by = auth.uid();
+end;
+$$;
+
+revoke execute on function cancel_household_invite(uuid) from public, anon, service_role;
+grant execute on function cancel_household_invite(uuid) to authenticated;
+
+-- Si le fondateur part et qu'il reste des membres, la propriété est
+-- transférée à l'un d'eux (choix arbitraire mais déterministe : le plus
+-- petit user_id) plutôt que de laisser le foyer sans propriétaire. Assez
+-- bon pour l'instant ; à revisiter si la propriété porte un jour une
+-- vraie notion de facturation.
+create or replace function leave_household()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  caller uuid := auth.uid();
+  hh_id uuid;
+  was_owner boolean;
+  next_owner uuid;
+  remaining_count int;
+begin
+  select household_id into hh_id from profiles where user_id = caller;
+  if hh_id is null then
+    return;
+  end if;
+
+  select (owner_id = caller) into was_owner from households where id = hh_id;
+
+  update profiles set household_id = null where user_id = caller;
+
+  select count(*) into remaining_count from profiles where household_id = hh_id;
+
+  if remaining_count = 0 then
+    delete from households where id = hh_id;
+  elsif was_owner then
+    select user_id into next_owner
+    from profiles
+    where household_id = hh_id
+    order by user_id
+    limit 1;
+    update households set owner_id = next_owner where id = hh_id;
+  end if;
+end;
+$$;
+
+revoke execute on function leave_household() from public, anon, service_role;
+grant execute on function leave_household() to authenticated;
+
+create or replace function remove_member(target_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  caller uuid := auth.uid();
+  hh_id uuid;
+begin
+  select household_id into hh_id from profiles where user_id = caller;
+  if hh_id is null or not exists (
+    select 1 from households where id = hh_id and owner_id = caller
+  ) then
+    raise exception 'Seul le fondateur du foyer peut retirer un membre.';
+  end if;
+  if target_user_id = caller then
+    raise exception 'Utilise "Quitter le foyer" pour te retirer toi-même.';
+  end if;
+
+  update profiles
+  set household_id = null
+  where user_id = target_user_id and household_id = hh_id;
+end;
+$$;
+
+revoke execute on function remove_member(uuid) from public, anon, service_role;
+grant execute on function remove_member(uuid) to authenticated;
+
+create or replace function rename_household(new_name text)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  update households
+  set name = nullif(trim(new_name), '')
+  where id = (select household_id from profiles where user_id = auth.uid())
+    and owner_id = auth.uid();
+end;
+$$;
+
+revoke execute on function rename_household(text) from public, anon, service_role;
+grant execute on function rename_household(text) to authenticated;
+
 create table books (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users(id) on delete cascade not null,
