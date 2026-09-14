@@ -3,7 +3,7 @@
 -- des tiers, et la faille qu'aurait ouverte household_id sans le revoke
 -- de colonne (voir baseline.sql).
 begin;
-select plan(11);
+select plan(13);
 
 create extension if not exists pgtap;
 
@@ -80,6 +80,11 @@ select is(
   'Bob voit l''invitation qui lui est adressée'
 );
 
+select ok(
+  exists(select 1 from profiles where user_id = '00000000-0000-0000-0000-000000000001'),
+  'Bob (invité, pas encore membre) peut voir le profil d''Alice qui l''a invité'
+);
+
 select set_config(
   'request.jwt.claims',
   json_build_object('sub', '00000000-0000-0000-0000-000000000003', 'role', 'authenticated')::text,
@@ -90,6 +95,11 @@ select is(
   (select count(*)::int from household_invites),
   0,
   'Carol (tierce partie) ne voit aucune invitation du foyer d''Alice'
+);
+
+select ok(
+  not exists(select 1 from profiles where user_id = '00000000-0000-0000-0000-000000000001'),
+  'Carol (tierce partie, aucune invitation) ne voit PAS le profil d''Alice'
 );
 
 -- La faille que le revoke de colonne doit bloquer : Carol ne peut pas
