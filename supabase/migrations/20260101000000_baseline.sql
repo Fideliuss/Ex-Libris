@@ -280,6 +280,36 @@ create policy "Invitee and household members can view relevant invites"
 -- Même logique que households : écriture uniquement via les fonctions
 -- ci-dessous.
 
+-- Même contournement que is_household_member : sans passer par une
+-- fonction security definer, une policy de profiles qui interroge
+-- household_invites (qui interroge elle-même profiles pour sa propre
+-- policy) forme un cycle à deux tables et Postgres le refuse avec la même
+-- erreur "infinite recursion detected in policy".
+create or replace function is_invite_party(other_user_id uuid)
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from household_invites
+    where (invited_by = auth.uid() and invitee_id = other_user_id)
+       or (invitee_id = auth.uid() and invited_by = other_user_id)
+  );
+$$;
+
+revoke execute on function is_invite_party(uuid) from public, anon, service_role;
+grant execute on function is_invite_party(uuid) to authenticated;
+
+-- Symétrique à "Les deux parties d'un lien ... doivent pouvoir lire le
+-- profil de l'autre" pour household_links plus haut : sans ça, l'UI ne
+-- peut pas afficher "Alice t'invite dans son foyer" (Bob ne peut pas
+-- encore voir le profil d'Alice tant qu'il n'a pas accepté).
+create policy "Invite parties can view each other's profiles"
+  on profiles for select
+  using (is_invite_party(user_id));
+
 -- Invite quelqu'un dans son foyer via son code ami. Crée le foyer de
 -- l'appelant à la volée s'il n'en a pas encore (il en devient le
 -- fondateur) : pas de bouton "créer un foyer" séparé dans l'UI prévue.
