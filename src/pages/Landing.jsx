@@ -708,12 +708,19 @@ function BillingToggle({ billing, onChange, labels }) {
 function TierCover({ tier }) {
   return (
     <div className="relative aspect-[2/3] bg-cover flex items-center justify-center overflow-hidden">
-      <div className="absolute inset-4 border-t border-b border-ink-on-cover/80 flex flex-col items-center justify-between py-4">
-        <span className="font-sans text-[11px] tracking-[0.14em] uppercase text-ink-on-cover/80 text-center px-2">
+      <div className="absolute inset-4 border-t border-b border-ink-on-cover/80 flex flex-col items-center py-4">
+        {/* Hauteur réservée fixe (pas juste centrée) : la tagline FR et EN
+            ne tiennent pas forcément sur le même nombre de lignes, et sans
+            ça le titre au milieu se décale verticalement selon la langue
+            (justify-between répartit l'espace RESTANT, donc dépend de la
+            hauteur du premier enfant). */}
+        <span className="font-sans text-[11px] tracking-[0.14em] uppercase text-ink-on-cover/80 text-center px-2 min-h-[34px] flex items-center justify-center">
           {tier.tagline}
         </span>
-        <span className="font-serif italic text-stamp-fill text-2xl leading-snug text-center px-2">
-          {tier.name}
+        <span className="flex-1 flex items-center justify-center px-2">
+          <span className="font-serif italic text-stamp-fill text-2xl leading-snug text-center">
+            {tier.name}
+          </span>
         </span>
         <span className="font-sans text-[10px] tracking-[0.18em] uppercase text-ink-on-cover/70">
           Ex Libris
@@ -723,10 +730,12 @@ function TierCover({ tier }) {
   )
 }
 
-// Même grammaire que BookCardVisual (couverture + tampon de coin +
-// pastilles de tag en pied de fiche) plutôt qu'une carte tarifaire
-// générique : chaque palier se présente comme un livre de la collection,
-// en plus grand et plus fourni.
+// Même grammaire que BookCardVisual (couverture + tampon de coin) qu'une
+// carte tarifaire générique : chaque palier se présente comme un livre de
+// la collection, en plus grand et plus fourni. Les fonctionnalités en
+// pastilles pleines (essayé d'abord) rendaient mal pour des phrases
+// complètes plutôt que des tags d'un ou deux mots ; une liste à coche
+// reste lisible quelle que soit la longueur du texte.
 function PricingCard({ tier, price }) {
   return (
     <div
@@ -741,14 +750,17 @@ function PricingCard({ tier, price }) {
       )}
       <TierCover tier={tier} />
       <div className="p-6">
-        <p className="font-mono text-3xl font-semibold text-library mb-3">{price}</p>
-        <div className="flex flex-wrap gap-1.5">
+        <p className="font-mono text-3xl font-semibold text-library mb-4">{price}</p>
+        <ul className="space-y-2">
           {tier.items.map((item) => (
-            <span key={item} className="bg-library-fill text-white text-xs px-2 py-0.5 rounded-full">
-              {item}
-            </span>
+            <li key={item} className="flex items-start gap-2 text-sm text-ink/80">
+              <span className="text-library font-bold leading-5" aria-hidden="true">
+                ✓
+              </span>
+              <span>{item}</span>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </div>
   )
