@@ -196,15 +196,9 @@ alter table profiles add column household_id uuid references households(id) on d
 
 create index profiles_household_id_idx on profiles(household_id);
 
--- La policy "Users can update their own profile" existante autorise déjà
--- la mise à jour de n'importe quelle colonne de sa propre ligne (with
--- check sur auth.uid() = user_id seulement) : sans ce revoke, n'importe
--- quel compte pourrait s'auto-assigner le household_id d'un foyer
--- étranger et hériter de la visibilité de ses livres, sans jamais passer
--- par une invitation. Seules les fonctions security definer plus bas
--- (qui tournent avec les privilèges du propriétaire de la table, donc
--- contournent ce revoke) peuvent modifier cette colonne.
-revoke update (household_id) on profiles from authenticated;
+-- Le revoke qui protège cette colonne est plus bas, après le grant all on
+-- all tables (sinon ce grant, plus permissif et exécuté après dans ce
+-- fichier, l'annulerait silencieusement).
 
 alter table households enable row level security;
 
@@ -222,6 +216,23 @@ create policy "Members can view their own household"
 -- par les fonctions security definer plus bas, qui appliquent les règles
 -- (un seul foyer par utilisateur, transfert de propriété, etc.) au même
 -- endroit plutôt que de les éparpiller dans des policies RLS complexes.
+
+-- La policy "Users can view their own or linked profiles" plus haut ne
+-- connaît que household_links (l'ancien modèle) : sans celle-ci, deux
+-- membres d'un même foyer ne pourraient pas voir le nom l'un de l'autre
+-- (nécessaire pour l'UI de partage). Plusieurs policies permissives pour
+-- la même commande se combinent en OR, donc celle-ci s'ajoute simplement
+-- à l'existante plutôt que de la remplacer.
+create policy "Household members can view each other's profiles"
+  on profiles for select
+  using (
+    exists (
+      select 1 from profiles as me
+      where me.user_id = auth.uid()
+        and me.household_id is not null
+        and me.household_id = profiles.household_id
+    )
+  );
 
 create table household_invites (
   id uuid primary key default gen_random_uuid(),
@@ -606,6 +617,19 @@ alter default privileges in schema public
   grant all on tables to anon, authenticated, service_role;
 alter default privileges in schema public
   grant all on sequences to anon, authenticated, service_role;
+
+-- La policy "Users can update their own profile" (plus haut) autorise déjà
+-- la mise à jour de n'importe quelle colonne de sa propre ligne (with
+-- check sur auth.uid() = user_id seulement), et le grant all sur toutes
+-- les tables ci-dessus la confirme. Sans ce revoke ciblé, n'importe quel
+-- compte pourrait s'auto-assigner le household_id d'un foyer étranger et
+-- hériter de la visibilité de ses livres, sans jamais passer par une
+-- invitation. Doit rester APRÈS le grant all ci-dessus : un grant plus
+-- permissif exécuté après annulerait silencieusement un revoke placé
+-- avant lui. Seules les fonctions security definer du modèle foyer (qui
+-- tournent avec les privilèges du propriétaire de la table, donc
+-- contournent ce revoke) peuvent modifier cette colonne.
+revoke update (household_id) on profiles from authenticated;
 
 -- Suppression de compte en libre-service (droit à l'effacement). security
 -- definer : auth.users n'est pas modifiable par le rôle authenticated
