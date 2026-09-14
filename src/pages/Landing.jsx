@@ -4,6 +4,7 @@ import { navigateWithViewTransition } from '../lib/navigation'
 import BookCoverPlaceholder from '../components/BookCoverPlaceholder'
 import { STATUS_LABELS } from '../lib/statusLabels'
 import { primaryButtonClass } from '../lib/ui'
+import { TIER_METAL } from '../lib/achievementVisuals'
 
 const LANG_STORAGE_KEY = 'landing-lang'
 
@@ -705,63 +706,88 @@ function BillingToggle({ billing, onChange, labels }) {
 // en pied), mais dimensionnée pour une carte de tarif plutôt qu'une
 // vignette de collection : le nom du palier tient lieu de titre, sa
 // tagline de note d'accroche.
-function TierCover({ tier }) {
+// Punaise de coin, identique à celle du mur à trophées des succès
+// (Pin dans ExLibrisPlate.jsx, non exportée) : dupliquée ici plutôt
+// qu'importée, cette page n'a pas d'autre raison de dépendre du module
+// succès.
+function Pin({ className }) {
   return (
-    <div className="relative aspect-[2/3] bg-cover flex items-center justify-center overflow-hidden">
-      <div className="absolute inset-4 border-t border-b border-ink-on-cover/80 flex flex-col items-center py-4">
-        {/* Hauteur réservée fixe (pas juste centrée) : la tagline FR et EN
-            ne tiennent pas forcément sur le même nombre de lignes, et sans
-            ça le titre au milieu se décale verticalement selon la langue
-            (justify-between répartit l'espace RESTANT, donc dépend de la
-            hauteur du premier enfant). */}
-        <span className="font-sans text-[11px] tracking-[0.14em] uppercase text-ink-on-cover/80 text-center px-2 min-h-[34px] flex items-center justify-center">
-          {tier.tagline}
-        </span>
-        <span className="flex-1 flex items-center justify-center px-2">
-          <span className="font-serif italic text-stamp-fill text-2xl leading-snug text-center">
-            {tier.name}
-          </span>
-        </span>
-        <span className="font-sans text-[10px] tracking-[0.18em] uppercase text-ink-on-cover/70">
-          Ex Libris
-        </span>
-      </div>
-    </div>
+    <span
+      aria-hidden="true"
+      className={`absolute w-2.5 h-2.5 rounded-full ${className}`}
+      style={{
+        background: 'radial-gradient(circle at 35% 35%, #f0dcae, #8e7145 75%)',
+        boxShadow: '0 2px 3px rgba(0,0,0,0.5)',
+      }}
+    />
   )
 }
 
-// Même grammaire que BookCardVisual (couverture + tampon de coin) qu'une
-// carte tarifaire générique : chaque palier se présente comme un livre de
-// la collection, en plus grand et plus fourni. Les fonctionnalités en
-// pastilles pleines (essayé d'abord) rendaient mal pour des phrases
-// complètes plutôt que des tags d'un ou deux mots ; une liste à coche
-// reste lisible quelle que soit la longueur du texte.
-function PricingCard({ tier, price }) {
+// Même matière que les plaques du mur à trophées (TIER_METAL : bronze,
+// argent, or, platine — un dégradé par palier, du même module que les
+// succès) mais sans leur mécanique de verrouillage/révélation : ça n'a
+// pas de sens pour un tarif, qui doit au contraire tout montrer
+// immédiatement. Basic->Family suit l'échelle bronze->platine.
+function PricingCard({ tier, price, tierIndex }) {
+  const metal = TIER_METAL[tierIndex]
   return (
     <div
-      className={`relative rounded-sm shadow-sm overflow-hidden bg-card h-full ${
-        tier.highlighted ? 'ring-2 ring-brass' : ''
+      className={`relative h-full flex flex-col items-center text-center rounded-sm px-6 pb-8 ${
+        tier.badge ? 'pt-14' : 'pt-8'
       }`}
+      style={{
+        background: metal.background,
+        boxShadow:
+          'inset 1px 1px 2px rgba(255,255,255,0.35), inset -2px -2px 4px rgba(15,10,5,0.25), 0 10px 16px rgba(0,0,0,0.25)',
+      }}
     >
+      <Pin className="-top-[5px] -left-[5px]" />
+      <Pin className="-top-[5px] -right-[5px]" />
+      <Pin className="-bottom-[5px] -left-[5px]" />
+      <Pin className="-bottom-[5px] -right-[5px]" />
+
       {tier.badge && (
+        // pt-14 ci-dessus réserve la place : sinon, tourné et collé au
+        // coin, le tampon empiète sur la tagline en dessous dès qu'elle
+        // se replie sur 2 lignes (largeurs de carte étroites).
         <span className="absolute top-3 right-3 -rotate-6 border-2 border-stamp text-stamp font-mono text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm bg-card/90 pointer-events-none z-10">
           {tier.badge}
         </span>
       )}
-      <TierCover tier={tier} />
-      <div className="p-6">
-        <p className="font-mono text-3xl font-semibold text-library mb-4">{price}</p>
-        <ul className="space-y-2">
-          {tier.items.map((item) => (
-            <li key={item} className="flex items-start gap-2 text-sm text-ink/80">
-              <span className="text-library font-bold leading-5" aria-hidden="true">
-                ✓
-              </span>
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
+
+      <p
+        className="font-mono uppercase tracking-[0.16em] text-[10px]"
+        style={{ color: `${metal.ink}99` }}
+      >
+        {tier.tagline}
+      </p>
+      <p
+        className="font-serif italic font-semibold text-2xl leading-snug mt-2"
+        style={{ color: metal.ink, textShadow: `0 1px 0 ${metal.shadow}` }}
+      >
+        {tier.name}
+      </p>
+      <p className="font-mono font-bold text-3xl mt-2" style={{ color: metal.ink }}>
+        {price}
+      </p>
+
+      <ul className="mt-5 space-y-1.5 text-left w-full">
+        {tier.items.map((item) => (
+          <li key={item} className="flex items-start gap-2 text-sm" style={{ color: metal.ink }}>
+            <span className="font-bold leading-5" aria-hidden="true">
+              ✓
+            </span>
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+
+      <p
+        className="font-sans uppercase tracking-[0.14em] text-[9px] mt-auto pt-6"
+        style={{ color: `${metal.ink}bb` }}
+      >
+        Ex Libris
+      </p>
     </div>
   )
 }
@@ -782,10 +808,11 @@ function Pricing() {
 
       <Reveal delay={100}>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {t.pricing.map((tier) => (
+          {t.pricing.map((tier, i) => (
             <PricingCard
               key={tier.name}
               tier={tier}
+              tierIndex={i}
               price={billing === 'annual' ? tier.priceAnnual : tier.priceMonthly}
             />
           ))}
