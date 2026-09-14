@@ -637,87 +637,119 @@ function HowItWorks() {
 // Bascule mensuel/annuel : un pilule coulissante plutôt que deux boutons
 // séparés, pour que le choix actif reste visible d'un coup d'œil sans
 // dupliquer la mise en forme "actif/inactif" deux fois.
+// Le fond coulissant suit la position/largeur RÉELLE du bouton actif
+// (mesurée via ref) plutôt qu'un découpage 50/50 suppos égal : "Annuel"
+// porte le badge de remise en plus de son texte, donc les deux boutons
+// n'ont jamais la même largeur, quelle que soit la langue.
 function BillingToggle({ billing, onChange, labels }) {
   const isAnnual = billing === 'annual'
+  const monthlyRef = useRef(null)
+  const annualRef = useRef(null)
+  const [highlight, setHighlight] = useState({ left: 0, width: 0 })
+
+  useEffect(() => {
+    const el = isAnnual ? annualRef.current : monthlyRef.current
+    if (el) setHighlight({ left: el.offsetLeft, width: el.offsetWidth })
+  }, [isAnnual])
+
   return (
-    <div className="flex justify-center items-center gap-2 mb-10">
+    <div className="flex justify-center mb-10">
       <div
         role="tablist"
         aria-label={labels.monthly + ' / ' + labels.annual}
         className="relative inline-flex items-center rounded-full border border-ink/15 bg-card p-1"
       >
-        {/* Les deux boutons ont une largeur fixe identique (au lieu de
-            suivre leur contenu) : le fond coulissant est calé sur cette
-            même largeur, donc les deux restent synchronisés quel que soit
-            le texte (FR/EN n'ont pas la même longueur). Le badge de remise
-            est sorti de la pilule plutôt que dans le bouton Annuel, qui
-            aurait alors été plus large que Mensuel et cassé cette symétrie. */}
         <span
           aria-hidden="true"
-          className={`absolute inset-y-1 left-1 w-24 rounded-full bg-library-fill transition-transform duration-200 ease-out ${
-            isAnnual ? 'translate-x-full' : 'translate-x-0'
-          }`}
+          className="absolute inset-y-1 rounded-full bg-library-fill transition-all duration-200 ease-out"
+          style={{ left: highlight.left, width: highlight.width }}
         />
         <button
+          ref={monthlyRef}
           type="button"
           role="tab"
           aria-selected={!isAnnual}
           onClick={() => onChange('monthly')}
-          className={`relative z-10 w-24 rounded-full py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+          className={`relative z-10 rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
             isAnnual ? 'text-ink/70' : 'text-white'
           }`}
         >
           {labels.monthly}
         </button>
         <button
+          ref={annualRef}
           type="button"
           role="tab"
           aria-selected={isAnnual}
           onClick={() => onChange('annual')}
-          className={`relative z-10 w-24 rounded-full py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
+          className={`relative z-10 flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium whitespace-nowrap transition-colors ${
             isAnnual ? 'text-white' : 'text-ink/70'
           }`}
         >
           {labels.annual}
+          <span
+            className={`rounded-full text-[10px] font-mono uppercase tracking-wide px-1.5 py-0.5 ${
+              isAnnual ? 'bg-white/20 text-white' : 'bg-brass-fill text-white'
+            }`}
+          >
+            {labels.save}
+          </span>
         </button>
       </div>
-      <span className="rounded-full bg-brass-fill text-white text-[10px] font-mono uppercase tracking-wide px-2 py-1 whitespace-nowrap">
-        {labels.save}
-      </span>
     </div>
   )
 }
 
-function PricingCard({ tier, price, roundedClass }) {
-  const on = tier.highlighted
+// "Couverture" façon BookCoverPlaceholder (même grammaire : double filet,
+// petites capitales en accroche, titre italique centré, mention Ex Libris
+// en pied), mais dimensionnée pour une carte de tarif plutôt qu'une
+// vignette de collection : le nom du palier tient lieu de titre, sa
+// tagline de note d'accroche.
+function TierCover({ tier }) {
+  return (
+    <div className="relative aspect-[2/3] bg-cover flex items-center justify-center overflow-hidden">
+      <div className="absolute inset-4 border-t border-b border-ink-on-cover/80 flex flex-col items-center justify-between py-4">
+        <span className="font-sans text-[11px] tracking-[0.14em] uppercase text-ink-on-cover/80 text-center px-2">
+          {tier.tagline}
+        </span>
+        <span className="font-serif italic text-stamp-fill text-2xl leading-snug text-center px-2">
+          {tier.name}
+        </span>
+        <span className="font-sans text-[10px] tracking-[0.18em] uppercase text-ink-on-cover/70">
+          Ex Libris
+        </span>
+      </div>
+    </div>
+  )
+}
+
+// Même grammaire que BookCardVisual (couverture + tampon de coin +
+// pastilles de tag en pied de fiche) plutôt qu'une carte tarifaire
+// générique : chaque palier se présente comme un livre de la collection,
+// en plus grand et plus fourni.
+function PricingCard({ tier, price }) {
   return (
     <div
-      className={`relative h-full p-6 border-t-4 border-dashed ${roundedClass} ${
-        on ? 'bg-library-fill text-white border-white/50' : 'bg-card text-ink border-brass'
+      className={`relative rounded-sm shadow-sm overflow-hidden bg-card h-full ${
+        tier.highlighted ? 'ring-2 ring-brass' : ''
       }`}
     >
       {tier.badge && (
-        <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-stamp-fill text-white text-[10px] font-mono uppercase tracking-widest px-2.5 py-1 shadow-sm">
+        <span className="absolute top-3 right-3 -rotate-6 border-2 border-stamp text-stamp font-mono text-xs font-bold uppercase tracking-widest px-2 py-0.5 rounded-sm bg-card/90 pointer-events-none z-10">
           {tier.badge}
         </span>
       )}
-      <div
-        className={`w-8 h-8 rounded-full border flex items-center justify-center font-serif font-semibold text-sm mb-3 ${
-          on ? 'border-white text-white' : 'border-brass text-brass'
-        }`}
-      >
-        {tier.name[0]}
+      <TierCover tier={tier} />
+      <div className="p-6">
+        <p className="font-mono text-3xl font-semibold text-library mb-3">{price}</p>
+        <div className="flex flex-wrap gap-1.5">
+          {tier.items.map((item) => (
+            <span key={item} className="bg-library-fill text-white text-xs px-2 py-0.5 rounded-full">
+              {item}
+            </span>
+          ))}
+        </div>
       </div>
-      <h3 className="font-serif text-xl mb-1">{tier.name}</h3>
-      <p className={`font-mono text-2xl font-semibold mb-1 ${on ? 'text-white' : 'text-library'}`}>{price}</p>
-      <p className={`text-sm mb-4 ${on ? 'text-white/80' : 'text-ink/70'}`}>{tier.tagline}</p>
-      <ul className="space-y-2 text-sm">
-        {tier.items.map((item) => (
-          <li key={item} className={on ? 'text-white/90' : 'text-ink/70'}>
-            · {item}
-          </li>
-        ))}
-      </ul>
     </div>
   )
 }
@@ -736,38 +768,14 @@ function Pricing() {
         <BillingToggle billing={billing} onChange={setBilling} labels={t.billingToggle} />
       </Reveal>
 
-      {/* En dessous de lg, la métaphore "feuille perforée" (cartes
-          fusionnées + pointillés entre elles) ne survit pas au passage en
-          grille 2 colonnes : on retombe sur des cartes indépendantes,
-          arrondies chacune de leur côté. */}
       <Reveal delay={100}>
-        <div className="grid sm:grid-cols-2 gap-6 lg:hidden">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {t.pricing.map((tier) => (
             <PricingCard
               key={tier.name}
               tier={tier}
               price={billing === 'annual' ? tier.priceAnnual : tier.priceMonthly}
-              roundedClass="rounded-sm shadow-sm"
             />
-          ))}
-        </div>
-
-        <div className="hidden lg:flex rounded-sm shadow-sm overflow-hidden">
-          {t.pricing.map((tier, i) => (
-            <div key={tier.name} className="flex flex-1">
-              {i > 0 && (
-                <div aria-hidden="true" className="w-px shrink-0 border-l border-dashed border-ink/25" />
-              )}
-              <div className="flex-1">
-                <PricingCard
-                  tier={tier}
-                  price={billing === 'annual' ? tier.priceAnnual : tier.priceMonthly}
-                  roundedClass={
-                    i === 0 ? 'rounded-l-sm' : i === t.pricing.length - 1 ? 'rounded-r-sm' : ''
-                  }
-                />
-              </div>
-            </div>
           ))}
         </div>
       </Reveal>
