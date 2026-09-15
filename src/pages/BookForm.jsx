@@ -33,6 +33,7 @@ import InlineConfirm from '../components/InlineConfirm'
 import SuggestInput from '../components/SuggestInput'
 import EditionCheckboxes from '../components/EditionCheckboxes'
 import QuickPurchaseModal from '../components/QuickPurchaseModal'
+import StarRating from '../components/StarRating'
 import { STATUS_BORDER_CLASS, STATUS_LABELS } from '../lib/statusLabels'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
@@ -586,12 +587,15 @@ export default function BookForm() {
                   ))}
                 </select>
               </Field>
-              <Field label="Note">
-                <StarRating
-                  value={book.rating}
-                  onChange={(v) => set('rating', v)}
-                />
-              </Field>
+              {/* Une note n'a de sens qu'une fois le livre terminé. */}
+              {book.status === 'read' && (
+                <Field label="Note">
+                  <StarRating
+                    value={book.rating}
+                    onChange={(v) => set('rating', v)}
+                  />
+                </Field>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -870,20 +874,3 @@ function FormSection({ title, defaultOpen = false, children }) {
   )
 }
 
-function StarRating({ value, onChange }) {
-  return (
-    <div className="flex items-center gap-1 h-[38px]">
-      {[1, 2, 3, 4, 5].map((n) => (
-        <button
-          key={n}
-          type="button"
-          onClick={() => onChange(value === n ? 0 : n)}
-          className="text-xl leading-none focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
-          aria-label={`${n} étoile${n > 1 ? 's' : ''}`}
-        >
-          <span className={n <= value ? 'text-brass' : 'text-ink/20'}>★</span>
-        </button>
-      ))}
-    </div>
-  )
-}

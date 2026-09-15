@@ -469,7 +469,13 @@ create table books (
     check (status in ('wishlist', 'to-read', 'reading', 'read')),
   date_started date,
   date_finished date,
-  rating int check (rating between 0 and 5),
+  -- `real` plutôt que `numeric` : PostgREST sérialise `numeric` en chaîne
+  -- (pour ne pas perdre de précision arbitraire), ce qui aurait cassé toutes
+  -- les comparaisons/sommes sur `rating` côté client (Stats.jsx,
+  -- achievements.js...) sans passer partout par Number(...) - déjà le cas
+  -- pour `price` ci-dessous, mais pas souhaitable d'étendre ce contournement.
+  -- Le check garantit des demi-points uniquement (0, 0.5, 1, ..., 5).
+  rating real check (rating >= 0 and rating <= 5 and (rating * 2) = floor(rating * 2)),
   notes text,
   favorite_quote text,
   page_count int,

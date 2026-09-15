@@ -66,7 +66,7 @@ describe('mapLibibRowToBook', () => {
       length: '320',
       price: '12.5',
     })
-    expect(withValues.rating).toBe(5) // rounded
+    expect(withValues.rating).toBe(4.5) // rounded to the nearest half-star
     expect(withValues.page_count).toBe(320)
     expect(withValues.price).toBe(12.5)
 

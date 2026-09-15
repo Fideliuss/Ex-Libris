@@ -61,7 +61,10 @@ export function mapLibibRowToBook(row) {
     status,
     date_started: clean(row.began) || null,
     date_finished: clean(row.completed) || null,
-    rating: rating ? Math.round(Number(rating)) : null,
+    // Libib exporte une note décimale continue (moyenne communautaire, pas
+    // un choix personnel à l'étoile près) : arrondie au demi-point le plus
+    // proche, comme le système de notation de l'app.
+    rating: rating ? Math.round(Number(rating) * 2) / 2 : null,
     page_count: pageCount ? Number(pageCount) : null,
     price: price ? Number(price) : null,
     purchase_date: null,

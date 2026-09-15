@@ -17,6 +17,7 @@ import { todayDateOnly } from '../lib/dates'
 import WishlistRibbon from '../components/WishlistRibbon'
 import { navigateWithViewTransition, useGoBack } from '../lib/navigation'
 import ReadingBookmark from '../components/ReadingBookmark'
+import StarRating from '../components/StarRating'
 import LoadingScreen from '../components/LoadingScreen'
 import BookCoverPlaceholder from '../components/BookCoverPlaceholder'
 import QuickRatingModal from '../components/QuickRatingModal'
@@ -566,12 +567,7 @@ export default function BookDetail() {
                     {BOOK_TYPES[book.type]}
                   </span>
                 )}
-                {book.rating > 0 && (
-                  <span className="text-brass text-sm" aria-hidden="true">
-                    {'★'.repeat(book.rating)}
-                    {'☆'.repeat(5 - book.rating)}
-                  </span>
-                )}
+                {book.rating > 0 && <StarRating value={book.rating} readOnly size="sm" />}
               </div>
 
               {specialEditions.length > 0 && (
