@@ -153,6 +153,13 @@ export default function AchievementsGallery({ books, partner, ownerName, isMine,
       }
 
       const claimed = claims.has(badge.id)
+      // Même garde-fou que pour les succès à paliers ci-dessus — en
+      // variable locale cette fois (pas seulement un champ du view-model),
+      // pour qu'onClick s'en serve aussi : la première version ne gardait
+      // que le champ, l'onClick gardait encore la condition brute
+      // `badge.unlocked && !claimed`, donc cliquable même si !isMine (bug
+      // réel rencontré en prod sur un succès unique en lecture seule).
+      const promotable = badge.unlocked && !claimed && isMine
       return {
         id: badge.id,
         motto: badge.motto,
@@ -166,16 +173,22 @@ export default function AchievementsGallery({ books, partner, ownerName, isMine,
         icon: badge.icon,
         tierRank: 0,
         seal: true,
-        locked: !badge.unlocked,
-        // Même garde-fou que pour les succès à paliers ci-dessus.
-        promotable: badge.unlocked && !claimed && isMine,
+        // Comme pour les succès à paliers (locked: !everRevealed) : l'état
+        // visuel "verrouillé" suit la révélation, pas le déblocage brut.
+        // Bug corrigé ici (locked: !badge.unlocked avant) — masqué jusque
+        // là par l'overlay "Promotion disponible" qui recouvrait le fond
+        // coloré tant que promotable était vrai partout ; en lecture seule
+        // (promotable toujours faux) le fond rouge + texte de mystère
+        // contradictoires devenaient visibles.
+        locked: !claimed,
+        promotable,
         everRevealed: claimed,
         big: false,
         rotation: rotationFor(badge.id),
         pinOffset: pinOffsetFor(badge.id),
         description: badge.description,
         onClick: () => {
-          if (badge.unlocked && !claimed) {
+          if (promotable) {
             setModal({
               animate: true,
               onConfirm: () => onClaim(badge.id, 0),
