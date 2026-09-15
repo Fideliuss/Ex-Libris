@@ -92,6 +92,7 @@ export default function BookForm() {
   const [scannerOpen, setScannerOpen] = useState(false)
   const [showPurchasePrompt, setShowPurchasePrompt] = useState(false)
   const [coverExpanded, setCoverExpanded] = useState(false)
+  const [coverDragActive, setCoverDragActive] = useState(false)
 
   useEffect(() => {
     listAllTags().then(setExistingTags).catch(() => {})
@@ -196,11 +197,10 @@ export default function BookForm() {
     handleLookup(code)
   }
 
-  async function handleCoverUpload(e) {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (!file) return
-
+  // Extrait de handleCoverUpload (le <input type="file">) pour être
+  // réutilisable depuis le glisser-déposer, qui ne fournit pas le même
+  // événement (dataTransfer.files, pas target.files).
+  async function uploadCoverFile(file) {
     if (!file.type.startsWith('image/')) {
       setCoverError('Le fichier doit être une image.')
       return
@@ -220,6 +220,19 @@ export default function BookForm() {
     } finally {
       setCoverUploading(false)
     }
+  }
+
+  function handleCoverUpload(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (file) uploadCoverFile(file)
+  }
+
+  function handleCoverDrop(e) {
+    e.preventDefault()
+    setCoverDragActive(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) uploadCoverFile(file)
   }
 
   async function handleSubmit(e) {
@@ -493,7 +506,23 @@ export default function BookForm() {
 
             <Field label="Couverture">
               <div className="flex gap-4 items-start">
-                <div className="w-24 aspect-[2/3] shrink-0 rounded-sm border border-ink/10 bg-paper overflow-hidden flex items-center justify-center">
+                {/* Glisser-déposer géré ici, sur le conteneur : les
+                    événements drag remontent depuis le bouton/label enfant,
+                    donc un seul jeu de handlers suffit pour les deux états
+                    (avec/sans couverture). */}
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    setCoverDragActive(true)
+                  }}
+                  onDragLeave={() => setCoverDragActive(false)}
+                  onDrop={handleCoverDrop}
+                  className={`w-24 aspect-[2/3] shrink-0 rounded-sm border overflow-hidden flex items-center justify-center transition-colors ${
+                    coverDragActive
+                      ? 'border-library border-2 bg-library/5'
+                      : 'border-ink/10 bg-paper'
+                  }`}
+                >
                   {book.cover_url ? (
                     <button
                       type="button"
@@ -508,9 +537,22 @@ export default function BookForm() {
                       />
                     </button>
                   ) : (
-                    <span className="text-ink/70 text-xs text-center px-1">
-                      Aucune couverture
-                    </span>
+                    <label className="w-full h-full flex items-center justify-center cursor-pointer px-1 focus-within:outline-none focus-within:ring-2 focus-within:ring-library">
+                      <span className="text-ink/70 text-xs text-center">
+                        {coverUploading
+                          ? 'Import…'
+                          : coverDragActive
+                            ? 'Dépose ici'
+                            : 'Aucune couverture'}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={handleCoverUpload}
+                        disabled={coverUploading}
+                      />
+                    </label>
                   )}
                 </div>
 
