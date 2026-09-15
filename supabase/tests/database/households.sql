@@ -1,9 +1,11 @@
--- Vérifie le nouveau modèle "foyer" (households/household_invites/
--- profiles.household_id) : invitation, acceptation, isolation vis-à-vis
--- des tiers, et la faille qu'aurait ouverte household_id sans le revoke
--- de colonne (voir baseline.sql).
+-- Vérifie le modèle "foyer" (households/household_invites/
+-- profiles.household_id, seul modèle de partage depuis le retrait de
+-- household_links) : invitation, acceptation, partage en lecture seule
+-- des books/reading_goals, isolation vis-à-vis des tiers, et la faille
+-- qu'aurait ouverte household_id sans le revoke de colonne (voir
+-- baseline.sql).
 begin;
-select plan(13);
+select plan(19);
 
 create extension if not exists pgtap;
 
@@ -11,6 +13,12 @@ insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-000000000001', 'alice@test.local'),
   ('00000000-0000-0000-0000-000000000002', 'bob@test.local'),
   ('00000000-0000-0000-0000-000000000003', 'carol@test.local');
+
+insert into books (id, user_id, title) values
+  ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'Livre d''Alice');
+
+insert into reading_goals (user_id, year, goal) values
+  ('00000000-0000-0000-0000-000000000001', 2026, 20);
 
 -- Le trigger on_auth_user_created crée déjà profiles (avec un friend_code
 -- généré aléatoirement) pour les trois : capture le code de Bob pendant
@@ -141,7 +149,82 @@ select is(
   'L''invitation a disparu une fois acceptée'
 );
 
--- Seul le fondateur peut retirer un membre.
+-- La faille corrigée par ce correctif : sans la policy books basée sur
+-- is_household_member(), Bob ne verrait jamais le livre d'Alice malgré
+-- leur foyer commun, car il n'existe aucune ligne household_links (ancien
+-- modèle) pour cette paire.
+select is(
+  (select count(*)::int from books where id = '10000000-0000-0000-0000-000000000001'),
+  1,
+  'Bob voit le livre d''Alice une fois membre de son foyer'
+);
+
+select is(
+  (select count(*)::int from reading_goals
+     where user_id = '00000000-0000-0000-0000-000000000001' and year = 2026),
+  1,
+  'Bob voit l''objectif de lecture d''Alice une fois membre de son foyer'
+);
+
+-- Le partage en lecture n'ouvre pas l'écriture : Bob voit le livre
+-- d'Alice, mais ne peut ni le modifier ni le supprimer (mêmes CTE
+-- modificatrices isolées que dans les autres tests pgTAP du projet, une
+-- CTE update/delete ... returning doit être au niveau racine).
+create temporary table test_bob_update_alice as
+with attempt as (
+  update books set title = 'piraté'
+  where id = '10000000-0000-0000-0000-000000000001'
+  returning 1
+)
+select count(*)::int as n from attempt;
+
+select is(
+  (select n from test_bob_update_alice),
+  0,
+  'Bob ne peut pas modifier le livre d''Alice malgré le partage en lecture'
+);
+
+create temporary table test_bob_delete_alice as
+with attempt as (
+  delete from books
+  where id = '10000000-0000-0000-0000-000000000001'
+  returning 1
+)
+select count(*)::int as n from attempt;
+
+select is(
+  (select n from test_bob_delete_alice),
+  0,
+  'Bob ne peut pas supprimer le livre d''Alice malgré le partage en lecture'
+);
+
+select set_config(
+  'request.jwt.claims',
+  json_build_object('sub', '00000000-0000-0000-0000-000000000003', 'role', 'authenticated')::text,
+  true
+);
+
+select is(
+  (select count(*)::int from books where id = '10000000-0000-0000-0000-000000000001'),
+  0,
+  'Carol (tierce partie, aucun foyer commun) ne voit PAS le livre d''Alice'
+);
+
+select is(
+  (select count(*)::int from reading_goals
+     where user_id = '00000000-0000-0000-0000-000000000001' and year = 2026),
+  0,
+  'Carol (tierce partie, aucun foyer commun) ne voit PAS l''objectif de lecture d''Alice'
+);
+
+-- Seul le fondateur peut retirer un membre (repasse en Bob, laissé sur
+-- Carol par le check précédent).
+select set_config(
+  'request.jwt.claims',
+  json_build_object('sub', '00000000-0000-0000-0000-000000000002', 'role', 'authenticated')::text,
+  true
+);
+
 select throws_like(
   $$ select remove_member('00000000-0000-0000-0000-000000000001') $$,
   '%fondateur%',

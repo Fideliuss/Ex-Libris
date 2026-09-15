@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { bulkDeleteBooks, bulkUpdateBooks } from '../lib/books'
+import { isBookIncomplete } from '../lib/bookCompleteness'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import { describeError } from '../lib/errors'
 import BookCard from '../components/BookCard'
@@ -171,8 +172,13 @@ function groupKeyFor(book, sortKey) {
       ? monthLabel(parseDateOnly(book.date_finished))
       : 'Non terminé'
   if (sortKey === 'status') return STATUS_LABELS[book.status] ?? null
-  if (sortKey === 'rating')
-    return book.rating > 0 ? '★'.repeat(book.rating) : 'Non noté'
+  if (sortKey === 'rating') {
+    if (!(book.rating > 0)) return 'Non noté'
+    // En-tête de groupe purement textuel (pas la place pour le composant
+    // StarRating ici) : étoiles pleines + ½ si besoin plutôt qu'arrondir et
+    // perdre la distinction entre 3 et 3,5 par exemple.
+    return '★'.repeat(Math.floor(book.rating)) + (book.rating % 1 !== 0 ? '½' : '')
+  }
   if (sortKey === 'tome') return book.series || 'Sans série'
   return null
 }
@@ -388,19 +394,12 @@ export default function Collection() {
     [books],
   )
 
-  // Livres sans couverture ou sans les champs qu'un scan ISBN réussi remplit
-  // normalement tout seul (auteur, éditeur, pages, description) : à
-  // compléter à la main. Basé sur ce qu'on possède : un livre encore en
+  // Livres sans ISBN ni les champs qu'un scan ISBN réussi remplit
+  // normalement tout seul (couverture, auteur, éditeur, pages, description) :
+  // à compléter à la main. Basé sur ce qu'on possède : un livre encore en
   // wishlist n'a pas vocation à être "complété" avant d'être acheté.
   const incompleteBooks = useMemo(() => {
-    return collectionBooks.filter(
-      (book) =>
-        !book.cover_url ||
-        !book.author?.length ||
-        !book.publisher ||
-        !book.page_count ||
-        !book.description,
-    )
+    return collectionBooks.filter(isBookIncomplete)
   }, [collectionBooks])
 
   // Chaque option de tri reste "croissante" par nature (compare() ci-dessus) ;

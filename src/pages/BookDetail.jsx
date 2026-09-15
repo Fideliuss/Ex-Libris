@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getBook, getSeriesSiblings, updateBook } from '../lib/books'
+import { getMissingFields } from '../lib/bookCompleteness'
 import { sortEditions, SPECIAL_EDITION_TYPES } from '../lib/editionTypes'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
@@ -16,6 +17,8 @@ import { todayDateOnly } from '../lib/dates'
 import WishlistRibbon from '../components/WishlistRibbon'
 import { navigateWithViewTransition, useGoBack } from '../lib/navigation'
 import ReadingBookmark from '../components/ReadingBookmark'
+import StarRating from '../components/StarRating'
+import CoverLightbox from '../components/CoverLightbox'
 import LoadingScreen from '../components/LoadingScreen'
 import BookCoverPlaceholder from '../components/BookCoverPlaceholder'
 import QuickRatingModal from '../components/QuickRatingModal'
@@ -152,7 +155,7 @@ export default function BookDetail() {
   const navigate = useNavigate()
   const goBack = useGoBack('/')
   const { user } = useAuth()
-  const { partner } = useHouseholdBooks()
+  const { members } = useHouseholdBooks()
   const [book, setBook] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -233,15 +236,6 @@ export default function BookDetail() {
   }
 
   useEffect(() => {
-    if (!coverExpanded) return
-    function handleKeyDown(e) {
-      if (e.key === 'Escape') setCoverExpanded(false)
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [coverExpanded])
-
-  useEffect(() => {
     let active = true
     getBook(id)
       .then((data) => {
@@ -275,18 +269,7 @@ export default function BookDetail() {
     }
   }, [book?.series, book?.user_id])
 
-  // Même critère que l'onglet « À compléter » de la collection et le
-  // formulaire d'édition (voir Collection.jsx / BookForm.jsx) : les champs
-  // qu'un scan ISBN réussi remplit normalement tout seul.
-  const missingFields = book
-    ? [
-        !book.cover_url && 'Couverture',
-        !book.author?.length && 'Auteur',
-        !book.publisher && 'Éditeur',
-        !book.page_count && 'Pages',
-        !book.description && 'Résumé',
-      ].filter(Boolean)
-    : []
+  const missingFields = book ? getMissingFields(book) : []
 
   const visibleSiblings = book?.series ? seriesSiblings : []
   const tomeSlots = buildTomeSlots(visibleSiblings)
@@ -378,6 +361,9 @@ export default function BookDetail() {
     (book.edition ?? []).filter((e) => !SPECIAL_EDITION_TYPES.includes(e)),
   )
 
+  const bookOwner = members.find((m) => m.userId === book.user_id)
+  const bookOwnerLabel = bookOwner?.displayName ?? bookOwner?.email ?? 'l’autre bibliothèque'
+
   return (
     <div className="min-h-svh p-6">
       <div className="max-w-2xl mx-auto">
@@ -399,7 +385,7 @@ export default function BookDetail() {
             </button>
           ) : (
             <span className="shrink-0 font-mono text-xs uppercase tracking-widest text-brass">
-              Livre de {partner?.label ?? 'l’autre bibliothèque'}
+              Livre de {bookOwnerLabel}
             </span>
           )}
         </div>
@@ -573,12 +559,7 @@ export default function BookDetail() {
                     {BOOK_TYPES[book.type]}
                   </span>
                 )}
-                {book.rating > 0 && (
-                  <span className="text-brass text-sm" aria-hidden="true">
-                    {'★'.repeat(book.rating)}
-                    {'☆'.repeat(5 - book.rating)}
-                  </span>
-                )}
+                {book.rating > 0 && <StarRating value={book.rating} readOnly size="sm" />}
               </div>
 
               {specialEditions.length > 0 && (
@@ -693,27 +674,11 @@ export default function BookDetail() {
       </div>
 
       {coverExpanded && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label="Couverture en grand"
-          onClick={() => setCoverExpanded(false)}
-          className="fixed inset-0 z-50 bg-ink/90 flex items-center justify-center p-6"
-        >
-          <button
-            type="button"
-            onClick={() => setCoverExpanded(false)}
-            aria-label="Fermer"
-            className="absolute top-4 right-4 text-white/80 hover:text-white text-3xl leading-none px-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded-sm"
-          >
-            ×
-          </button>
-          <img
-            src={book.cover_url}
-            alt={book.title}
-            className="max-w-full max-h-full rounded-sm shadow-lg cursor-zoom-out"
-          />
-        </div>
+        <CoverLightbox
+          src={book.cover_url}
+          alt={book.title}
+          onClose={() => setCoverExpanded(false)}
+        />
       )}
 
       {showRatingPrompt && (
@@ -727,6 +692,7 @@ export default function BookDetail() {
       {showPurchasePrompt && (
         <QuickPurchaseModal
           bookTitle={book.title}
+          bookAuthor={book.author?.length ? book.author.join(', ') : null}
           onConfirm={handleQuickPurchase}
           onSkip={() => setShowPurchasePrompt(false)}
         />

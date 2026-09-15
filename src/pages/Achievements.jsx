@@ -2,20 +2,23 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import { getMyProfile } from '../lib/friendCode'
+import { listClaims, migrateLocalStorageClaims, upsertClaim } from '../lib/achievementClaims'
 import { useGoBack } from '../lib/navigation'
-import HouseholdTabs from '../components/HouseholdTabs'
+import HouseholdSwitchBadge from '../components/HouseholdSwitchBadge'
 import AchievementsGallery from '../components/AchievementsGallery'
 import LoadingScreen from '../components/LoadingScreen'
 
 export default function Achievements() {
   const { user } = useAuth()
-  const { partner, isMine, books, loading, error, setView } = useHouseholdBooks()
+  const { members, ownerId, setOwnerId, isMine, books, loading, error } = useHouseholdBooks()
   const goBack = useGoBack('/')
   const [myFirstName, setMyFirstName] = useState(null)
+  const [claims, setClaims] = useState(new Map())
+  const [claimsLoading, setClaimsLoading] = useState(true)
 
   // Pour la ligne "Ex-Libris {prénom}" gravée sur les plaques de succès :
-  // le prénom du partenaire est déjà sur `partner.label`, mais le sien
-  // propre n'est nulle part ailleurs dans l'app à ce niveau.
+  // le prénom du membre du foyer affiché est déjà sur selectedMember, mais
+  // le sien propre n'est nulle part ailleurs dans l'app à ce niveau.
   useEffect(() => {
     if (!user) return
     let active = true
@@ -29,9 +32,54 @@ export default function Achievements() {
     }
   }, [user])
 
+  useEffect(() => {
+    if (!ownerId) return
+    let active = true
+    setClaimsLoading(true)
+    ;(async () => {
+      // Reprend une seule fois par appareil ce qui traînait en localStorage
+      // (ancien stockage, avant la table achievement_claims) - uniquement
+      // pertinent sur sa propre vue, et doit être fait AVANT de lire pour
+      // que la migration soit bien prise en compte dès ce premier chargement.
+      if (ownerId === user?.id) {
+        await migrateLocalStorageClaims(ownerId).catch(() => {})
+      }
+      return listClaims(ownerId)
+    })()
+      .then((rows) => {
+        if (active) setClaims(new Map(rows.map((r) => [r.badge_id, r.rank])))
+      })
+      .catch(() => {
+        // Le foyer reste optionnel : une erreur ici ne doit pas bloquer
+        // l'affichage des succès eux-mêmes (recalculés depuis les livres).
+        if (active) setClaims(new Map())
+      })
+      .finally(() => {
+        if (active) setClaimsLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [ownerId, user?.id])
+
+  // Optimiste : l'affichage réagit tout de suite, l'écriture réseau suit
+  // en tâche de fond. Jamais appelé si !isMine (voir AchievementsGallery),
+  // et de toute façon refusé par la policy RLS insert/update sinon. Écrit
+  // sous ownerId (pas user.id) en défense en profondeur : les deux sont
+  // censés être égaux ici (onClaim n'est branché que si isMine), mais un
+  // bug similaire à celui qu'on vient de corriger dans AchievementsGallery
+  // aurait sinon pu de nouveau attribuer la réclamation au mauvais compte.
+  function handleClaim(badgeId, rank) {
+    setClaims((prev) => new Map(prev).set(badgeId, rank))
+    upsertClaim(ownerId, badgeId, rank).catch(() => {})
+  }
+
+  const selectedMember = members.find((m) => m.userId === ownerId)
+  const selectedLabel = selectedMember?.displayName ?? selectedMember?.email
+
   const ownerName = isMine
     ? myFirstName ?? user?.email?.split('@')[0] ?? null
-    : partner?.label ?? null
+    : selectedLabel ?? null
 
   return (
     <div className="min-h-svh p-6">
@@ -46,18 +94,18 @@ export default function Achievements() {
 
         <h1 className="font-serif text-2xl font-semibold mt-4 mb-6">Succès</h1>
 
-        {partner && (
-          <HouseholdTabs
-            isMine={isMine}
-            onSelectMine={() => setView('mine')}
-            onSelectPartner={() => setView('partner')}
-            mineLabel="Mes succès"
-            partnerLabel={`Succès de ${partner.label}`}
-            ariaLabel="Succès à afficher"
-          />
+        {members.length > 1 && (
+          <div className="mb-6">
+            <HouseholdSwitchBadge
+              members={members}
+              selectedId={ownerId}
+              onSelect={setOwnerId}
+              currentUserId={user.id}
+            />
+          </div>
         )}
 
-        {loading ? (
+        {loading || claimsLoading ? (
           <LoadingScreen fullScreen={false} />
         ) : error ? (
           <p role="alert" className="text-sm text-stamp text-center py-16">
@@ -67,14 +115,16 @@ export default function Achievements() {
           <p className="text-sm text-ink/70 text-center py-16">
             {isMine
               ? 'Ajoute des livres à ta collection pour débloquer des succès.'
-              : `${partner?.label} n'a pas encore de livres.`}
+              : `${selectedLabel} n'a pas encore de livres.`}
           </p>
         ) : (
           <AchievementsGallery
             books={books}
-            partner={partner}
-            userId={user?.id}
+            partner={members.length > 1}
             ownerName={ownerName}
+            isMine={isMine}
+            claims={claims}
+            onClaim={handleClaim}
           />
         )}
       </div>

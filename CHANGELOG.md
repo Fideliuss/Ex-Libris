@@ -9,6 +9,29 @@ l'app. Pour le pop-up "Quoi de neuf" vu par l'utilisateur, voir
 `src/lib/whatsNew.js`, à tenir à jour en parallèle (voir README.md,
 section GitFlow).
 
+## 1.10.0 (2026-09-15)
+
+### Features
+
+* migrate achievement claims (succès) from localStorage to a real database table, visible across devices and household members instead of trapped in a single browser ([#123](https://github.com/Fideliuss/Ex-Libris/pull/123))
+* unify the household switcher into a single dropdown across Collection, Stats and Succès, replacing the pill row that didn't scale well with many members ([#122](https://github.com/Fideliuss/Ex-Libris/pull/122), [#126](https://github.com/Fideliuss/Ex-Libris/pull/126))
+* quick "wishlist" checkbox at the top of the book form, always visible, with a purchase price/date prompt offered when marking an existing wishlist book as owned ([#129](https://github.com/Fideliuss/Ex-Libris/pull/129))
+* half-star ratings (0 to 5, 0.5 increments), with a redesigned star picker; the rating field now only shows once a book is marked "Lu" ([#129](https://github.com/Fideliuss/Ex-Libris/pull/129))
+* book cover thumbnail is clickable (full-size view) and accepts click/drag-and-drop upload, on both the add/edit form and the book detail page ([#129](https://github.com/Fideliuss/Ex-Libris/pull/129))
+* floating "save" button on the add/edit form (sticky under the preview on desktop, floating bottom-right on mobile), in addition to the one at the bottom of the form ([#129](https://github.com/Fideliuss/Ex-Libris/pull/129))
+
+### Bug Fixes
+
+* a household member invited through the newer friend-code flow could not see books shared by the rest of the household (RLS policy never updated for the new model) ([#121](https://github.com/Fideliuss/Ex-Libris/pull/121))
+* the household switcher now always shows the current user's own entry first, instead of alphabetical order ([#122](https://github.com/Fideliuss/Ex-Libris/pull/122))
+* the household switcher on Succès and the owner name on a shared book's page, both broken since the multi-person household rework, are restored ([#122](https://github.com/Fideliuss/Ex-Libris/pull/122))
+* a household member's not-yet-claimed achievement could be accidentally claimed for the viewer instead of the actual owner ([#122](https://github.com/Fideliuss/Ex-Libris/pull/122), [#125](https://github.com/Fideliuss/Ex-Libris/pull/125))
+* a not-yet-claimed minor achievement showed an inconsistent color when viewing a household member's succès ([#125](https://github.com/Fideliuss/Ex-Libris/pull/125))
+* book listing queries (tags, authors, collections, publishers, series, universes) now paginate past 1000 entries like the main book list already did, instead of silently truncating a very large library ([#127](https://github.com/Fideliuss/Ex-Libris/pull/127))
+* ISBN is now included in the "à compléter" completeness check, instead of the one field a scan never prompts you to fill in yourself ([#128](https://github.com/Fideliuss/Ex-Libris/pull/128))
+* the reading calendar and chart tooltips were unreadable in dark mode ([#128](https://github.com/Fideliuss/Ex-Libris/pull/128))
+* a book started and finished the same day no longer shows "0 jour" in the reading-pace stats ([#128](https://github.com/Fideliuss/Ex-Libris/pull/128))
+
 ## 2026-09-14
 
 Pas de tag/version release-please ici (outil retiré, voir plus haut) :
