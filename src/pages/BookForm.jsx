@@ -134,10 +134,11 @@ export default function BookForm() {
   // (même modal que sur la fiche livre quand un statut sort de la wishlist,
   // voir QuickPurchaseModal) — mais volontairement PAS depuis le sélecteur
   // complet dans "Ma lecture" plus bas, qui reste un simple changement de
-  // statut sans interruption.
+  // statut sans interruption. Et seulement en édition : à l'ajout, le livre
+  // n'existe pas encore, interrompre la saisie pour ça est prématuré.
   function handleWishlistToggle(checked) {
     set('status', checked ? 'wishlist' : 'to-read')
-    if (!checked && !book.purchase_date) {
+    if (isEdit && !checked && !book.purchase_date) {
       setShowPurchasePrompt(true)
     }
   }
