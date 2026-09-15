@@ -34,6 +34,7 @@ import SuggestInput from '../components/SuggestInput'
 import EditionCheckboxes from '../components/EditionCheckboxes'
 import QuickPurchaseModal from '../components/QuickPurchaseModal'
 import StarRating from '../components/StarRating'
+import CoverLightbox from '../components/CoverLightbox'
 import { STATUS_BORDER_CLASS, STATUS_LABELS } from '../lib/statusLabels'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
@@ -90,6 +91,7 @@ export default function BookForm() {
   const [coverError, setCoverError] = useState(null)
   const [scannerOpen, setScannerOpen] = useState(false)
   const [showPurchasePrompt, setShowPurchasePrompt] = useState(false)
+  const [coverExpanded, setCoverExpanded] = useState(false)
 
   useEffect(() => {
     listAllTags().then(setExistingTags).catch(() => {})
@@ -493,11 +495,18 @@ export default function BookForm() {
               <div className="flex gap-4 items-start">
                 <div className="w-24 aspect-[2/3] shrink-0 rounded-sm border border-ink/10 bg-paper overflow-hidden flex items-center justify-center">
                   {book.cover_url ? (
-                    <img
-                      src={book.cover_url}
-                      alt=""
-                      className="w-full h-full object-contain"
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setCoverExpanded(true)}
+                      aria-label="Agrandir la couverture"
+                      className="w-full h-full block focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                    >
+                      <img
+                        src={book.cover_url}
+                        alt=""
+                        className="w-full h-full object-contain cursor-zoom-in"
+                      />
+                    </button>
                   ) : (
                     <span className="text-ink/70 text-xs text-center px-1">
                       Aucune couverture
@@ -729,6 +738,14 @@ export default function BookForm() {
           bookAuthor={book.author?.length ? book.author.join(', ') : null}
           onConfirm={handleQuickPurchase}
           onSkip={() => setShowPurchasePrompt(false)}
+        />
+      )}
+
+      {coverExpanded && (
+        <CoverLightbox
+          src={book.cover_url}
+          alt={book.title}
+          onClose={() => setCoverExpanded(false)}
         />
       )}
     </div>
