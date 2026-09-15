@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { inputClass, labelClass, primaryButtonClass } from '../lib/ui'
 import { todayDateOnly } from '../lib/dates'
 
-export default function QuickPurchaseModal({ bookTitle, onConfirm, onSkip }) {
+export default function QuickPurchaseModal({ bookTitle, bookAuthor, onConfirm, onSkip }) {
   const [price, setPrice] = useState('')
   const [purchaseDate, setPurchaseDate] = useState(todayDateOnly())
 
@@ -25,13 +25,14 @@ export default function QuickPurchaseModal({ bookTitle, onConfirm, onSkip }) {
       <form
         onClick={(e) => e.stopPropagation()}
         onSubmit={handleSubmit}
-        className="w-full max-w-sm bg-card border-t-4 border-dashed border-brass rounded-sm shadow-xl p-7"
+        className="w-full max-w-sm bg-card border-t-4 border-dashed border-toread rounded-sm shadow-xl p-7"
       >
         <p className="font-serif text-lg font-semibold mb-1 text-center">
-          Tu l'as acheté ?
+          Ce titre a rejoint ta PAL ?
         </p>
-        <p className="text-sm text-ink/70 mb-5 text-center">
-          Pour <span className="italic">{bookTitle}</span>, si tu veux garder une trace.
+        <p className="text-sm text-ink/70 mb-5 text-center italic">
+          {bookTitle}
+          {bookAuthor ? ` de ${bookAuthor}` : ''}
         </p>
         <div className="space-y-3 mb-6">
           <div>

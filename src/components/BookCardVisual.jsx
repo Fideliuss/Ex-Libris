@@ -4,6 +4,7 @@ import { hasSpecialEdition } from '../lib/editionTypes'
 import WishlistRibbon from './WishlistRibbon'
 import ReadingBookmark from './ReadingBookmark'
 import BookCoverPlaceholder from './BookCoverPlaceholder'
+import StarRating from './StarRating'
 
 // Rendu visuel pur d'une carte livre (couverture, titre/série, auteur,
 // éditeur, tags, statut/note) : partagé entre BookCard (carte interactive
@@ -120,9 +121,8 @@ export default function BookCardVisual({ book }) {
             </span>
           )}
           {book.rating > 0 && (
-            <span className="text-brass text-sm ml-auto" aria-hidden="true">
-              {'★'.repeat(book.rating)}
-              {'☆'.repeat(5 - book.rating)}
+            <span className="ml-auto">
+              <StarRating value={book.rating} readOnly size="sm" />
             </span>
           )}
         </div>

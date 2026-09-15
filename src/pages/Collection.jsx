@@ -172,8 +172,13 @@ function groupKeyFor(book, sortKey) {
       ? monthLabel(parseDateOnly(book.date_finished))
       : 'Non terminé'
   if (sortKey === 'status') return STATUS_LABELS[book.status] ?? null
-  if (sortKey === 'rating')
-    return book.rating > 0 ? '★'.repeat(book.rating) : 'Non noté'
+  if (sortKey === 'rating') {
+    if (!(book.rating > 0)) return 'Non noté'
+    // En-tête de groupe purement textuel (pas la place pour le composant
+    // StarRating ici) : étoiles pleines + ½ si besoin plutôt qu'arrondir et
+    // perdre la distinction entre 3 et 3,5 par exemple.
+    return '★'.repeat(Math.floor(book.rating)) + (book.rating % 1 !== 0 ? '½' : '')
+  }
   if (sortKey === 'tome') return book.series || 'Sans série'
   return null
 }

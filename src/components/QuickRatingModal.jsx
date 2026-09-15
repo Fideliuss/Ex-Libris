@@ -1,10 +1,6 @@
-import { useState } from 'react'
-
-const STARS = [1, 2, 3, 4, 5]
+import StarRating from './StarRating'
 
 export default function QuickRatingModal({ bookTitle, onRate, onSkip }) {
-  const [hovered, setHovered] = useState(0)
-
   return (
     <div
       role="dialog"
@@ -21,27 +17,8 @@ export default function QuickRatingModal({ bookTitle, onRate, onSkip }) {
         <p className="text-sm text-ink/70 mb-5">
           Une note pour <span className="italic">{bookTitle}</span> ?
         </p>
-        <div
-          className="flex items-center justify-center gap-1 mb-6"
-          onMouseLeave={() => setHovered(0)}
-        >
-          {STARS.map((n) => (
-            <button
-              key={n}
-              type="button"
-              onClick={() => onRate(n)}
-              onMouseEnter={() => setHovered(n)}
-              aria-label={`${n} étoile${n > 1 ? 's' : ''}`}
-              className="text-3xl leading-none px-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
-            >
-              <span
-                aria-hidden="true"
-                className={hovered >= n ? 'text-brass' : 'text-ink/20'}
-              >
-                ★
-              </span>
-            </button>
-          ))}
+        <div className="flex items-center justify-center mb-6">
+          <StarRating value={0} onChange={onRate} size="md" />
         </div>
         <button
           type="button"
