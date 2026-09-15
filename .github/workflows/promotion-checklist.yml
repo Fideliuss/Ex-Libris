@@ -1,0 +1,29 @@
+name: promotion-checklist
+
+# Ne tourne que sur les PR develop -> main (seul cas où la base est main
+# dans ce repo) : verifie que le bump de version et l'entree CHANGELOG
+# sont bien dans le meme diff que la promotion elle-meme, plutot que de
+# compter sur la memoire pour ne pas les oublier ou les livrer a part
+# (voir README.md, section GitFlow).
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  check-release-files:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Verifie que CHANGELOG.md et package.json font partie du diff
+        run: |
+          CHANGED=$(git diff --name-only "${{ github.event.pull_request.base.sha }}...${{ github.event.pull_request.head.sha }}")
+          MISSING=""
+          echo "$CHANGED" | grep -qx "CHANGELOG.md" || MISSING="$MISSING CHANGELOG.md"
+          echo "$CHANGED" | grep -qx "package.json" || MISSING="$MISSING package.json"
+          if [ -n "$MISSING" ]; then
+            echo "::error::Fichier(s) absent(s) de cette promotion :$MISSING (voir README.md, section GitFlow)"
+            exit 1
+          fi
