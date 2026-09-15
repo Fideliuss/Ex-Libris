@@ -325,6 +325,7 @@ export default function BookForm() {
         )}
 
         <form
+          id="book-form"
           onSubmit={handleSubmit}
           className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6 space-y-5"
         >
@@ -767,8 +768,31 @@ export default function BookForm() {
         </form>
       </div>
 
-        <LivePreviewCard book={book} />
+        <LivePreviewCard book={book} saving={saving} isEdit={isEdit} />
       </div>
+
+      {/* Équivalent mobile du bouton flottant sous l'aperçu (desktop) :
+          l'aperçu lui-même est caché en dessous de lg, donc pas de colonne
+          sticky où l'accrocher. Même gabarit que le "+" flottant de
+          Collection.jsx pour rester cohérent, mais calé sur le seuil lg
+          (pas sm) puisque c'est celui qui régit l'aperçu sur cette page. */}
+      <button
+        type="submit"
+        form="book-form"
+        disabled={saving}
+        aria-label={saving ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Ajouter'}
+        className="lg:hidden fixed bottom-6 right-6 flex items-center justify-center w-14 h-14 rounded-full bg-library-fill text-white shadow-lg hover:bg-library-fill/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-library disabled:opacity-60"
+      >
+        {saving ? (
+          <span className="text-xs font-mono" aria-hidden="true">
+            …
+          </span>
+        ) : (
+          <span className="text-2xl leading-none" aria-hidden="true">
+            ✓
+          </span>
+        )}
+      </button>
 
       {scannerOpen && (
         <Suspense
@@ -811,7 +835,7 @@ export default function BookForm() {
 // Aperçu "façon carte de la collection" (D1 angle C, partie 2 de la fiche
 // de chantier) : retour visuel immédiat sur ce qui sera enregistré, mis à
 // jour en direct pendant la saisie (avant même le premier scan ISBN).
-function LivePreviewCard({ book }) {
+function LivePreviewCard({ book, saving, isEdit }) {
   // BookCardVisual attend un titre pour afficher une ligne correcte : un
   // champ vide donnerait un <p> vide plutôt qu'un vrai placeholder, d'où le
   // fallback local (comportement propre à cet aperçu, pas à la vraie carte).
@@ -832,6 +856,18 @@ function LivePreviewCard({ book }) {
       >
         <BookCardVisual book={previewBook} />
       </div>
+
+      {/* En plus du bouton en bas du formulaire (utile sur un long
+          formulaire, pour ne pas avoir à redescendre) : soumet le <form>
+          via l'attribut form (bouton hors de l'arbre du formulaire). */}
+      <button
+        type="submit"
+        form="book-form"
+        disabled={saving}
+        className={`w-full mt-3 rounded-sm py-2 text-sm ${primaryButtonClass}`}
+      >
+        {saving ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Ajouter'}
+      </button>
     </div>
   )
 }
