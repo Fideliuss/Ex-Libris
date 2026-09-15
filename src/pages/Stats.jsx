@@ -19,7 +19,7 @@ import { useGoBack } from '../lib/navigation'
 import { BOOK_TYPES } from '../lib/bookTypes'
 import { STATUS_LABELS } from '../lib/statusLabels'
 import { labelClass } from '../lib/ui'
-import HouseholdTabs from '../components/HouseholdTabs'
+import HouseholdSwitchBadge from '../components/HouseholdSwitchBadge'
 import TabBar from '../components/TabBar'
 import StatusStackedBar from '../components/StatusStackedBar'
 import BarChart from '../components/BarChart'
@@ -372,15 +372,14 @@ export default function Stats() {
         </h1>
 
         {members.length > 1 && (
-          <HouseholdTabs
-            members={members}
-            selectedId={ownerId}
-            onSelect={setOwnerId}
-            labelFor={(m) =>
-              m.userId === user.id ? 'Mes statistiques' : `Statistiques de ${m.displayName ?? m.email}`
-            }
-            ariaLabel="Statistiques à afficher"
-          />
+          <div className="mb-6">
+            <HouseholdSwitchBadge
+              members={members}
+              selectedId={ownerId}
+              onSelect={setOwnerId}
+              currentUserId={user.id}
+            />
+          </div>
         )}
 
         {loading ? (

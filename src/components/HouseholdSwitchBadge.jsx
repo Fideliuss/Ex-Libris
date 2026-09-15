@@ -7,9 +7,10 @@ function labelFor(member, currentUserId) {
 }
 
 // Bascule "Mon Ex Libris / celui d'un membre du foyer" en un seul badge
-// déroulant, plutôt que des pastilles côte à côte — pensé pour la place
-// réduite de l'en-tête (voir HouseholdTabs pour la version pleine largeur
-// utilisée en haut de la page Stats). members inclut le membre courant.
+// déroulant, plutôt que des pastilles côte à côte (ancien HouseholdTabs,
+// retiré : ne passait pas bien à l'échelle avec beaucoup de membres).
+// Utilisé uniformément sur Collection/Stats/Succès. members inclut le
+// membre courant.
 export default function HouseholdSwitchBadge({ members, selectedId, onSelect, currentUserId }) {
   const [open, setOpen] = useState(false)
   const wrapperRef = useRef(null)
