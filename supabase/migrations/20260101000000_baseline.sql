@@ -582,7 +582,7 @@ create policy "Users can view their own achievement claims"
   on achievement_claims for select
   using (user_id = auth.uid());
 
-create policy "Household (foyer) members can view all household achievement claims"
+create policy "Household (foyer) members can view achievement claims"
   on achievement_claims for select
   using (is_household_member(user_id));
 
