@@ -15,6 +15,7 @@ import {
   updateBook,
 } from '../lib/books'
 import { lookupIsbn } from '../lib/isbnLookup'
+import { getMissingFields } from '../lib/bookCompleteness'
 import { uploadCover } from '../lib/storage'
 import TagInput from '../components/TagInput'
 import {
@@ -126,16 +127,7 @@ export default function BookForm() {
     setBook((b) => ({ ...b, [field]: value }))
   }
 
-  // Même critère que l'onglet « À compléter » de la collection et le
-  // bandeau de la fiche livre (voir Collection.jsx / BookDetail.jsx) : les
-  // champs qu'un scan ISBN réussi remplit normalement tout seul.
-  const missingFields = [
-    !book.cover_url && 'Couverture',
-    !book.author?.length && 'Auteur',
-    !book.publisher && 'Éditeur',
-    !book.page_count && 'Pages',
-    !book.description && 'Résumé',
-  ].filter(Boolean)
+  const missingFields = getMissingFields(book)
 
   async function handleLookup(isbnOverride) {
     const isbnToSearch = isbnOverride ?? book.isbn

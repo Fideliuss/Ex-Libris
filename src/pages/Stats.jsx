@@ -284,6 +284,10 @@ export default function Stats() {
       0,
     )
 
+    // Un livre commencé et fini le même jour compte comme 1 jour de lecture,
+    // pas 0 : ce plancher s'applique après avoir écarté les dates
+    // incohérentes (fini avant d'être commencé), qui restent filtrées comme
+    // avant plutôt que remontées à 1.
     const durations = finishedInPeriod
       .filter((b) => b.date_started && b.date_finished)
       .map((b) => ({
@@ -294,6 +298,7 @@ export default function Stats() {
         ),
       }))
       .filter((d) => d.days >= 0)
+      .map((d) => (d.days === 0 ? { ...d, days: 1 } : d))
 
     const avgDays = durations.length
       ? durations.reduce((sum, d) => sum + d.days, 0) / durations.length

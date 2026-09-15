@@ -61,6 +61,12 @@
      usage, pas juste "figé" comme les trois autres. */
   --color-brass-fill: #8e7145;
   --color-stamp-fill: #a2372e;
+  /* Même logique, version neutre : pour une infobulle (fond sombre + texte
+     blanc) qui doit rester lisible dans les deux thèmes — --color-ink
+     s'éclaircit en sombre (pensé pour du TEXTE), donc bg-ink + text-white
+     devient illisible une fois le thème basculé. Bug réel rencontré sur
+     ReadingHeatmap/BarChart avant l'ajout de ce token. */
+  --color-ink-fill: #1e2b3a;
 
   /* Texte sur --color-cover (couverture "sans image") : ce fond est fixe et
      clair dans les deux thèmes, donc le texte dessus a le problème inverse

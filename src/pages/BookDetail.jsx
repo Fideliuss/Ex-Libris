@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getBook, getSeriesSiblings, updateBook } from '../lib/books'
+import { getMissingFields } from '../lib/bookCompleteness'
 import { sortEditions, SPECIAL_EDITION_TYPES } from '../lib/editionTypes'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
@@ -275,18 +276,7 @@ export default function BookDetail() {
     }
   }, [book?.series, book?.user_id])
 
-  // Même critère que l'onglet « À compléter » de la collection et le
-  // formulaire d'édition (voir Collection.jsx / BookForm.jsx) : les champs
-  // qu'un scan ISBN réussi remplit normalement tout seul.
-  const missingFields = book
-    ? [
-        !book.cover_url && 'Couverture',
-        !book.author?.length && 'Auteur',
-        !book.publisher && 'Éditeur',
-        !book.page_count && 'Pages',
-        !book.description && 'Résumé',
-      ].filter(Boolean)
-    : []
+  const missingFields = book ? getMissingFields(book) : []
 
   const visibleSiblings = book?.series ? seriesSiblings : []
   const tomeSlots = buildTomeSlots(visibleSiblings)

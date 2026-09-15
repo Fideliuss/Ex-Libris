@@ -105,7 +105,7 @@ export default function ReadingHeatmap({ books }) {
                   {hovered === day.key && day.count !== null && (
                     <div
                       role="status"
-                      className="absolute -top-8 left-1/2 -translate-x-1/2 bg-ink text-white text-[10px] font-mono px-2 py-1 rounded-sm whitespace-nowrap z-10"
+                      className="absolute -top-8 left-1/2 -translate-x-1/2 bg-ink-fill text-white text-[10px] font-mono px-2 py-1 rounded-sm whitespace-nowrap z-10"
                     >
                       {day.count} · {DATE_FMT.format(day.date)}
                     </div>
