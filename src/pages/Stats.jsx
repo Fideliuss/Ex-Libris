@@ -332,18 +332,21 @@ export default function Stats() {
   }, [finishedInPeriod, periodRange])
 
   // Un cran par demi-étoile (0, 0.5, 1, ..., 5) : l'index est le rang *2,
-  // 11 crans au lieu de 6 pour les notes entières uniquement.
+  // 11 crans au lieu de 6 pour les notes entières uniquement. Avec des
+  // étoiles empilées ("★★★½"), les étiquettes de 11 barres se chevauchaient
+  // (illisible) : un simple chiffre à la place, et seuls les paliers
+  // entiers sont étiquetés (les demi-crans restent des barres nues) pour
+  // aérer l'axe sans retirer de barres.
   const ratingBars = useMemo(() => {
     const counts = new Array(11).fill(0)
     for (const b of finishedInPeriod) counts[Math.round((b.rating || 0) * 2)] += 1
     return counts.map((count, i) => {
       const rating = i / 2
-      const full = Math.floor(rating)
-      const half = rating % 1 !== 0
+      const isWholeStep = rating % 1 === 0
       return {
         key: String(i),
         count,
-        shortLabel: rating === 0 ? '—' : '★'.repeat(full) + (half ? '½' : ''),
+        shortLabel: !isWholeStep ? '' : rating === 0 ? '—' : String(rating),
         fullLabel:
           rating === 0
             ? 'Non noté'
