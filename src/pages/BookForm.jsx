@@ -360,6 +360,15 @@ export default function BookForm() {
             </select>
           </Field>
 
+          {/* Toujours visible (contrairement au statut complet, dans "Ma
+              lecture" plus bas, repliée par défaut à l'ajout) : le cas
+              d'usage visé est "en librairie, je veux juste noter que je le
+              veux", sans avoir à déplier un menu pour ça. */}
+          <WishlistCheckbox
+            checked={book.status === 'wishlist'}
+            onChange={(checked) => set('status', checked ? 'wishlist' : 'to-read')}
+          />
+
           <FormSection title="Détails du livre" defaultOpen>
             <Field label="Auteur">
               <TagInput
@@ -584,26 +593,30 @@ export default function BookForm() {
               </Field>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Date d'achat">
-                <input
-                  type="date"
-                  value={book.purchase_date ?? ''}
-                  onChange={(e) => set('purchase_date', e.target.value)}
-                  className={inputClass}
-                />
-              </Field>
-              <Field label="Prix d'achat (€)">
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  value={book.price ?? ''}
-                  onChange={(e) => set('price', e.target.value)}
-                  className={`${inputClass} font-mono`}
-                />
-              </Field>
-            </div>
+            {/* Pas encore acheté tant que c'est en wishlist : ces deux
+                champs n'ont pas de sens avant. */}
+            {book.status !== 'wishlist' && (
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Date d'achat">
+                  <input
+                    type="date"
+                    value={book.purchase_date ?? ''}
+                    onChange={(e) => set('purchase_date', e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Prix d'achat (€)">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={book.price ?? ''}
+                    onChange={(e) => set('price', e.target.value)}
+                    className={`${inputClass} font-mono`}
+                  />
+                </Field>
+              </div>
+            )}
           </FormSection>
 
           <FormSection title="Notes personnelles" defaultOpen={isEdit}>
@@ -713,6 +726,58 @@ function LivePreviewCard({ book }) {
         <BookCardVisual book={previewBook} />
       </div>
     </div>
+  )
+}
+
+// Case à cocher personnalisée plutôt qu'une <input type="checkbox"> nue
+// (comme EditionCheckboxes) : c'est le seul contrôle du formulaire pensé
+// pour un geste rapide en librairie, donc volontairement plus visible que
+// les champs habituels. L'input réel reste dans le DOM (sr-only) pour le
+// clavier/lecteur d'écran ; le carré coché et le focus visible sont gérés
+// à la main par-dessus.
+function WishlistCheckbox({ checked, onChange }) {
+  return (
+    <label
+      className={`flex items-center gap-3 rounded-sm border-2 border-dashed p-3 cursor-pointer transition-colors ${
+        checked
+          ? 'border-wishlist bg-wishlist/10'
+          : 'border-ink/20 hover:border-wishlist/50'
+      }`}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="sr-only peer"
+      />
+      <span
+        aria-hidden="true"
+        className={`shrink-0 w-6 h-6 rounded-sm border-2 flex items-center justify-center transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-library peer-focus-visible:ring-offset-2 ${
+          checked
+            ? 'bg-wishlist-fill border-wishlist-fill'
+            : 'border-ink/30 bg-surface'
+        }`}
+      >
+        {checked && (
+          <svg
+            viewBox="0 0 20 20"
+            className="w-4 h-4 text-white"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M4 10l4 4 8-8" />
+          </svg>
+        )}
+      </span>
+      <span className="text-sm">
+        <span className="font-medium">Wishlist</span>
+        <span className="text-ink/70"> — je ne l'ai pas encore</span>
+      </span>
+    </label>
   )
 }
 
