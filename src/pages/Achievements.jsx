@@ -64,10 +64,14 @@ export default function Achievements() {
 
   // Optimiste : l'affichage réagit tout de suite, l'écriture réseau suit
   // en tâche de fond. Jamais appelé si !isMine (voir AchievementsGallery),
-  // et de toute façon refusé par la policy RLS insert/update sinon.
+  // et de toute façon refusé par la policy RLS insert/update sinon. Écrit
+  // sous ownerId (pas user.id) en défense en profondeur : les deux sont
+  // censés être égaux ici (onClaim n'est branché que si isMine), mais un
+  // bug similaire à celui qu'on vient de corriger dans AchievementsGallery
+  // aurait sinon pu de nouveau attribuer la réclamation au mauvais compte.
   function handleClaim(badgeId, rank) {
     setClaims((prev) => new Map(prev).set(badgeId, rank))
-    upsertClaim(user.id, badgeId, rank).catch(() => {})
+    upsertClaim(ownerId, badgeId, rank).catch(() => {})
   }
 
   const selectedMember = members.find((m) => m.userId === ownerId)
