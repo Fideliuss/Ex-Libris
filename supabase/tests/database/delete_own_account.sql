@@ -1,6 +1,6 @@
 -- Vérifie la suppression de compte en libre-service : on ne peut supprimer
 -- que soi-même, jamais sans être connecté, et la cascade nettoie bien
--- livres/objectifs/profil sans toucher aux comptes tiers liés.
+-- livres/objectifs/profil sans toucher aux autres comptes.
 begin;
 select plan(7);
 
@@ -9,9 +9,6 @@ create extension if not exists pgtap;
 insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-000000000001', 'alice@test.local'),
   ('00000000-0000-0000-0000-000000000002', 'bob@test.local');
-
-insert into household_links (requester_id, target_id, status) values
-  ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'accepted');
 
 insert into books (id, user_id, title) values
   ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'Livre d''Alice');
@@ -43,7 +40,7 @@ select lives_ok(
 );
 
 -- Vérifications côté postgres (bypass RLS) : tout ce qui appartenait à
--- Alice a disparu, mais Bob (tiers lié) reste intact.
+-- Alice a disparu, mais Bob reste intact.
 reset role;
 
 select is(
@@ -72,7 +69,7 @@ select is(
 
 select ok(
   exists(select 1 from auth.users where id = '00000000-0000-0000-0000-000000000002'),
-  'Le compte de Bob (tiers lié) n''est pas affecté par la suppression du compte d''Alice'
+  'Le compte de Bob n''est pas affecté par la suppression du compte d''Alice'
 );
 
 select * from finish();
