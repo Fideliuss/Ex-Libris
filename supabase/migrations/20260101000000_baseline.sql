@@ -36,55 +36,9 @@ create policy "Users can update their own profile"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
--- Demandes de partage entre deux comptes, échangées par code ami plutôt
--- que des UID codés en dur. status 'pending' tant que la cible n'a pas
--- accepté, 'accepted' une fois validé.
-create table household_links (
-  id uuid primary key default gen_random_uuid(),
-  requester_id uuid not null references auth.users(id) on delete cascade,
-  target_id uuid not null references auth.users(id) on delete cascade,
-  status text not null default 'pending' check (status in ('pending', 'accepted')),
-  created_at timestamptz default now(),
-  constraint household_links_no_self_link check (requester_id <> target_id)
-);
-
-alter table household_links enable row level security;
-
--- Une seule ligne par paire, peu importe qui a envoyé la demande.
-create unique index household_links_pair_idx
-  on household_links (least(requester_id, target_id), greatest(requester_id, target_id));
-
-create policy "Users can view their own links"
-  on household_links for select
-  using (auth.uid() = requester_id or auth.uid() = target_id);
-
-create policy "Users can send link requests"
-  on household_links for insert
-  with check (auth.uid() = requester_id);
-
-create policy "Target can accept a pending request"
-  on household_links for update
-  using (auth.uid() = target_id and status = 'pending')
-  with check (status = 'accepted');
-
-create policy "Either party can remove their link"
-  on household_links for delete
-  using (auth.uid() = requester_id or auth.uid() = target_id);
-
--- Les deux parties d'un lien (en attente ou accepté) doivent pouvoir lire
--- le profil de l'autre pour afficher son nom. La sous-requête reste
--- filtrée par la policy select de household_links ci-dessus, donc ça ne
--- fuite rien de plus.
-create policy "Users can view their own or linked profiles"
+create policy "Users can view their own profile"
   on profiles for select
-  using (
-    user_id = auth.uid()
-    or exists (
-      select 1 from household_links
-      where (requester_id = auth.uid() and target_id = profiles.user_id)
-         or (target_id = auth.uid() and requester_id = profiles.user_id)
-    )
-  );
+  using (user_id = auth.uid());
 
 -- Résout un code ami en user_id sans exposer toute la table profiles :
 -- security definer contourne la RLS pour cette seule recherche ciblée par
@@ -170,14 +124,9 @@ create trigger on_auth_user_created
   for each row
   execute function handle_new_user_profile();
 
--- Modèle "foyer" (households) : remplace progressivement household_links
--- (paires 1:1) par un vrai groupe à N membres. Migration délibérément
--- additive pour l'instant : household_links reste en place et fonctionnel,
--- rien ici ne change le comportement actuel. La bascule (peuplement de
--- households/profiles.household_id depuis les paires acceptées, RLS de
--- books/reading_goals sur household_id, puis suppression de
--- household_links) se fera dans une migration séparée, au moment où le
--- code applicatif sera prêt à l'utiliser.
+-- Modèle "foyer" (households) : remplace household_links (paires 1:1) par
+-- un vrai groupe à N membres (bascule complète, household_links a été
+-- supprimée).
 --
 -- Pas de colonne de limite de membres pour l'instant (pas de pricing réel
 -- à faire respecter encore) ; elle s'ajoutera plus tard sans rien casser.
@@ -242,12 +191,11 @@ $$;
 revoke execute on function is_household_member(uuid) from public, anon, service_role;
 grant execute on function is_household_member(uuid) to authenticated;
 
--- La policy "Users can view their own or linked profiles" plus haut ne
--- connaît que household_links (l'ancien modèle) : sans celle-ci, deux
--- membres d'un même foyer ne pourraient pas voir le nom l'un de l'autre
--- (nécessaire pour l'UI de partage). Plusieurs policies permissives pour
--- la même commande se combinent en OR, donc celle-ci s'ajoute simplement
--- à l'existante plutôt que de la remplacer.
+-- La policy "Users can view their own profile" plus haut ne couvre que
+-- l'utilisateur lui-même : sans celle-ci, deux membres d'un même foyer ne
+-- pourraient pas voir le nom l'un de l'autre (nécessaire pour l'UI de
+-- partage). Plusieurs policies permissives pour la même commande se
+-- combinent en OR, donc celle-ci s'ajoute simplement à l'existante.
 create policy "Household members can view each other's profiles"
   on profiles for select
   using (is_household_member(user_id));
@@ -302,10 +250,8 @@ $$;
 revoke execute on function is_invite_party(uuid) from public, anon, service_role;
 grant execute on function is_invite_party(uuid) to authenticated;
 
--- Symétrique à "Les deux parties d'un lien ... doivent pouvoir lire le
--- profil de l'autre" pour household_links plus haut : sans ça, l'UI ne
--- peut pas afficher "Alice t'invite dans son foyer" (Bob ne peut pas
--- encore voir le profil d'Alice tant qu'il n'a pas accepté).
+-- Sans ça, l'UI ne peut pas afficher "Alice t'invite dans son foyer" (Bob
+-- ne peut pas encore voir le profil d'Alice tant qu'il n'a pas accepté).
 create policy "Invite parties can view each other's profiles"
   on profiles for select
   using (is_invite_party(user_id));
@@ -555,31 +501,16 @@ create trigger books_set_updated_at
   for each row
   execute function set_updated_at();
 
--- Partage en lecture entre deux comptes liés (household_links, plus bas) :
--- chacun voit les livres de son partenaire, mais ne peut modifier/supprimer
--- que les siens. Tout utilisateur voit toujours ses propres livres, sinon
--- un compte solo sans partenaire ne verrait jamais ce qu'il vient d'ajouter.
-create policy "Household members can view all household books"
+-- Partage en lecture entre membres d'un même foyer : chacun voit les
+-- livres des autres membres, mais ne peut modifier/supprimer que les
+-- siens. Tout utilisateur voit toujours ses propres livres, sinon un
+-- compte solo sans foyer ne verrait jamais ce qu'il vient d'ajouter. Deux
+-- policies permissives combinées en OR plutôt qu'une seule avec un OR
+-- interne, pour rester symétrique avec le même découpage sur profiles.
+create policy "Users can view their own books"
   on books for select
-  using (
-    user_id = auth.uid()
-    or exists (
-      select 1 from household_links
-      where status = 'accepted'
-        and (
-          (requester_id = auth.uid() and target_id = books.user_id)
-          or (target_id = auth.uid() and requester_id = books.user_id)
-        )
-    )
-  );
+  using (user_id = auth.uid());
 
--- Même faille que celle corrigée sur profiles (voir
--- "Household members can view each other's profiles" plus haut) : la
--- policy ci-dessus ne connaît que household_links (l'ancien modèle 1:1),
--- jamais peuplé par le nouveau flux d'invitation par code (households/
--- profiles.household_id). Sans celle-ci, un membre d'un foyer à N
--- personnes invité via ce nouveau flux ne voit jamais les livres des
--- autres membres. Policy additionnelle, combinée en OR avec l'existante.
 create policy "Household (foyer) members can view all household books"
   on books for select
   using (is_household_member(user_id));
@@ -615,22 +546,10 @@ create trigger reading_goals_set_updated_at
   for each row
   execute function set_updated_at();
 
-create policy "Household members can view all household reading goals"
+create policy "Users can view their own reading goals"
   on reading_goals for select
-  using (
-    user_id = auth.uid()
-    or exists (
-      select 1 from household_links
-      where status = 'accepted'
-        and (
-          (requester_id = auth.uid() and target_id = reading_goals.user_id)
-          or (target_id = auth.uid() and requester_id = reading_goals.user_id)
-        )
-    )
-  );
+  using (user_id = auth.uid());
 
--- Même bascule manquante que pour books ci-dessus : le nouveau modèle
--- foyer (households) n'était pas couvert.
 create policy "Household (foyer) members can view all household reading goals"
   on reading_goals for select
   using (is_household_member(user_id));
@@ -706,7 +625,7 @@ grant update (display_name, first_name, last_name, has_seen_tutorial, last_seen_
 -- definer : auth.users n'est pas modifiable par le rôle authenticated
 -- normalement. `where id = auth.uid()` garantit qu'on ne peut jamais
 -- supprimer que son propre compte, malgré ce contournement de RLS.
--- profiles/household_links/books/reading_goals sont tous en
+-- profiles/households/household_invites/books/reading_goals sont tous en
 -- `on delete cascade` vers auth.users, donc leur nettoyage est automatique
 -- une fois la ligne auth.users supprimée — seuls les fichiers de
 -- couverture dans le storage n'ont pas de contrainte FK et doivent être

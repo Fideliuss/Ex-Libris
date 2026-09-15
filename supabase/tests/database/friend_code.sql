@@ -11,10 +11,6 @@ insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-000000000002', 'bob@test.local'),
   ('00000000-0000-0000-0000-000000000003', 'carol@test.local');
 
--- Bob a envoyé une demande à Alice, pas encore acceptée.
-insert into household_links (requester_id, target_id, status) values
-  ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'pending');
-
 -- Capturé pendant qu'on est encore postgres (donc hors RLS) : une table
 -- temporaire n'est pas soumise à la RLS de `profiles`, contrairement à une
 -- sous-requête qu'on referait plus bas depuis le contexte d'Alice.
@@ -24,8 +20,21 @@ create temporary table test_carol_code as
 -- change plus bas, pas juste la revendication JWT) n'y aurait pas accès.
 grant select on test_carol_code to authenticated, anon;
 
--- Se fait passer pour Alice.
+create temporary table test_alice_code as
+  select friend_code from profiles where user_id = '00000000-0000-0000-0000-000000000001';
+grant select on test_alice_code to authenticated;
+
+-- Bob invite Alice dans son foyer via son code ami, pas encore acceptée.
 set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  json_build_object('sub', '00000000-0000-0000-0000-000000000002', 'role', 'authenticated')::text,
+  true
+);
+
+select invite_to_household((select friend_code from test_alice_code));
+
+-- Se fait passer pour Alice.
 select set_config(
   'request.jwt.claims',
   json_build_object('sub', '00000000-0000-0000-0000-000000000001', 'role', 'authenticated')::text,
@@ -44,7 +53,7 @@ select ok(
 
 select ok(
   exists(select 1 from profiles where user_id = '00000000-0000-0000-0000-000000000002'),
-  'Alice voit le profil de Bob même si le lien est encore "pending" (pour afficher qui a envoyé la demande)'
+  'Alice voit le profil de Bob même si l''invitation n''est pas encore acceptée (pour afficher qui l''a invitée)'
 );
 
 select is(
