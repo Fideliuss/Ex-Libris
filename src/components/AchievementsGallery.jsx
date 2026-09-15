@@ -4,28 +4,6 @@ import { formatUnlockedDate } from '../lib/achievementVisuals'
 import ExLibrisPlate from './ExLibrisPlate'
 import PromotionModal from './PromotionModal'
 
-function storageKey(userId, id) {
-  return `exlibris:${userId ?? 'anon'}:${id}`
-}
-
-function readState(userId, id, fallback) {
-  try {
-    const value = localStorage.getItem(storageKey(userId, id))
-    return value == null ? fallback : value
-  } catch {
-    return fallback
-  }
-}
-
-function writeState(userId, id, value) {
-  try {
-    localStorage.setItem(storageKey(userId, id), value)
-  } catch {
-    // localStorage indisponible (navigation privée...) : l'état reste en
-    // mémoire pour cette session, tant pis pour la persistance.
-  }
-}
-
 // Un nombre stable par id (0..1), pour dériver rotation/décalage du clou
 // sans que ça change de rendu en rendu — deux hashs différents (l'un
 // dérivé de l'id seul, l'autre de l'id inversé) pour ne pas corréler les
@@ -71,26 +49,27 @@ function groupByIcon(items) {
 }
 
 // Calcule le view-model de chaque succès (paliers "réclamés" compris, lus
-// depuis localStorage) et gère la modal déclenchée au clic — promotion pour
-// un palier fraîchement atteint, détails pour un succès déjà acquis,
-// mystère (sans rien révéler) pour un succès encore hors de portée. Les
+// depuis la table achievement_claims) et gère la modal déclenchée au clic —
+// promotion pour un palier fraîchement atteint, détails pour un succès déjà
+// acquis, mystère (sans rien révéler) pour un succès encore hors de portée. Les
 // succès à paliers n'affichent qu'UN badge, qui montre le palier le plus
 // haut réclamé — atteindre un palier supérieur ne remplace l'affichage
 // qu'une fois la promotion confirmée dans la modal.
-export default function AchievementsGallery({ books, partner, userId, ownerName, isMine }) {
-  const [, setVersion] = useState(0)
+// claims : Map badgeId -> rang réclamé (voir achievement_claims en DB,
+// achievementClaims.js). onClaim(badgeId, rank) persiste une nouvelle
+// réclamation/promotion ; jamais appelé si !isMine (voir promotable
+// ci-dessous, et la policy RLS insert/update côté serveur qui refuserait
+// de toute façon).
+export default function AchievementsGallery({ books, partner, ownerName, isMine, claims, onClaim }) {
   const [modal, setModal] = useState(null)
 
   const rawBadges = useMemo(() => evaluateAchievements(books, { partner }), [books, partner])
   const ownerLine = ownerName ? `Ex-Libris ${ownerName}` : null
 
-  // Pas de useMemo ici : la version doit forcer une relecture du
-  // localStorage à chaque clic de promotion, alors qu'elle n'apparaît dans
-  // aucune valeur lue par ce calcul (seulement dans son but).
-  const items = (() => {
+  const items = useMemo(() => {
     return rawBadges.map((badge) => {
       if (badge.kind === 'tiered') {
-        const displayRank = Number(readState(userId, badge.id, -1))
+        const displayRank = claims.has(badge.id) ? claims.get(badge.id) : -1
         const everRevealed = displayRank >= 0
         // Seul le propriétaire peut réclamer/promouvoir son propre succès :
         // sans ce garde-fou, cliquer sur un succès "promouvable" en
@@ -132,10 +111,7 @@ export default function AchievementsGallery({ books, partner, userId, ownerName,
             if (promotable) {
               setModal({
                 animate: true,
-                onConfirm: () => {
-                  writeState(userId, badge.id, String(nextRank))
-                  setVersion((v) => v + 1)
-                },
+                onConfirm: () => onClaim(badge.id, nextRank),
                 motto: badge.motto,
                 ownerLine,
                 headline: everRevealed ? 'Promotion !' : 'Nouveau succès',
@@ -176,7 +152,7 @@ export default function AchievementsGallery({ books, partner, userId, ownerName,
         }
       }
 
-      const claimed = readState(userId, badge.id, '0') === '1'
+      const claimed = claims.has(badge.id)
       return {
         id: badge.id,
         motto: badge.motto,
@@ -202,10 +178,7 @@ export default function AchievementsGallery({ books, partner, userId, ownerName,
           if (badge.unlocked && !claimed) {
             setModal({
               animate: true,
-              onConfirm: () => {
-                writeState(userId, badge.id, '1')
-                setVersion((v) => v + 1)
-              },
+              onConfirm: () => onClaim(badge.id, 0),
               motto: badge.motto,
               ownerLine,
               headline: 'Nouveau succès',
@@ -244,7 +217,7 @@ export default function AchievementsGallery({ books, partner, userId, ownerName,
         },
       }
     })
-  })()
+  }, [rawBadges, claims, isMine, ownerLine, onClaim])
 
   const laidOut = groupByIcon(items)
 

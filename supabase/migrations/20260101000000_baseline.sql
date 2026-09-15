@@ -563,6 +563,43 @@ create policy "Users can update their own reading goals"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+-- État de révélation des succès (Achievements.jsx) : jusqu'ici purement en
+-- localStorage, donc invisible d'un membre du foyer à l'autre et perdu au
+-- moindre vidage de cache. rank est le palier confirmé pour un succès à
+-- paliers (0..N) ; pour un succès unique, seule l'existence de la ligne
+-- compte (rank reste à sa valeur par défaut).
+create table achievement_claims (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  badge_id text not null,
+  rank int not null default 0,
+  claimed_at timestamptz not null default now(),
+  primary key (user_id, badge_id)
+);
+
+alter table achievement_claims enable row level security;
+
+create policy "Users can view their own achievement claims"
+  on achievement_claims for select
+  using (user_id = auth.uid());
+
+create policy "Household (foyer) members can view all household achievement claims"
+  on achievement_claims for select
+  using (is_household_member(user_id));
+
+-- Seul le propriétaire peut réclamer/promouvoir son propre succès (même
+-- garde-fou que isMine côté client dans AchievementsGallery.jsx, mais
+-- appliqué ici comme une vraie règle serveur plutôt qu'une simple
+-- convention UI — c'est justement le bug qu'on vient de corriger côté
+-- client qui motive cette migration).
+create policy "Users can insert their own achievement claims"
+  on achievement_claims for insert
+  with check (auth.uid() = user_id);
+
+create policy "Users can update their own achievement claims"
+  on achievement_claims for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
 -- Stockage des couvertures importées manuellement
 insert into storage.buckets (id, name, public)
 values ('covers', 'covers', true)
@@ -625,7 +662,7 @@ grant update (display_name, first_name, last_name, has_seen_tutorial, last_seen_
 -- definer : auth.users n'est pas modifiable par le rôle authenticated
 -- normalement. `where id = auth.uid()` garantit qu'on ne peut jamais
 -- supprimer que son propre compte, malgré ce contournement de RLS.
--- profiles/households/household_invites/books/reading_goals sont tous en
+-- profiles/households/household_invites/books/reading_goals/achievement_claims sont tous en
 -- `on delete cascade` vers auth.users, donc leur nettoyage est automatique
 -- une fois la ligne auth.users supprimée — seuls les fichiers de
 -- couverture dans le storage n'ont pas de contrainte FK et doivent être
