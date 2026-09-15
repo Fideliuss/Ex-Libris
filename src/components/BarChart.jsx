@@ -47,7 +47,7 @@ export default function BarChart({ bars }) {
                 {hovered === i && (
                   <div
                     role="status"
-                    className="absolute -top-8 bg-ink text-white text-xs font-mono px-2 py-1 rounded-sm whitespace-nowrap z-10"
+                    className="absolute -top-8 bg-ink-fill text-white text-xs font-mono px-2 py-1 rounded-sm whitespace-nowrap z-10"
                   >
                     {m.count} · {m.fullLabel}
                   </div>

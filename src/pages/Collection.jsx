@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { bulkDeleteBooks, bulkUpdateBooks } from '../lib/books'
+import { isBookIncomplete } from '../lib/bookCompleteness'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import { describeError } from '../lib/errors'
 import BookCard from '../components/BookCard'
@@ -388,19 +389,12 @@ export default function Collection() {
     [books],
   )
 
-  // Livres sans couverture ou sans les champs qu'un scan ISBN réussi remplit
-  // normalement tout seul (auteur, éditeur, pages, description) : à
-  // compléter à la main. Basé sur ce qu'on possède : un livre encore en
+  // Livres sans ISBN ni les champs qu'un scan ISBN réussi remplit
+  // normalement tout seul (couverture, auteur, éditeur, pages, description) :
+  // à compléter à la main. Basé sur ce qu'on possède : un livre encore en
   // wishlist n'a pas vocation à être "complété" avant d'être acheté.
   const incompleteBooks = useMemo(() => {
-    return collectionBooks.filter(
-      (book) =>
-        !book.cover_url ||
-        !book.author?.length ||
-        !book.publisher ||
-        !book.page_count ||
-        !book.description,
-    )
+    return collectionBooks.filter(isBookIncomplete)
   }, [collectionBooks])
 
   // Chaque option de tri reste "croissante" par nature (compare() ci-dessus) ;
