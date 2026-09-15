@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   createBook,
@@ -93,6 +93,7 @@ export default function BookForm() {
   const [showPurchasePrompt, setShowPurchasePrompt] = useState(false)
   const [coverExpanded, setCoverExpanded] = useState(false)
   const [coverDragActive, setCoverDragActive] = useState(false)
+  const coverFileInputRef = useRef(null)
 
   useEffect(() => {
     listAllTags().then(setExistingTags).catch(() => {})
@@ -504,11 +505,19 @@ export default function BookForm() {
               />
             </Field>
 
-            <Field label="Couverture">
+            {/* Pas de <Field> ici (qui enveloppe tout dans un <label>) :
+                cette section contient déjà plusieurs contrôles labelables
+                (vignette, URL, deux boutons d'import) — un <label>
+                englobant les associe implicitement au premier d'entre eux
+                dans l'ordre du DOM, donc cliquer n'importe où dans le champ
+                activait le mauvais contrôle (bug réel rencontré avec
+                l'input caché de la vignette, devenu le premier). */}
+            <div className="block">
+              <span className="block text-sm font-medium mb-1">Couverture</span>
               <div className="flex gap-4 items-start">
                 {/* Glisser-déposer géré ici, sur le conteneur : les
-                    événements drag remontent depuis le bouton/label enfant,
-                    donc un seul jeu de handlers suffit pour les deux états
+                    événements drag remontent depuis le bouton enfant, donc
+                    un seul jeu de handlers suffit pour les deux états
                     (avec/sans couverture). */}
                 <div
                   onDragOver={(e) => {
@@ -537,7 +546,11 @@ export default function BookForm() {
                       />
                     </button>
                   ) : (
-                    <label className="w-full h-full flex items-center justify-center cursor-pointer px-1 focus-within:outline-none focus-within:ring-2 focus-within:ring-library">
+                    <button
+                      type="button"
+                      onClick={() => coverFileInputRef.current?.click()}
+                      className="w-full h-full flex items-center justify-center px-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                    >
                       <span className="text-ink/70 text-xs text-center">
                         {coverUploading
                           ? 'Import…'
@@ -545,15 +558,16 @@ export default function BookForm() {
                             ? 'Dépose ici'
                             : 'Aucune couverture'}
                       </span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="sr-only"
-                        onChange={handleCoverUpload}
-                        disabled={coverUploading}
-                      />
-                    </label>
+                    </button>
                   )}
+                  <input
+                    ref={coverFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="sr-only"
+                    onChange={handleCoverUpload}
+                    disabled={coverUploading}
+                  />
                 </div>
 
                 <div className="flex-1 space-y-2">
@@ -603,7 +617,7 @@ export default function BookForm() {
                   )}
                 </div>
               </div>
-            </Field>
+            </div>
 
             <Field label="Nombre de pages">
               <input
