@@ -9,13 +9,13 @@ import LoadingScreen from '../components/LoadingScreen'
 
 export default function Achievements() {
   const { user } = useAuth()
-  const { partner, isMine, books, loading, error, setView } = useHouseholdBooks()
+  const { members, ownerId, setOwnerId, isMine, books, loading, error } = useHouseholdBooks()
   const goBack = useGoBack('/')
   const [myFirstName, setMyFirstName] = useState(null)
 
   // Pour la ligne "Ex-Libris {prénom}" gravée sur les plaques de succès :
-  // le prénom du partenaire est déjà sur `partner.label`, mais le sien
-  // propre n'est nulle part ailleurs dans l'app à ce niveau.
+  // le prénom du membre du foyer affiché est déjà sur selectedMember, mais
+  // le sien propre n'est nulle part ailleurs dans l'app à ce niveau.
   useEffect(() => {
     if (!user) return
     let active = true
@@ -29,9 +29,12 @@ export default function Achievements() {
     }
   }, [user])
 
+  const selectedMember = members.find((m) => m.userId === ownerId)
+  const selectedLabel = selectedMember?.displayName ?? selectedMember?.email
+
   const ownerName = isMine
     ? myFirstName ?? user?.email?.split('@')[0] ?? null
-    : partner?.label ?? null
+    : selectedLabel ?? null
 
   return (
     <div className="min-h-svh p-6">
@@ -46,13 +49,14 @@ export default function Achievements() {
 
         <h1 className="font-serif text-2xl font-semibold mt-4 mb-6">Succès</h1>
 
-        {partner && (
+        {members.length > 1 && (
           <HouseholdTabs
-            isMine={isMine}
-            onSelectMine={() => setView('mine')}
-            onSelectPartner={() => setView('partner')}
-            mineLabel="Mes succès"
-            partnerLabel={`Succès de ${partner.label}`}
+            members={members}
+            selectedId={ownerId}
+            onSelect={setOwnerId}
+            labelFor={(m) =>
+              m.userId === user.id ? 'Mes succès' : `Succès de ${m.displayName ?? m.email}`
+            }
             ariaLabel="Succès à afficher"
           />
         )}
@@ -67,12 +71,12 @@ export default function Achievements() {
           <p className="text-sm text-ink/70 text-center py-16">
             {isMine
               ? 'Ajoute des livres à ta collection pour débloquer des succès.'
-              : `${partner?.label} n'a pas encore de livres.`}
+              : `${selectedLabel} n'a pas encore de livres.`}
           </p>
         ) : (
           <AchievementsGallery
             books={books}
-            partner={partner}
+            partner={members.length > 1}
             userId={user?.id}
             ownerName={ownerName}
           />

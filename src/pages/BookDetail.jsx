@@ -152,7 +152,7 @@ export default function BookDetail() {
   const navigate = useNavigate()
   const goBack = useGoBack('/')
   const { user } = useAuth()
-  const { partner } = useHouseholdBooks()
+  const { members } = useHouseholdBooks()
   const [book, setBook] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -378,6 +378,9 @@ export default function BookDetail() {
     (book.edition ?? []).filter((e) => !SPECIAL_EDITION_TYPES.includes(e)),
   )
 
+  const bookOwner = members.find((m) => m.userId === book.user_id)
+  const bookOwnerLabel = bookOwner?.displayName ?? bookOwner?.email ?? 'l’autre bibliothèque'
+
   return (
     <div className="min-h-svh p-6">
       <div className="max-w-2xl mx-auto">
@@ -399,7 +402,7 @@ export default function BookDetail() {
             </button>
           ) : (
             <span className="shrink-0 font-mono text-xs uppercase tracking-widest text-brass">
-              Livre de {partner?.label ?? 'l’autre bibliothèque'}
+              Livre de {bookOwnerLabel}
             </span>
           )}
         </div>
