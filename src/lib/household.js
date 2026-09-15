@@ -40,9 +40,19 @@ export async function getMyHousehold(userId) {
   if (incomingResult.error) throw incomingResult.error
 
   const household = householdResult.data
-  const members = membersResult.data ?? []
   const invites = invitesResult.data ?? []
   const incoming = incomingResult.data ?? []
+
+  // L'utilisateur courant toujours en tête (peu importe où l'ordre
+  // alphabétique le placerait) : c'est la vue qu'on consulte le plus
+  // souvent, elle doit être immédiate à repérer dans le switcher. Le tri
+  // est stable (garanti depuis ES2019), donc les autres membres gardent
+  // l'ordre alphabétique renvoyé par la requête.
+  const members = (membersResult.data ?? []).sort((a, b) => {
+    if (a.user_id === userId) return -1
+    if (b.user_id === userId) return 1
+    return 0
+  })
 
   // Les invités (pas encore membres) et les inviteurs d'une invitation
   // reçue (membres d'un autre foyer) ne sont pas forcément dans `members`.
