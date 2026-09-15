@@ -573,6 +573,17 @@ create policy "Household members can view all household books"
     )
   );
 
+-- Même faille que celle corrigée sur profiles (voir
+-- "Household members can view each other's profiles" plus haut) : la
+-- policy ci-dessus ne connaît que household_links (l'ancien modèle 1:1),
+-- jamais peuplé par le nouveau flux d'invitation par code (households/
+-- profiles.household_id). Sans celle-ci, un membre d'un foyer à N
+-- personnes invité via ce nouveau flux ne voit jamais les livres des
+-- autres membres. Policy additionnelle, combinée en OR avec l'existante.
+create policy "Household (foyer) members can view all household books"
+  on books for select
+  using (is_household_member(user_id));
+
 create policy "Users can insert their own books"
   on books for insert
   with check (auth.uid() = user_id);
@@ -617,6 +628,12 @@ create policy "Household members can view all household reading goals"
         )
     )
   );
+
+-- Même bascule manquante que pour books ci-dessus : le nouveau modèle
+-- foyer (households) n'était pas couvert.
+create policy "Household (foyer) members can view all household reading goals"
+  on reading_goals for select
+  using (is_household_member(user_id));
 
 create policy "Users can insert their own reading goals"
   on reading_goals for insert
