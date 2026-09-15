@@ -4,7 +4,7 @@ import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import { getMyProfile } from '../lib/friendCode'
 import { listClaims, migrateLocalStorageClaims, upsertClaim } from '../lib/achievementClaims'
 import { useGoBack } from '../lib/navigation'
-import HouseholdTabs from '../components/HouseholdTabs'
+import HouseholdSwitchBadge from '../components/HouseholdSwitchBadge'
 import AchievementsGallery from '../components/AchievementsGallery'
 import LoadingScreen from '../components/LoadingScreen'
 
@@ -95,15 +95,14 @@ export default function Achievements() {
         <h1 className="font-serif text-2xl font-semibold mt-4 mb-6">Succès</h1>
 
         {members.length > 1 && (
-          <HouseholdTabs
-            members={members}
-            selectedId={ownerId}
-            onSelect={setOwnerId}
-            labelFor={(m) =>
-              m.userId === user.id ? 'Mes succès' : `Succès de ${m.displayName ?? m.email}`
-            }
-            ariaLabel="Succès à afficher"
-          />
+          <div className="mb-6">
+            <HouseholdSwitchBadge
+              members={members}
+              selectedId={ownerId}
+              onSelect={setOwnerId}
+              currentUserId={user.id}
+            />
+          </div>
         )}
 
         {loading || claimsLoading ? (
