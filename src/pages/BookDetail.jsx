@@ -720,6 +720,7 @@ export default function BookDetail() {
       {showPurchasePrompt && (
         <QuickPurchaseModal
           bookTitle={book.title}
+          bookAuthor={book.author?.length ? book.author.join(', ') : null}
           onConfirm={handleQuickPurchase}
           onSkip={() => setShowPurchasePrompt(false)}
         />

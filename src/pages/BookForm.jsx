@@ -32,6 +32,7 @@ import BookCardVisual from '../components/BookCardVisual'
 import InlineConfirm from '../components/InlineConfirm'
 import SuggestInput from '../components/SuggestInput'
 import EditionCheckboxes from '../components/EditionCheckboxes'
+import QuickPurchaseModal from '../components/QuickPurchaseModal'
 import { STATUS_BORDER_CLASS, STATUS_LABELS } from '../lib/statusLabels'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
@@ -87,6 +88,7 @@ export default function BookForm() {
   const [coverUploading, setCoverUploading] = useState(false)
   const [coverError, setCoverError] = useState(null)
   const [scannerOpen, setScannerOpen] = useState(false)
+  const [showPurchasePrompt, setShowPurchasePrompt] = useState(false)
 
   useEffect(() => {
     listAllTags().then(setExistingTags).catch(() => {})
@@ -125,6 +127,24 @@ export default function BookForm() {
 
   function set(field, value) {
     setBook((b) => ({ ...b, [field]: value }))
+  }
+
+  // Décocher "Je le veux" propose de noter prix/date d'achat tout de suite
+  // (même modal que sur la fiche livre quand un statut sort de la wishlist,
+  // voir QuickPurchaseModal) — mais volontairement PAS depuis le sélecteur
+  // complet dans "Ma lecture" plus bas, qui reste un simple changement de
+  // statut sans interruption.
+  function handleWishlistToggle(checked) {
+    set('status', checked ? 'wishlist' : 'to-read')
+    if (!checked && !book.purchase_date) {
+      setShowPurchasePrompt(true)
+    }
+  }
+
+  function handleQuickPurchase(patch) {
+    setShowPurchasePrompt(false)
+    set('price', patch.price)
+    set('purchase_date', patch.purchase_date)
   }
 
   const missingFields = getMissingFields(book)
@@ -366,7 +386,7 @@ export default function BookForm() {
               veux", sans avoir à déplier un menu pour ça. */}
           <WishlistCheckbox
             checked={book.status === 'wishlist'}
-            onChange={(checked) => set('status', checked ? 'wishlist' : 'to-read')}
+            onChange={handleWishlistToggle}
           />
 
           <FormSection title="Détails du livre" defaultOpen>
@@ -696,6 +716,15 @@ export default function BookForm() {
             onClose={() => setScannerOpen(false)}
           />
         </Suspense>
+      )}
+
+      {showPurchasePrompt && (
+        <QuickPurchaseModal
+          bookTitle={book.title || 'ce livre'}
+          bookAuthor={book.author?.length ? book.author.join(', ') : null}
+          onConfirm={handleQuickPurchase}
+          onSkip={() => setShowPurchasePrompt(false)}
+        />
       )}
     </div>
   )
