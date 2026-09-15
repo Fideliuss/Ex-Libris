@@ -164,26 +164,46 @@ crédits) en dehors d'un vrai merge sur `main` :
   les PR qui touchent `supabase/`, à titre informatif.
 - `main` et `develop` sont protégées : push direct interdit, merge
   uniquement via PR avec la CI au vert.
-- Quand `develop` est stable, ouvrir une PR de `develop` vers `main`. Le
-  merge de cette PR déclenche le déploiement (Netlify ne surveille que
-  `main`, branch deploys et previews désactivés). Pas de versionnage
-  automatique (release-please retiré), mais un versionnage manuel a
-  repris depuis le 2026-09-14 : à chaque promotion, bump `package.json`
-  à la main (semver : MINOR si le lot contient au moins une vraie
-  fonctionnalité, PATCH si fixes seulement) et créer la
-  [GitHub Release](https://github.com/Fideliuss/Ex-Libris/releases)
-  correspondante (tag léger `ExLibris-vX.Y.Z`, pour le badge "Verified"
-  signé par le commit de merge plutôt qu'un tag annoté non signé).
-  `CHANGELOG.md` reste tenu à la main (voir plus bas), indépendamment de
-  ce tag.
-- **Avant cette PR `develop → main`**, si les changements embarqués sont
-  visibles pour l'utilisateur (pas un refactor interne ou un fix invisible) :
-  ajouter une entrée à la main dans `CHANGELOG.md` (historique technique,
-  un paragraphe par version) **et** dans `src/lib/whatsNew.js` (texte
-  pensé pour l'utilisateur, affiché dans l'app via le pop-up "Quoi de
-  neuf" — voir son commentaire d'en-tête). Les deux sont volontairement
-  distincts et doivent être tenus à jour ensemble, pas l'un à la place de
-  l'autre.
+- Quand `develop` est stable, promotion `develop` -> `main`. Le merge de
+  cette PR déclenche le déploiement (Netlify ne surveille que `main`,
+  branch deploys et previews désactivés) — donc jamais de petite
+  promotion isolée, on groupe plusieurs `feature/xxx` avant d'en ouvrir
+  une. Pas de versionnage automatique (release-please retiré), un
+  versionnage manuel a repris depuis le 2026-09-14 (voir
+  [GitHub Releases](https://github.com/Fideliuss/Ex-Libris/releases)).
+  Checklist, dans l'ordre :
+  1. Lister les commits/PR sur `develop` absents de `main` (périmètre de
+     la promotion).
+  2. Vérifier que les migrations SQL du lot sont déjà appliquées à la
+     vraie base.
+  3. Décider du numéro de version (semver : MINOR si le lot contient au
+     moins une vraie fonctionnalité, PATCH si fixes seulement).
+  4. Ajouter une entrée dans `CHANGELOG.md` (historique technique, une
+     section datée, un paragraphe par version) — seulement si les
+     changements embarqués sont visibles pour l'utilisateur, pas pour un
+     refactor interne ou un fix invisible.
+  5. Ajouter une entrée dans `src/lib/whatsNew.js` (texte pensé pour
+     l'utilisateur, affiché dans l'app via le pop-up "Quoi de neuf" —
+     voir son commentaire d'en-tête), si ça mérite une annonce. Distinct
+     de `CHANGELOG.md`, les deux doivent être tenus à jour ensemble, pas
+     l'un à la place de l'autre.
+  6. Bump `package.json`/`package-lock.json` avec le numéro décidé à
+     l'étape 3.
+  7. Vérifier que cette section du README décrit toujours la pratique
+     réelle.
+  8. `npm run build && npm run lint && npm run test` propres en local.
+  9. Ouvrir la PR `develop` -> `main`, titre
+     `chore(main): promote develop to production (vX.Y.Z)`.
+  10. CI au vert, y compris `.github/workflows/promotion-checklist.yml`
+      (vérifie que `CHANGELOG.md` et `package.json` font bien partie du
+      diff, pour ne pas les oublier ni les livrer dans une PR séparée).
+  11. Merge classique (jamais squash, pour garder l'historique des PR
+      individuelles visible sur `main`).
+  12. Une fois mergée : tag léger `ExLibris-vX.Y.Z` sur le commit de
+      merge (pour le badge "Verified", signé par GitHub contrairement à
+      un tag annoté créé en local) puis `gh release create`.
+  13. Vérifier le déploiement live (pas d'erreur console, la nouveauté
+      est bien visible).
 - Protection des branches via [Repository Rulesets](https://github.com/Fideliuss/Ex-Libris/rules)
   (pas l'ancienne "branch protection" classique, qui ne bloque pas
   vraiment les push directs quand 0 review est requise).
