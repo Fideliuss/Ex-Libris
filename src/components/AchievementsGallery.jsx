@@ -77,7 +77,7 @@ function groupByIcon(items) {
 // succès à paliers n'affichent qu'UN badge, qui montre le palier le plus
 // haut réclamé — atteindre un palier supérieur ne remplace l'affichage
 // qu'une fois la promotion confirmée dans la modal.
-export default function AchievementsGallery({ books, partner, userId, ownerName }) {
+export default function AchievementsGallery({ books, partner, userId, ownerName, isMine }) {
   const [, setVersion] = useState(0)
   const [modal, setModal] = useState(null)
 
@@ -92,7 +92,12 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
       if (badge.kind === 'tiered') {
         const displayRank = Number(readState(userId, badge.id, -1))
         const everRevealed = displayRank >= 0
-        const promotable = badge.reachedRank > displayRank
+        // Seul le propriétaire peut réclamer/promouvoir son propre succès :
+        // sans ce garde-fou, cliquer sur un succès "promouvable" en
+        // regardant le foyer de quelqu'un d'autre écrivait la réclamation
+        // sous cette clé-là (bug réel rencontré en prod, voir le fix qui a
+        // introduit isMine).
+        const promotable = badge.reachedRank > displayRank && isMine
         const nextRank = badge.reachedRank
         const nextTierUp = displayRank + 1
         const nextTierHint =
@@ -186,7 +191,8 @@ export default function AchievementsGallery({ books, partner, userId, ownerName 
         tierRank: 0,
         seal: true,
         locked: !badge.unlocked,
-        promotable: badge.unlocked && !claimed,
+        // Même garde-fou que pour les succès à paliers ci-dessus.
+        promotable: badge.unlocked && !claimed && isMine,
         everRevealed: claimed,
         big: false,
         rotation: rotationFor(badge.id),
