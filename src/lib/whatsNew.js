@@ -9,6 +9,16 @@
 // prend du recul sur tout ce qui vient d'être livré d'un coup.
 export const WHATS_NEW = [
   {
+    id: '2026-09-half-stars-and-wishlist',
+    title: 'Notes en demi-étoiles et ajout plus rapide',
+    items: [
+      'Tu peux maintenant noter un livre avec des demi-étoiles, pas juste des notes entières.',
+      'Une case à cocher "Je le veux" tout en haut du formulaire d’ajout, pour marquer un livre en wishlist en un clic sans fouiller dans le formulaire.',
+      'La couverture d’un livre s’affiche en grand d’un clic, et accepte maintenant le glisser-déposer pour l’ajouter.',
+      'Les succès de ton foyer sont maintenant sauvegardés pour de bon : avant, ils ne vivaient que dans ton navigateur et ne se voyaient pas d’un appareil à l’autre.',
+    ],
+  },
+  {
     id: '2026-09-household',
     title: 'Un foyer à plusieurs personnes',
     items: [
