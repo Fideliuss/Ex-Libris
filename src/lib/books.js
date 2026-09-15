@@ -1,26 +1,34 @@
 import { supabase } from './supabaseClient'
 
-// PostgREST plafonne une requête sans .range() à 1000 lignes par défaut :
-// au-delà, un .select('*') simple tronque silencieusement le résultat. On
-// pagine explicitement pour ramener vraiment tous les livres visibles,
-// quelle que soit la taille de la table.
 const LIST_PAGE_SIZE = 1000
 
-export async function listBooks() {
+// PostgREST plafonne une requête sans .range() à 1000 lignes par défaut :
+// au-delà, un .select() simple tronque silencieusement le résultat. On
+// pagine explicitement pour ramener vraiment toutes les lignes visibles,
+// quelle que soit la taille de la table — buildQuery reçoit les bornes
+// (from, to) et doit renvoyer la requête Supabase déjà filtrée/triée, prête
+// à recevoir .range(from, to).
+async function fetchAllPages(buildQuery) {
   const rows = []
   let from = 0
   for (;;) {
-    const { data, error } = await supabase
-      .from('books')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .range(from, from + LIST_PAGE_SIZE - 1)
+    const { data, error } = await buildQuery(from, from + LIST_PAGE_SIZE - 1)
     if (error) throw error
     rows.push(...data)
     if (data.length < LIST_PAGE_SIZE) break
     from += LIST_PAGE_SIZE
   }
   return rows
+}
+
+export function listBooks() {
+  return fetchAllPages((from, to) =>
+    supabase
+      .from('books')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(from, to),
+  )
 }
 
 export async function createBook(book) {
@@ -110,11 +118,9 @@ async function listDistinctArrayValues(column) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  const { data, error } = await supabase
-    .from('books')
-    .select(column)
-    .eq('user_id', user.id)
-  if (error) throw error
+  const data = await fetchAllPages((from, to) =>
+    supabase.from('books').select(column).eq('user_id', user.id).range(from, to),
+  )
   const values = new Set()
   for (const row of data) {
     for (const value of row[column] ?? []) values.add(value)
@@ -138,60 +144,38 @@ export function listAllIllustrators() {
   return listDistinctArrayValues('illustrator')
 }
 
-export async function listAllCollections() {
+// Valeurs distinctes d'une colonne simple (pas un tableau, contrairement à
+// listDistinctArrayValues ci-dessus) sur les livres de l'utilisateur courant.
+async function listDistinctColumnValues(column) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  const { data, error } = await supabase
-    .from('books')
-    .select('collection')
-    .eq('user_id', user.id)
-    .not('collection', 'is', null)
-  if (error) throw error
-  const collections = new Set(data.map((row) => row.collection).filter(Boolean))
-  return [...collections].sort((a, b) => a.localeCompare(b, 'fr'))
+  const data = await fetchAllPages((from, to) =>
+    supabase
+      .from('books')
+      .select(column)
+      .eq('user_id', user.id)
+      .not(column, 'is', null)
+      .range(from, to),
+  )
+  const values = new Set(data.map((row) => row[column]).filter(Boolean))
+  return [...values].sort((a, b) => a.localeCompare(b, 'fr'))
 }
 
-export async function listAllPublishers() {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const { data, error } = await supabase
-    .from('books')
-    .select('publisher')
-    .eq('user_id', user.id)
-    .not('publisher', 'is', null)
-  if (error) throw error
-  const publishers = new Set(data.map((row) => row.publisher).filter(Boolean))
-  return [...publishers].sort((a, b) => a.localeCompare(b, 'fr'))
+export function listAllCollections() {
+  return listDistinctColumnValues('collection')
 }
 
-export async function listAllSeries() {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const { data, error } = await supabase
-    .from('books')
-    .select('series')
-    .eq('user_id', user.id)
-    .not('series', 'is', null)
-  if (error) throw error
-  const series = new Set(data.map((row) => row.series).filter(Boolean))
-  return [...series].sort((a, b) => a.localeCompare(b, 'fr'))
+export function listAllPublishers() {
+  return listDistinctColumnValues('publisher')
 }
 
-export async function listAllUniverses() {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const { data, error } = await supabase
-    .from('books')
-    .select('universe')
-    .eq('user_id', user.id)
-    .not('universe', 'is', null)
-  if (error) throw error
-  const universes = new Set(data.map((row) => row.universe).filter(Boolean))
-  return [...universes].sort((a, b) => a.localeCompare(b, 'fr'))
+export function listAllSeries() {
+  return listDistinctColumnValues('series')
+}
+
+export function listAllUniverses() {
+  return listDistinctColumnValues('universe')
 }
 
 // Migration : un tag utilisé comme nom de collection éditeur (ex: "folio sf")
@@ -201,12 +185,14 @@ export async function convertTagToCollection(tag) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  const { data: matching, error: fetchError } = await supabase
-    .from('books')
-    .select('id, tags')
-    .eq('user_id', user.id)
-    .contains('tags', [tag])
-  if (fetchError) throw fetchError
+  const matching = await fetchAllPages((from, to) =>
+    supabase
+      .from('books')
+      .select('id, tags')
+      .eq('user_id', user.id)
+      .contains('tags', [tag])
+      .range(from, to),
+  )
 
   for (const book of matching) {
     const { error } = await supabase
