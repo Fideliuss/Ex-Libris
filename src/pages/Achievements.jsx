@@ -77,8 +77,9 @@ export default function Achievements() {
           <AchievementsGallery
             books={books}
             partner={members.length > 1}
-            userId={user?.id}
+            userId={ownerId}
             ownerName={ownerName}
+            isMine={isMine}
           />
         )}
       </div>
