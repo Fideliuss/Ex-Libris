@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import { getMyProfile } from '../lib/friendCode'
+import { listClaims, migrateLocalStorageClaims, upsertClaim } from '../lib/achievementClaims'
 import { useGoBack } from '../lib/navigation'
 import HouseholdTabs from '../components/HouseholdTabs'
 import AchievementsGallery from '../components/AchievementsGallery'
@@ -12,6 +13,8 @@ export default function Achievements() {
   const { members, ownerId, setOwnerId, isMine, books, loading, error } = useHouseholdBooks()
   const goBack = useGoBack('/')
   const [myFirstName, setMyFirstName] = useState(null)
+  const [claims, setClaims] = useState(new Map())
+  const [claimsLoading, setClaimsLoading] = useState(true)
 
   // Pour la ligne "Ex-Libris {prénom}" gravée sur les plaques de succès :
   // le prénom du membre du foyer affiché est déjà sur selectedMember, mais
@@ -28,6 +31,44 @@ export default function Achievements() {
       active = false
     }
   }, [user])
+
+  useEffect(() => {
+    if (!ownerId) return
+    let active = true
+    setClaimsLoading(true)
+    ;(async () => {
+      // Reprend une seule fois par appareil ce qui traînait en localStorage
+      // (ancien stockage, avant la table achievement_claims) - uniquement
+      // pertinent sur sa propre vue, et doit être fait AVANT de lire pour
+      // que la migration soit bien prise en compte dès ce premier chargement.
+      if (ownerId === user?.id) {
+        await migrateLocalStorageClaims(ownerId).catch(() => {})
+      }
+      return listClaims(ownerId)
+    })()
+      .then((rows) => {
+        if (active) setClaims(new Map(rows.map((r) => [r.badge_id, r.rank])))
+      })
+      .catch(() => {
+        // Le foyer reste optionnel : une erreur ici ne doit pas bloquer
+        // l'affichage des succès eux-mêmes (recalculés depuis les livres).
+        if (active) setClaims(new Map())
+      })
+      .finally(() => {
+        if (active) setClaimsLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [ownerId, user?.id])
+
+  // Optimiste : l'affichage réagit tout de suite, l'écriture réseau suit
+  // en tâche de fond. Jamais appelé si !isMine (voir AchievementsGallery),
+  // et de toute façon refusé par la policy RLS insert/update sinon.
+  function handleClaim(badgeId, rank) {
+    setClaims((prev) => new Map(prev).set(badgeId, rank))
+    upsertClaim(user.id, badgeId, rank).catch(() => {})
+  }
 
   const selectedMember = members.find((m) => m.userId === ownerId)
   const selectedLabel = selectedMember?.displayName ?? selectedMember?.email
@@ -61,7 +102,7 @@ export default function Achievements() {
           />
         )}
 
-        {loading ? (
+        {loading || claimsLoading ? (
           <LoadingScreen fullScreen={false} />
         ) : error ? (
           <p role="alert" className="text-sm text-stamp text-center py-16">
@@ -77,9 +118,10 @@ export default function Achievements() {
           <AchievementsGallery
             books={books}
             partner={members.length > 1}
-            userId={ownerId}
             ownerName={ownerName}
             isMine={isMine}
+            claims={claims}
+            onClaim={handleClaim}
           />
         )}
       </div>
