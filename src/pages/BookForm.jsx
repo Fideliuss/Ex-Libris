@@ -774,8 +774,8 @@ function WishlistCheckbox({ checked, onChange }) {
         )}
       </span>
       <span className="text-sm">
-        <span className="font-medium">Wishlist</span>
-        <span className="text-ink/70"> — je ne l'ai pas encore</span>
+        <span className="font-medium">Je le veux</span>
+        <span className="text-ink/70"> (Wishlist)</span>
       </span>
     </label>
   )
