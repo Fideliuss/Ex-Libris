@@ -173,7 +173,14 @@ export default function AchievementsGallery({ books, partner, ownerName, isMine,
         icon: badge.icon,
         tierRank: 0,
         seal: true,
-        locked: !badge.unlocked,
+        // Comme pour les succès à paliers (locked: !everRevealed) : l'état
+        // visuel "verrouillé" suit la révélation, pas le déblocage brut.
+        // Bug corrigé ici (locked: !badge.unlocked avant) — masqué jusque
+        // là par l'overlay "Promotion disponible" qui recouvrait le fond
+        // coloré tant que promotable était vrai partout ; en lecture seule
+        // (promotable toujours faux) le fond rouge + texte de mystère
+        // contradictoires devenaient visibles.
+        locked: !claimed,
         promotable,
         everRevealed: claimed,
         big: false,
