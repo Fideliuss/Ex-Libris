@@ -536,7 +536,9 @@ export default function BookForm() {
                   className={`w-24 aspect-[2/3] shrink-0 rounded-sm border overflow-hidden flex items-center justify-center transition-colors ${
                     coverDragActive
                       ? 'border-library border-2 bg-library/5'
-                      : 'border-ink/10 bg-paper'
+                      : book.cover_url
+                        ? 'border-ink/10 bg-paper'
+                        : 'border-dashed border-ink/25 bg-paper'
                   }`}
                 >
                   {book.cover_url ? (
@@ -556,14 +558,29 @@ export default function BookForm() {
                     <button
                       type="button"
                       onClick={() => coverFileInputRef.current?.click()}
-                      className="w-full h-full flex items-center justify-center px-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                      className="w-full h-full flex flex-col items-center justify-center gap-1.5 px-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
                     >
-                      <span className="text-ink/70 text-xs text-center">
+                      {!coverDragActive && (
+                        <svg
+                          viewBox="0 0 20 20"
+                          className="w-5 h-5 text-ink/40"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M10 3v9m0-9-3 3m3-3 3 3" />
+                          <path d="M4 13.5v1.5A1.5 1.5 0 0 0 5.5 16.5h9a1.5 1.5 0 0 0 1.5-1.5v-1.5" />
+                        </svg>
+                      )}
+                      <span className="text-ink/60 text-[11px] text-center leading-tight">
                         {coverUploading
                           ? 'Import…'
                           : coverDragActive
                             ? 'Dépose ici'
-                            : 'Aucune couverture'}
+                            : 'Cliquer ou glisser une image'}
                       </span>
                     </button>
                   )}
