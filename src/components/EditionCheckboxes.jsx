@@ -1,4 +1,4 @@
-import { EDITION_GROUPS, EDITION_TYPES } from '../lib/editionTypes'
+import { BINDING_TYPES, EDITION_GROUPS, EDITION_TYPES } from '../lib/editionTypes'
 import { labelClass } from '../lib/ui'
 
 const chipClass =
@@ -54,9 +54,15 @@ export default function EditionCheckboxes({ value = [], onChange }) {
     // cocher "Grand format" retire "Poche" s'il était coché, plutôt que de
     // les cumuler.
     const group = EDITION_GROUPS.find((g) => g.types.includes(type))
-    const withoutGroup = group?.exclusive
+    let withoutGroup = group?.exclusive
       ? value.filter((v) => !group.types.includes(v))
       : value
+    // Numérique n'a pas de reliure physique : la sélectionner retire toute
+    // reliure déjà cochée, plutôt que de laisser une combinaison
+    // impossible (ex: Numérique + Relié).
+    if (type === 'Numérique') {
+      withoutGroup = withoutGroup.filter((v) => !BINDING_TYPES.includes(v))
+    }
     onChange([...withoutGroup, type])
   }
 

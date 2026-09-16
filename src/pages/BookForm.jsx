@@ -456,12 +456,18 @@ export default function BookForm() {
               />
             </Field>
 
-            <Field label="Édition">
+            {/* Pas de <Field> ici (qui enveloppe dans un <label>) : les
+                boutons d'EditionCheckboxes sont eux-mêmes "labelable" —
+                un <label> englobant aurait activé le premier d'entre eux
+                (Poche) sur tout clic perdu dans la zone, même hors des
+                boutons (même bug que celui déjà corrigé sur Couverture). */}
+            <div className="block">
+              <span className="block text-sm font-medium mb-1">Édition</span>
               <EditionCheckboxes
                 value={book.edition ?? []}
                 onChange={(v) => set('edition', v)}
               />
-            </Field>
+            </div>
 
             <div className="grid grid-cols-3 gap-4">
               <div className="col-span-2">
@@ -654,14 +660,19 @@ export default function BookForm() {
                   ))}
                 </select>
               </Field>
-              {/* Une note n'a de sens qu'une fois le livre terminé. */}
+              {/* Une note n'a de sens qu'une fois le livre terminé. Pas de
+                  <Field> (même raison que Couverture/Édition) : StarRating
+                  rend 5 boutons, tous "labelable" — un <label> englobant
+                  aurait activé le premier (1 étoile) sur un clic perdu
+                  dans la zone. */}
               {book.status === 'read' && (
-                <Field label="Note">
+                <div className="block">
+                  <span className="block text-sm font-medium mb-1">Note</span>
                   <StarRating
                     value={book.rating}
                     onChange={(v) => set('rating', v)}
                   />
-                </Field>
+                </div>
               )}
             </div>
 
