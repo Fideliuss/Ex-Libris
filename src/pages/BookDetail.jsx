@@ -535,7 +535,7 @@ export default function BookDetail() {
               {(formatValue || bindingValue) && (
                 <div className="flex items-center gap-3.5 mt-2">
                   {formatValue && (
-                    <span className="flex items-center gap-1 font-mono text-[11px] uppercase tracking-wide text-brass-fill">
+                    <span className="flex items-center gap-1 text-sm text-ink/70">
                       <svg
                         viewBox="0 0 20 20"
                         className="w-3.5 h-3.5"
@@ -564,7 +564,7 @@ export default function BookDetail() {
                     <span className="w-[3px] h-[3px] rounded-full bg-ink/30" aria-hidden="true" />
                   )}
                   {bindingValue && (
-                    <span className="flex items-center gap-1 font-mono text-[11px] uppercase tracking-wide text-brass-fill">
+                    <span className="flex items-center gap-1 text-sm text-ink/70">
                       <svg
                         viewBox="0 0 20 20"
                         className="w-3.5 h-3.5"
