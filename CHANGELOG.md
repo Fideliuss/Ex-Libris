@@ -9,6 +9,18 @@ l'app. Pour le pop-up "Quoi de neuf" vu par l'utilisateur, voir
 `src/lib/whatsNew.js`, à tenir à jour en parallèle (voir README.md,
 section GitFlow).
 
+## 1.11.0 (2026-09-16)
+
+### Features
+
+* redesigned Format/Reliure/Édition spéciale controls with segmented pills for mutually-exclusive choices and chip-style selectors, and added Format/Reliure to the book completeness check ([#132](https://github.com/Fideliuss/Ex-Libris/pull/132))
+* cover images are now automatically resized and compressed to WebP before upload, instead of storing multi-megabyte phone photos as-is ([#135](https://github.com/Fideliuss/Ex-Libris/pull/135))
+
+### Bug Fixes
+
+* replacing or removing a book's cover, or deleting a book, now removes the corresponding file from storage instead of leaving it behind ([#133](https://github.com/Fideliuss/Ex-Libris/pull/133))
+* leaving the add/edit form without saving no longer uploads the chosen cover — the file is only sent to storage once the book is actually saved ([#135](https://github.com/Fideliuss/Ex-Libris/pull/135))
+
 ## 1.10.0 (2026-09-15)
 
 ### Features

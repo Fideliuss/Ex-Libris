@@ -9,6 +9,15 @@
 // prend du recul sur tout ce qui vient d'être livré d'un coup.
 export const WHATS_NEW = [
   {
+    id: '2026-09-format-reliure-webp',
+    title: 'Format et reliure repensés',
+    items: [
+      'Le format et la reliure d’un livre se choisissent maintenant avec de vraies pastilles à sélection unique, plus lisibles que des cases à cocher.',
+      'Ils sont pris en compte dans le calcul des fiches "à compléter", avec une présentation dédiée sur la fiche du livre.',
+      'Les couvertures que tu ajoutes sont maintenant optimisées automatiquement (plus légères, s’affichent plus vite).',
+    ],
+  },
+  {
     id: '2026-09-half-stars-and-wishlist',
     title: 'Notes en demi-étoiles et ajout plus rapide',
     items: [
