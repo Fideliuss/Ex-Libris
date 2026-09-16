@@ -16,7 +16,7 @@ import {
 } from '../lib/books'
 import { lookupIsbn } from '../lib/isbnLookup'
 import { getMissingFields } from '../lib/bookCompleteness'
-import { uploadCover } from '../lib/storage'
+import { deleteCover, uploadCover } from '../lib/storage'
 import TagInput from '../components/TagInput'
 import {
   inputClass,
@@ -94,6 +94,11 @@ export default function BookForm() {
   const [coverExpanded, setCoverExpanded] = useState(false)
   const [coverDragActive, setCoverDragActive] = useState(false)
   const coverFileInputRef = useRef(null)
+  // Valeur en base au chargement de la fiche, indépendante des éditions en
+  // cours dans book.cover_url — sert à savoir, à la sauvegarde, si la cover
+  // a changé et si l'ancien fichier (remplacé ou retiré) doit être nettoyé
+  // du storage.
+  const originalCoverUrlRef = useRef(null)
 
   useEffect(() => {
     listAllTags().then(setExistingTags).catch(() => {})
@@ -109,7 +114,8 @@ export default function BookForm() {
   useEffect(() => {
     if (!isEdit) return
     getBook(id)
-      .then((data) =>
+      .then((data) => {
+        originalCoverUrlRef.current = data.cover_url ?? null
         setBook({
           ...emptyBook,
           ...data,
@@ -124,8 +130,8 @@ export default function BookForm() {
           author: data.author ?? [],
           translator: data.translator ?? [],
           illustrator: data.illustrator ?? [],
-        }),
-      )
+        })
+      })
       .catch((err) => setError(describeError(err)))
       .finally(() => setLoading(false))
   }, [id, isEdit])
@@ -263,6 +269,10 @@ export default function BookForm() {
     try {
       if (isEdit) {
         await updateBook(id, payload)
+        const previousCoverUrl = originalCoverUrlRef.current
+        if (previousCoverUrl && previousCoverUrl !== payload.cover_url) {
+          deleteCover(previousCoverUrl)
+        }
         // On revient en arrière (plutôt que naviguer vers la fiche) pour ne
         // pas empiler une entrée d'historique en plus de celle déjà créée
         // par le clic sur "Modifier" — sinon "Retour" depuis la fiche
