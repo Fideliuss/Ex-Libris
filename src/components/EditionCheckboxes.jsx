@@ -44,6 +44,7 @@ function SegmentedGroup({ group, value, onToggle }) {
 export default function EditionCheckboxes({ value = [], onChange }) {
   const customValue = value.find((v) => !EDITION_TYPES.includes(v)) ?? ''
   const hasCustom = value.some((v) => !EDITION_TYPES.includes(v))
+  const isDigital = value.includes('Numérique')
 
   function toggle(type) {
     if (value.includes(type)) {
@@ -81,8 +82,13 @@ export default function EditionCheckboxes({ value = [], onChange }) {
 
   return (
     <div className="space-y-4">
-      {EDITION_GROUPS.map((group) =>
-        group.exclusive ? (
+      {EDITION_GROUPS.map((group) => {
+        // Un livre numérique n'a pas de reliure physique : plutôt que de
+        // laisser le contrôle affiché pour un choix qui n'a pas de sens,
+        // on le retire complètement (toggle() vide déjà toute reliure
+        // cochée au moment où Numérique est sélectionné).
+        if (group.label === 'Reliure' && isDigital) return null
+        return group.exclusive ? (
           <SegmentedGroup key={group.label} group={group} value={value} onToggle={toggle} />
         ) : (
           <div key={group.label}>
@@ -104,8 +110,8 @@ export default function EditionCheckboxes({ value = [], onChange }) {
               })}
             </div>
           </div>
-        ),
-      )}
+        )
+      })}
       <div className="flex items-center gap-2">
         <button
           type="button"
