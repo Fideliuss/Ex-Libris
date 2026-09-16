@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient'
+import { deleteCover } from './storage'
 
 const LIST_PAGE_SIZE = 1000
 
@@ -56,8 +57,14 @@ export async function updateBook(id, patch) {
 }
 
 export async function deleteBook(id) {
-  const { error } = await supabase.from('books').delete().eq('id', id)
+  const { data, error } = await supabase
+    .from('books')
+    .delete()
+    .eq('id', id)
+    .select('cover_url')
+    .single()
   if (error) throw error
+  await deleteCover(data.cover_url)
 }
 
 export async function getBook(id) {
@@ -105,8 +112,13 @@ export async function bulkUpdateBooks(updates) {
 }
 
 export async function bulkDeleteBooks(ids) {
-  const { error } = await supabase.from('books').delete().in('id', ids)
+  const { data, error } = await supabase
+    .from('books')
+    .delete()
+    .in('id', ids)
+    .select('cover_url')
   if (error) throw error
+  await Promise.all(data.map((row) => deleteCover(row.cover_url)))
 }
 
 // Valeurs distinctes d'une colonne à valeurs multiples (tags, author,

@@ -16,7 +16,7 @@ import {
 } from '../lib/books'
 import { lookupIsbn } from '../lib/isbnLookup'
 import { getMissingFields } from '../lib/bookCompleteness'
-import { uploadCover } from '../lib/storage'
+import { compressImage, deleteCover, uploadCover } from '../lib/storage'
 import TagInput from '../components/TagInput'
 import {
   inputClass,
@@ -38,6 +38,12 @@ import CoverLightbox from '../components/CoverLightbox'
 import { STATUS_BORDER_CLASS, STATUS_LABELS } from '../lib/statusLabels'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
+
+// Exclut explicitement HEIC/HEIF (photos par défaut sur iPhone) : le canvas
+// de compressImage ne sait pas les décoder sur Chrome/Firefox. C'est un
+// indice pour le sélecteur de fichier du système, pas une garantie — le
+// glisser-déposer l'ignore et compressImage reste la vraie barrière.
+const COVER_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,image/bmp'
 
 const emptyBook = {
   title: '',
@@ -94,6 +100,38 @@ export default function BookForm() {
   const [coverExpanded, setCoverExpanded] = useState(false)
   const [coverDragActive, setCoverDragActive] = useState(false)
   const coverFileInputRef = useRef(null)
+  // Valeur en base au chargement de la fiche, indépendante des éditions en
+  // cours dans book.cover_url — sert à savoir, à la sauvegarde, si la cover
+  // a changé et si l'ancien fichier (remplacé ou retiré) doit être nettoyé
+  // du storage.
+  const originalCoverUrlRef = useRef(null)
+  // L'upload réel vers le storage n'a lieu qu'à la sauvegarde (handleSubmit),
+  // pas au choix du fichier : sinon quitter la page sans enregistrer laisse
+  // un fichier orphelin en storage (bug réel rencontré). En attendant, on
+  // affiche un aperçu 100% local (URL.createObjectURL, aucun réseau) et on
+  // garde le blob compressé de côté pour l'upload différé.
+  const pendingCoverBlobRef = useRef(null)
+  const pendingCoverPreviewUrlRef = useRef(null)
+
+  function clearPendingCover() {
+    if (pendingCoverPreviewUrlRef.current) {
+      URL.revokeObjectURL(pendingCoverPreviewUrlRef.current)
+      pendingCoverPreviewUrlRef.current = null
+    }
+    pendingCoverBlobRef.current = null
+  }
+
+  // Révoque l'aperçu local en attente si la page est quittée sans avoir
+  // soumis le formulaire (fermeture d'onglet ou navigation SPA) : pas
+  // d'impact storage (rien n'a été uploadé), juste l'hygiène mémoire du
+  // blob local.
+  useEffect(() => {
+    return () => {
+      if (pendingCoverPreviewUrlRef.current) {
+        URL.revokeObjectURL(pendingCoverPreviewUrlRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     listAllTags().then(setExistingTags).catch(() => {})
@@ -109,7 +147,8 @@ export default function BookForm() {
   useEffect(() => {
     if (!isEdit) return
     getBook(id)
-      .then((data) =>
+      .then((data) => {
+        originalCoverUrlRef.current = data.cover_url ?? null
         setBook({
           ...emptyBook,
           ...data,
@@ -124,8 +163,8 @@ export default function BookForm() {
           author: data.author ?? [],
           translator: data.translator ?? [],
           illustrator: data.illustrator ?? [],
-        }),
-      )
+        })
+      })
       .catch((err) => setError(describeError(err)))
       .finally(() => setLoading(false))
   }, [id, isEdit])
@@ -171,6 +210,7 @@ export default function BookForm() {
           text: 'Aucun résultat trouvé pour cet ISBN. Remplis les champs manuellement.',
         })
       } else {
+        if (result.cover_url) clearPendingCover()
         setBook((b) => ({
           ...b,
           title: result.title || b.title,
@@ -213,14 +253,34 @@ export default function BookForm() {
 
     setCoverUploading(true)
     setCoverError(null)
+
+    let compressed
     try {
-      const url = await uploadCover(file)
-      set('cover_url', url)
+      compressed = await compressImage(file)
     } catch {
-      setCoverError("Échec de l'import de l'image. Réessaie.")
-    } finally {
+      setCoverError(
+        "Format d'image non pris en charge par le navigateur (HEIC ?). Essaie une photo JPEG ou PNG.",
+      )
       setCoverUploading(false)
+      return
     }
+
+    clearPendingCover()
+    const previewUrl = URL.createObjectURL(compressed)
+    pendingCoverBlobRef.current = compressed
+    pendingCoverPreviewUrlRef.current = previewUrl
+    set('cover_url', previewUrl)
+    setCoverUploading(false)
+  }
+
+  function handleRemoveCover() {
+    clearPendingCover()
+    set('cover_url', '')
+  }
+
+  function handleCoverUrlInput(value) {
+    clearPendingCover()
+    set('cover_url', value)
   }
 
   function handleCoverUpload(e) {
@@ -240,12 +300,31 @@ export default function BookForm() {
     e.preventDefault()
     setSaving(true)
     setError(null)
+
+    // L'upload réel n'a lieu qu'ici, jamais avant : book.cover_url ne
+    // contient qu'un aperçu local (blob:) tant qu'aucun fichier n'a été
+    // choisi côté texte/ISBN. On résout la vraie URL avant de construire le
+    // payload.
+    let coverUrl = book.cover_url
+    let uploadedNewCover = false
+    if (pendingCoverBlobRef.current) {
+      try {
+        coverUrl = await uploadCover(pendingCoverBlobRef.current)
+        uploadedNewCover = true
+      } catch {
+        setError("Échec de l'envoi de la couverture. Réessaie.")
+        setSaving(false)
+        return
+      }
+    }
+
     const cleanEdition = (book.edition ?? []).filter(Boolean)
     const cleanAuthor = (book.author ?? []).filter(Boolean)
     const cleanTranslator = (book.translator ?? []).filter(Boolean)
     const cleanIllustrator = (book.illustrator ?? []).filter(Boolean)
     const payload = {
       ...book,
+      cover_url: coverUrl,
       date_started: book.date_started || null,
       date_finished: book.date_finished || null,
       page_count: book.page_count === '' ? null : Number(book.page_count),
@@ -263,6 +342,11 @@ export default function BookForm() {
     try {
       if (isEdit) {
         await updateBook(id, payload)
+        const previousCoverUrl = originalCoverUrlRef.current
+        if (previousCoverUrl && previousCoverUrl !== payload.cover_url) {
+          deleteCover(previousCoverUrl)
+        }
+        clearPendingCover()
         // On revient en arrière (plutôt que naviguer vers la fiche) pour ne
         // pas empiler une entrée d'historique en plus de celle déjà créée
         // par le clic sur "Modifier" — sinon "Retour" depuis la fiche
@@ -270,9 +354,15 @@ export default function BookForm() {
         goBack()
       } else {
         await createBook(payload)
+        clearPendingCover()
         navigate('/')
       }
     } catch (err) {
+      // La cover vient d'être uploadée avec succès mais l'enregistrement du
+      // livre a échoué : sans ce rollback, ce fichier tout juste envoyé
+      // deviendrait orphelin immédiatement, exactement le problème que tout
+      // ce chantier visait à éliminer.
+      if (uploadedNewCover) deleteCover(coverUrl)
       setError(describeError(err))
       setSaving(false)
     }
@@ -456,12 +546,18 @@ export default function BookForm() {
               />
             </Field>
 
-            <Field label="Édition">
+            {/* Pas de <Field> ici (qui enveloppe dans un <label>) : les
+                boutons d'EditionCheckboxes sont eux-mêmes "labelable" —
+                un <label> englobant aurait activé le premier d'entre eux
+                (Poche) sur tout clic perdu dans la zone, même hors des
+                boutons (même bug que celui déjà corrigé sur Couverture). */}
+            <div className="block">
+              <span className="block text-sm font-medium mb-1">Édition</span>
               <EditionCheckboxes
                 value={book.edition ?? []}
                 onChange={(v) => set('edition', v)}
               />
-            </Field>
+            </div>
 
             <div className="grid grid-cols-3 gap-4">
               <div className="col-span-2">
@@ -525,12 +621,26 @@ export default function BookForm() {
                     e.preventDefault()
                     setCoverDragActive(true)
                   }}
-                  onDragLeave={() => setCoverDragActive(false)}
+                  onDragLeave={(e) => {
+                    // dragleave se déclenche aussi en passant d'un enfant à
+                    // un autre (l'icône, le texte) à l'intérieur de la
+                    // zone, pas seulement en la quittant vraiment : sans ce
+                    // garde-fou, l'état actif clignote pendant le survol et
+                    // peut faire rater le dépôt. relatedTarget est
+                    // l'élément vers lequel le pointeur se déplace — s'il
+                    // est encore dans la zone, on n'en est pas vraiment
+                    // sorti.
+                    if (!e.currentTarget.contains(e.relatedTarget)) {
+                      setCoverDragActive(false)
+                    }
+                  }}
                   onDrop={handleCoverDrop}
                   className={`w-24 aspect-[2/3] shrink-0 rounded-sm border overflow-hidden flex items-center justify-center transition-colors ${
                     coverDragActive
                       ? 'border-library border-2 bg-library/5'
-                      : 'border-ink/10 bg-paper'
+                      : book.cover_url
+                        ? 'border-ink/10 bg-paper'
+                        : 'border-dashed border-ink/25 bg-paper'
                   }`}
                 >
                   {book.cover_url ? (
@@ -550,21 +660,36 @@ export default function BookForm() {
                     <button
                       type="button"
                       onClick={() => coverFileInputRef.current?.click()}
-                      className="w-full h-full flex items-center justify-center px-1 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
+                      className="w-full h-full flex flex-col items-center justify-center gap-1.5 px-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
                     >
-                      <span className="text-ink/70 text-xs text-center">
+                      {!coverDragActive && (
+                        <svg
+                          viewBox="0 0 20 20"
+                          className="w-5 h-5 text-ink/40"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                        >
+                          <path d="M10 3v9m0-9-3 3m3-3 3 3" />
+                          <path d="M4 13.5v1.5A1.5 1.5 0 0 0 5.5 16.5h9a1.5 1.5 0 0 0 1.5-1.5v-1.5" />
+                        </svg>
+                      )}
+                      <span className="text-ink/60 text-[11px] text-center leading-tight">
                         {coverUploading
                           ? 'Import…'
                           : coverDragActive
                             ? 'Dépose ici'
-                            : 'Aucune couverture'}
+                            : 'Cliquer ou glisser une image'}
                       </span>
                     </button>
                   )}
                   <input
                     ref={coverFileInputRef}
                     type="file"
-                    accept="image/*"
+                    accept={COVER_ACCEPT}
                     className="sr-only"
                     onChange={handleCoverUpload}
                     disabled={coverUploading}
@@ -575,7 +700,7 @@ export default function BookForm() {
                   <input
                     type="url"
                     value={book.cover_url ?? ''}
-                    onChange={(e) => set('cover_url', e.target.value)}
+                    onChange={(e) => handleCoverUrlInput(e.target.value)}
                     placeholder="https://..."
                     className={inputClass}
                   />
@@ -584,7 +709,7 @@ export default function BookForm() {
                       {coverUploading ? 'Import…' : 'Importer une image'}
                       <input
                         type="file"
-                        accept="image/*"
+                        accept={COVER_ACCEPT}
                         className="sr-only"
                         onChange={handleCoverUpload}
                         disabled={coverUploading}
@@ -594,7 +719,7 @@ export default function BookForm() {
                       {coverUploading ? 'Import…' : 'Prendre une photo'}
                       <input
                         type="file"
-                        accept="image/*"
+                        accept={COVER_ACCEPT}
                         capture="environment"
                         className="sr-only"
                         onChange={handleCoverUpload}
@@ -604,7 +729,7 @@ export default function BookForm() {
                     {book.cover_url && (
                       <button
                         type="button"
-                        onClick={() => set('cover_url', '')}
+                        onClick={handleRemoveCover}
                         className="text-sm text-ink/70 hover:text-stamp underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
                       >
                         Retirer
@@ -654,14 +779,19 @@ export default function BookForm() {
                   ))}
                 </select>
               </Field>
-              {/* Une note n'a de sens qu'une fois le livre terminé. */}
+              {/* Une note n'a de sens qu'une fois le livre terminé. Pas de
+                  <Field> (même raison que Couverture/Édition) : StarRating
+                  rend 5 boutons, tous "labelable" — un <label> englobant
+                  aurait activé le premier (1 étoile) sur un clic perdu
+                  dans la zone. */}
               {book.status === 'read' && (
-                <Field label="Note">
+                <div className="block">
+                  <span className="block text-sm font-medium mb-1">Note</span>
                   <StarRating
                     value={book.rating}
                     onChange={(v) => set('rating', v)}
                   />
-                </Field>
+                </div>
               )}
             </div>
 

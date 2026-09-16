@@ -606,14 +606,28 @@ create policy "Users can update their own achievement claims"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
--- Stockage des couvertures importées manuellement
-insert into storage.buckets (id, name, public)
-values ('covers', 'covers', true)
-on conflict (id) do nothing;
+-- Stockage des couvertures importées manuellement. allowed_mime_types /
+-- file_size_limit sont une deuxième barrière côté serveur, en plus de la
+-- compression côté client (compressImage dans storage.js) qui uniformise
+-- déjà tout en WebP avant l'envoi — utile si ce garde-fou client est un
+-- jour contourné (appel direct à l'API, bug côté client...).
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('covers', 'covers', true, 2097152, array['image/webp'])
+on conflict (id) do update
+set file_size_limit = excluded.file_size_limit,
+    allowed_mime_types = excluded.allowed_mime_types;
 
-create policy "Public read access to covers"
+-- Le bucket est public (public = true ci-dessus) : la lecture d'une image
+-- par son URL passe par l'endpoint /object/public/... et ne consulte pas
+-- cette policy. Cette policy select ne gouverne que le listing/l'API
+-- authentifiée (storage.list(), .download()) — la scoper au dossier de
+-- l'utilisateur (même règle que insert/update/delete ci-dessous) évite
+-- qu'un client puisse énumérer les dossiers et fichiers de tous les autres
+-- utilisateurs (avertissement Supabase : "Clients can list all files in
+-- this bucket").
+create policy "Users can list their own covers"
 on storage.objects for select
-using (bucket_id = 'covers');
+using (bucket_id = 'covers' and auth.uid()::text = (storage.foldername(name))[1]);
 
 -- Chaque utilisateur ne peut déposer/modifier/supprimer que des fichiers
 -- dans son propre dossier : covers/<user_id>/...
