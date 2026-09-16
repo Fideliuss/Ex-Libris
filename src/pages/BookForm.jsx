@@ -105,6 +105,33 @@ export default function BookForm() {
   // a changé et si l'ancien fichier (remplacé ou retiré) doit être nettoyé
   // du storage.
   const originalCoverUrlRef = useRef(null)
+  // L'upload réel vers le storage n'a lieu qu'à la sauvegarde (handleSubmit),
+  // pas au choix du fichier : sinon quitter la page sans enregistrer laisse
+  // un fichier orphelin en storage (bug réel rencontré). En attendant, on
+  // affiche un aperçu 100% local (URL.createObjectURL, aucun réseau) et on
+  // garde le blob compressé de côté pour l'upload différé.
+  const pendingCoverBlobRef = useRef(null)
+  const pendingCoverPreviewUrlRef = useRef(null)
+
+  function clearPendingCover() {
+    if (pendingCoverPreviewUrlRef.current) {
+      URL.revokeObjectURL(pendingCoverPreviewUrlRef.current)
+      pendingCoverPreviewUrlRef.current = null
+    }
+    pendingCoverBlobRef.current = null
+  }
+
+  // Révoque l'aperçu local en attente si la page est quittée sans avoir
+  // soumis le formulaire (fermeture d'onglet ou navigation SPA) : pas
+  // d'impact storage (rien n'a été uploadé), juste l'hygiène mémoire du
+  // blob local.
+  useEffect(() => {
+    return () => {
+      if (pendingCoverPreviewUrlRef.current) {
+        URL.revokeObjectURL(pendingCoverPreviewUrlRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     listAllTags().then(setExistingTags).catch(() => {})
@@ -183,6 +210,7 @@ export default function BookForm() {
           text: 'Aucun résultat trouvé pour cet ISBN. Remplis les champs manuellement.',
         })
       } else {
+        if (result.cover_url) clearPendingCover()
         setBook((b) => ({
           ...b,
           title: result.title || b.title,
@@ -237,14 +265,22 @@ export default function BookForm() {
       return
     }
 
-    try {
-      const url = await uploadCover(compressed)
-      set('cover_url', url)
-    } catch {
-      setCoverError("Échec de l'import de l'image. Réessaie.")
-    } finally {
-      setCoverUploading(false)
-    }
+    clearPendingCover()
+    const previewUrl = URL.createObjectURL(compressed)
+    pendingCoverBlobRef.current = compressed
+    pendingCoverPreviewUrlRef.current = previewUrl
+    set('cover_url', previewUrl)
+    setCoverUploading(false)
+  }
+
+  function handleRemoveCover() {
+    clearPendingCover()
+    set('cover_url', '')
+  }
+
+  function handleCoverUrlInput(value) {
+    clearPendingCover()
+    set('cover_url', value)
   }
 
   function handleCoverUpload(e) {
@@ -264,12 +300,31 @@ export default function BookForm() {
     e.preventDefault()
     setSaving(true)
     setError(null)
+
+    // L'upload réel n'a lieu qu'ici, jamais avant : book.cover_url ne
+    // contient qu'un aperçu local (blob:) tant qu'aucun fichier n'a été
+    // choisi côté texte/ISBN. On résout la vraie URL avant de construire le
+    // payload.
+    let coverUrl = book.cover_url
+    let uploadedNewCover = false
+    if (pendingCoverBlobRef.current) {
+      try {
+        coverUrl = await uploadCover(pendingCoverBlobRef.current)
+        uploadedNewCover = true
+      } catch {
+        setError("Échec de l'envoi de la couverture. Réessaie.")
+        setSaving(false)
+        return
+      }
+    }
+
     const cleanEdition = (book.edition ?? []).filter(Boolean)
     const cleanAuthor = (book.author ?? []).filter(Boolean)
     const cleanTranslator = (book.translator ?? []).filter(Boolean)
     const cleanIllustrator = (book.illustrator ?? []).filter(Boolean)
     const payload = {
       ...book,
+      cover_url: coverUrl,
       date_started: book.date_started || null,
       date_finished: book.date_finished || null,
       page_count: book.page_count === '' ? null : Number(book.page_count),
@@ -291,6 +346,7 @@ export default function BookForm() {
         if (previousCoverUrl && previousCoverUrl !== payload.cover_url) {
           deleteCover(previousCoverUrl)
         }
+        clearPendingCover()
         // On revient en arrière (plutôt que naviguer vers la fiche) pour ne
         // pas empiler une entrée d'historique en plus de celle déjà créée
         // par le clic sur "Modifier" — sinon "Retour" depuis la fiche
@@ -298,9 +354,15 @@ export default function BookForm() {
         goBack()
       } else {
         await createBook(payload)
+        clearPendingCover()
         navigate('/')
       }
     } catch (err) {
+      // La cover vient d'être uploadée avec succès mais l'enregistrement du
+      // livre a échoué : sans ce rollback, ce fichier tout juste envoyé
+      // deviendrait orphelin immédiatement, exactement le problème que tout
+      // ce chantier visait à éliminer.
+      if (uploadedNewCover) deleteCover(coverUrl)
       setError(describeError(err))
       setSaving(false)
     }
@@ -638,7 +700,7 @@ export default function BookForm() {
                   <input
                     type="url"
                     value={book.cover_url ?? ''}
-                    onChange={(e) => set('cover_url', e.target.value)}
+                    onChange={(e) => handleCoverUrlInput(e.target.value)}
                     placeholder="https://..."
                     className={inputClass}
                   />
@@ -667,7 +729,7 @@ export default function BookForm() {
                     {book.cover_url && (
                       <button
                         type="button"
-                        onClick={() => set('cover_url', '')}
+                        onClick={handleRemoveCover}
                         className="text-sm text-ink/70 hover:text-stamp underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
                       >
                         Retirer
