@@ -16,7 +16,7 @@ import {
 } from '../lib/books'
 import { lookupIsbn } from '../lib/isbnLookup'
 import { getMissingFields } from '../lib/bookCompleteness'
-import { deleteCover, uploadCover } from '../lib/storage'
+import { compressImage, deleteCover, uploadCover } from '../lib/storage'
 import TagInput from '../components/TagInput'
 import {
   inputClass,
@@ -38,6 +38,12 @@ import CoverLightbox from '../components/CoverLightbox'
 import { STATUS_BORDER_CLASS, STATUS_LABELS } from '../lib/statusLabels'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
+
+// Exclut explicitement HEIC/HEIF (photos par défaut sur iPhone) : le canvas
+// de compressImage ne sait pas les décoder sur Chrome/Firefox. C'est un
+// indice pour le sélecteur de fichier du système, pas une garantie — le
+// glisser-déposer l'ignore et compressImage reste la vraie barrière.
+const COVER_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,image/bmp'
 
 const emptyBook = {
   title: '',
@@ -219,8 +225,20 @@ export default function BookForm() {
 
     setCoverUploading(true)
     setCoverError(null)
+
+    let compressed
     try {
-      const url = await uploadCover(file)
+      compressed = await compressImage(file)
+    } catch {
+      setCoverError(
+        "Format d'image non pris en charge par le navigateur (HEIC ?). Essaie une photo JPEG ou PNG.",
+      )
+      setCoverUploading(false)
+      return
+    }
+
+    try {
+      const url = await uploadCover(compressed)
       set('cover_url', url)
     } catch {
       setCoverError("Échec de l'import de l'image. Réessaie.")
@@ -609,7 +627,7 @@ export default function BookForm() {
                   <input
                     ref={coverFileInputRef}
                     type="file"
-                    accept="image/*"
+                    accept={COVER_ACCEPT}
                     className="sr-only"
                     onChange={handleCoverUpload}
                     disabled={coverUploading}
@@ -629,7 +647,7 @@ export default function BookForm() {
                       {coverUploading ? 'Import…' : 'Importer une image'}
                       <input
                         type="file"
-                        accept="image/*"
+                        accept={COVER_ACCEPT}
                         className="sr-only"
                         onChange={handleCoverUpload}
                         disabled={coverUploading}
@@ -639,7 +657,7 @@ export default function BookForm() {
                       {coverUploading ? 'Import…' : 'Prendre une photo'}
                       <input
                         type="file"
-                        accept="image/*"
+                        accept={COVER_ACCEPT}
                         capture="environment"
                         className="sr-only"
                         onChange={handleCoverUpload}
