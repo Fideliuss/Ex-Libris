@@ -611,9 +611,17 @@ insert into storage.buckets (id, name, public)
 values ('covers', 'covers', true)
 on conflict (id) do nothing;
 
-create policy "Public read access to covers"
+-- Le bucket est public (public = true ci-dessus) : la lecture d'une image
+-- par son URL passe par l'endpoint /object/public/... et ne consulte pas
+-- cette policy. Cette policy select ne gouverne que le listing/l'API
+-- authentifiée (storage.list(), .download()) — la scoper au dossier de
+-- l'utilisateur (même règle que insert/update/delete ci-dessous) évite
+-- qu'un client puisse énumérer les dossiers et fichiers de tous les autres
+-- utilisateurs (avertissement Supabase : "Clients can list all files in
+-- this bucket").
+create policy "Users can list their own covers"
 on storage.objects for select
-using (bucket_id = 'covers');
+using (bucket_id = 'covers' and auth.uid()::text = (storage.foldername(name))[1]);
 
 -- Chaque utilisateur ne peut déposer/modifier/supprimer que des fichiers
 -- dans son propre dossier : covers/<user_id>/...
