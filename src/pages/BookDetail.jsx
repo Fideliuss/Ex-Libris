@@ -2,7 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getBook, getSeriesSiblings, updateBook } from '../lib/books'
 import { getMissingFields } from '../lib/bookCompleteness'
-import { sortEditions, SPECIAL_EDITION_TYPES } from '../lib/editionTypes'
+import {
+  sortEditions,
+  SPECIAL_EDITION_TYPES,
+  FORMAT_TYPES,
+  BINDING_TYPES,
+} from '../lib/editionTypes'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import {
@@ -352,13 +357,21 @@ export default function BookDetail() {
   const isSeriesVolume = SERIES_DRIVEN_TYPES.includes(book.type) && book.series
 
   // Les éditions "spéciale" (Collector, Illustrée...) sortent du lot des
-  // badges texte pour un ruban doré bien visible ; le reste (Format,
-  // Reliure) garde le traitement badge habituel.
+  // badges texte pour un ruban doré bien visible ; Format/Reliure ont leur
+  // propre ligne caractéristiques (voir plus bas) ; le reste (uniquement
+  // les valeurs "Autre" en texte libre) garde le traitement badge habituel.
   const specialEditions = sortEditions(
     (book.edition ?? []).filter((e) => SPECIAL_EDITION_TYPES.includes(e)),
   )
+  const formatValue = (book.edition ?? []).find((e) => FORMAT_TYPES.includes(e))
+  const bindingValue = (book.edition ?? []).find((e) => BINDING_TYPES.includes(e))
   const otherEditions = sortEditions(
-    (book.edition ?? []).filter((e) => !SPECIAL_EDITION_TYPES.includes(e)),
+    (book.edition ?? []).filter(
+      (e) =>
+        !SPECIAL_EDITION_TYPES.includes(e) &&
+        !FORMAT_TYPES.includes(e) &&
+        !BINDING_TYPES.includes(e),
+    ),
   )
 
   const bookOwner = members.find((m) => m.userId === book.user_id)
@@ -519,6 +532,57 @@ export default function BookDetail() {
                 </span>
                 {book.collection && ` · ${book.collection}`}
               </p>
+              {(formatValue || bindingValue) && (
+                <div className="flex items-center gap-3.5 mt-2">
+                  {formatValue && (
+                    <span className="flex items-center gap-1 font-mono text-[11px] uppercase tracking-wide text-brass-fill">
+                      <svg
+                        viewBox="0 0 20 20"
+                        className="w-3.5 h-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        {formatValue === 'Numérique' ? (
+                          <>
+                            <rect x="4" y="3" width="12" height="14" rx="1.5" />
+                            <line x1="7" y1="14.5" x2="13" y2="14.5" />
+                          </>
+                        ) : formatValue === 'Poche' ? (
+                          <rect x="6.5" y="3" width="7" height="14" rx="1" />
+                        ) : (
+                          <rect x="4.5" y="2.5" width="11" height="15" rx="1" />
+                        )}
+                      </svg>
+                      {formatValue}
+                    </span>
+                  )}
+                  {formatValue && bindingValue && (
+                    <span className="w-[3px] h-[3px] rounded-full bg-ink/30" aria-hidden="true" />
+                  )}
+                  {bindingValue && (
+                    <span className="flex items-center gap-1 font-mono text-[11px] uppercase tracking-wide text-brass-fill">
+                      <svg
+                        viewBox="0 0 20 20"
+                        className="w-3.5 h-3.5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <path d="M4 3.5h9a2.5 2.5 0 0 1 2.5 2.5v10a2.5 2.5 0 0 0-2.5-2.5H4Z" />
+                        <line x1="4" y1="3.5" x2="4" y2="13.5" />
+                      </svg>
+                      {bindingValue}
+                    </span>
+                  )}
+                </div>
+              )}
               {otherEditions.length > 0 && (
                 <div className="flex flex-wrap gap-1 mt-1.5">
                   {otherEditions.map((e) => (

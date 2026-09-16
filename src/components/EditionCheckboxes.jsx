@@ -1,12 +1,46 @@
 import { EDITION_GROUPS, EDITION_TYPES } from '../lib/editionTypes'
 import { labelClass } from '../lib/ui'
 
-const checkboxClass =
-  'rounded-sm border-ink/30 text-library-fill focus:outline-none focus-visible:ring-2 focus-visible:ring-library'
+const chipClass =
+  'px-2.5 py-1 text-xs rounded-full border focus:outline-none focus-visible:ring-2 focus-visible:ring-library'
+const chipActiveClass = 'bg-library-fill text-white border-library'
+const chipInactiveClass =
+  'border-ink/20 text-ink/70 hover:border-library hover:text-library'
+
+// Groupe exclusif (Format, Reliure) : un livre n'a physiquement qu'une seule
+// valeur à la fois sur cet axe, donc un sélecteur segmenté (pastilles
+// collées, un seul choix visible en surbrillance) plutôt que des cases à
+// cocher indépendantes qui ne montrent pas cette exclusivité avant d'en
+// cocher deux.
+function SegmentedGroup({ group, value, onToggle }) {
+  return (
+    <div>
+      <p className={`${labelClass} mb-1.5`}>{group.label}</p>
+      <div className="inline-flex rounded-full border border-ink/20 overflow-hidden">
+        {group.types.map((type, i) => {
+          const active = value.includes(type)
+          return (
+            <button
+              key={type}
+              type="button"
+              onClick={() => onToggle(type)}
+              aria-pressed={active}
+              className={`px-3 py-1.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-library focus-visible:ring-inset ${
+                i > 0 ? 'border-l border-ink/10' : ''
+              } ${active ? 'bg-library-fill text-white font-medium' : 'text-ink/70 hover:bg-paper'}`}
+            >
+              {type}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
 
 // Liste fermée (EDITION_TYPES) + une case "Autre" à texte libre pour les cas
 // non prévus : un livre peut cumuler plusieurs éditions (ex: "Illustrée" +
-// "Collector"), d'où des cases à cocher plutôt qu'un choix unique.
+// "Collector"), d'où des chips multi-sélection plutôt qu'un choix unique.
 export default function EditionCheckboxes({ value = [], onChange }) {
   const customValue = value.find((v) => !EDITION_TYPES.includes(v)) ?? ''
   const hasCustom = value.some((v) => !EDITION_TYPES.includes(v))
@@ -40,35 +74,43 @@ export default function EditionCheckboxes({ value = [], onChange }) {
   }
 
   return (
-    <div className="space-y-3">
-      {EDITION_GROUPS.map((group) => (
-        <div key={group.label}>
-          <p className={`${labelClass} mb-1.5`}>{group.label}</p>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-2">
-            {group.types.map((type) => (
-              <label key={type} className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  checked={value.includes(type)}
-                  onChange={() => toggle(type)}
-                  className={checkboxClass}
-                />
-                {type}
-              </label>
-            ))}
+    <div className="space-y-4">
+      {EDITION_GROUPS.map((group) =>
+        group.exclusive ? (
+          <SegmentedGroup key={group.label} group={group} value={value} onToggle={toggle} />
+        ) : (
+          <div key={group.label}>
+            <p className={`${labelClass} mb-1.5`}>{group.label}</p>
+            <div className="flex flex-wrap gap-1.5">
+              {group.types.map((type) => {
+                const active = value.includes(type)
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => toggle(type)}
+                    aria-pressed={active}
+                    className={`${chipClass} ${active ? chipActiveClass : chipInactiveClass}`}
+                  >
+                    {type}
+                  </button>
+                )
+              })}
+            </div>
           </div>
-        </div>
-      ))}
-      <div className="flex items-center gap-2 pt-1 border-t border-ink/10">
-        <label className="flex items-center gap-2 text-sm shrink-0">
-          <input
-            type="checkbox"
-            checked={hasCustom}
-            onChange={toggleCustom}
-            className={checkboxClass}
-          />
-          Autre
-        </label>
+        ),
+      )}
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={toggleCustom}
+          aria-pressed={hasCustom}
+          className={`${chipClass} shrink-0 ${
+            hasCustom ? chipActiveClass : 'border-dashed border-ink/30 text-ink/70 hover:border-library hover:text-library'
+          }`}
+        >
+          + Autre
+        </button>
         {hasCustom && (
           <input
             type="text"
