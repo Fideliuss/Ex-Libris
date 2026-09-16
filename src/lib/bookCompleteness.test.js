@@ -8,6 +8,7 @@ const COMPLETE_BOOK = {
   publisher: 'Gallimard',
   page_count: 159,
   description: 'Un résumé.',
+  edition: ['Poche', 'Broché'],
 }
 
 describe('getMissingFields', () => {
@@ -27,11 +28,27 @@ describe('getMissingFields', () => {
       'Éditeur',
       'Pages',
       'Résumé',
+      'Format',
+      'Reliure',
     ])
   })
 
   it('treats an empty author array as missing', () => {
     expect(getMissingFields({ ...COMPLETE_BOOK, author: [] })).toContain('Auteur')
+  })
+
+  it('flags a missing format', () => {
+    expect(getMissingFields({ ...COMPLETE_BOOK, edition: ['Broché'] })).toContain('Format')
+  })
+
+  it('flags a missing binding for a physical book', () => {
+    expect(getMissingFields({ ...COMPLETE_BOOK, edition: ['Poche'] })).toContain('Reliure')
+  })
+
+  it('does not require a binding for a digital book', () => {
+    expect(getMissingFields({ ...COMPLETE_BOOK, edition: ['Numérique'] })).not.toContain(
+      'Reliure',
+    )
   })
 })
 

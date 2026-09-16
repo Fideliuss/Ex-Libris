@@ -34,6 +34,14 @@ export const SPECIAL_EDITION_TYPES = EDITION_GROUPS.find(
   (group) => group.label === 'Édition spéciale',
 ).types
 
+export const FORMAT_TYPES = EDITION_GROUPS.find(
+  (group) => group.label === 'Format',
+).types
+
+export const BINDING_TYPES = EDITION_GROUPS.find(
+  (group) => group.label === 'Reliure',
+).types
+
 // Un livre "édition spéciale" (Illustrée, Collector, Édition limitée,
 // Édition originale, Intégrale) mérite un traitement visuel à part sur la
 // carte, façon vraie carte de collection.
