@@ -531,7 +531,19 @@ export default function BookForm() {
                     e.preventDefault()
                     setCoverDragActive(true)
                   }}
-                  onDragLeave={() => setCoverDragActive(false)}
+                  onDragLeave={(e) => {
+                    // dragleave se déclenche aussi en passant d'un enfant à
+                    // un autre (l'icône, le texte) à l'intérieur de la
+                    // zone, pas seulement en la quittant vraiment : sans ce
+                    // garde-fou, l'état actif clignote pendant le survol et
+                    // peut faire rater le dépôt. relatedTarget est
+                    // l'élément vers lequel le pointeur se déplace — s'il
+                    // est encore dans la zone, on n'en est pas vraiment
+                    // sorti.
+                    if (!e.currentTarget.contains(e.relatedTarget)) {
+                      setCoverDragActive(false)
+                    }
+                  }}
                   onDrop={handleCoverDrop}
                   className={`w-24 aspect-[2/3] shrink-0 rounded-sm border overflow-hidden flex items-center justify-center transition-colors ${
                     coverDragActive
