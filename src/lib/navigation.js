@@ -1,14 +1,53 @@
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { flushSync } from 'react-dom'
+
+// Nombre de navigations effectuées pendant CETTE session JS (voir
+// useTrackSessionNavigation ci-dessous) — contrairement à
+// window.history.state.idx (posé par React Router mais stocké par le
+// navigateur), qui survit à une pause/reprise de l'app : l'OS peut décharger
+// l'onglet pour libérer de la RAM puis le recharger, ce qui redémarre le JS
+// à zéro mais laisse l'historique du navigateur intact. useGoBack faisait
+// alors confiance à un navigate(-1) qui reculait dans un historique
+// "fantôme" d'avant la pause, sans rapport avec la session en cours — deux
+// pages qui se renvoient l'une à l'autre via useGoBack pouvaient ainsi
+// boucler indéfiniment (bug réel rencontré : fiche livre <-> édition).
+// Une variable de module repart forcément à 0 à chaque (re)chargement du
+// JS, donc ne peut pas hériter de cet état fantôme.
+let sessionNavCount = 0
+
+// À appeler une seule fois, tout en haut de l'arbre (dans <App>, sous
+// <BrowserRouter>) : incrémente le compteur à chaque changement de route
+// après le montage initial. Le premier montage ne compte jamais — sinon un
+// lien partagé ouvert directement sur une fiche livre laisserait croire à
+// une session avec de l'historique alors qu'il n'y en a pas.
+export function useTrackSessionNavigation() {
+  const location = useLocation()
+  const isFirstRender = useRef(true)
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      // Annule ce flag au "démontage" : en dev, StrictMode monte l'effet,
+      // le nettoie, puis le remonte immédiatement pour simuler un
+      // remount — sans ce reset, cette seconde passe verrait le flag déjà à
+      // false et compterait à tort le montage initial comme une navigation.
+      return () => {
+        isFirstRender.current = true
+      }
+    }
+    sessionNavCount += 1
+  }, [location])
+}
 
 // Un lien "Retour" qui revient à la page précédente (préservant filtres,
 // recherche, tri...) au lieu de toujours renvoyer vers une URL fixe qui
 // perdrait cet état. Si on arrive directement sur la page (pas d'historique
-// dans l'app, ex: lien partagé), on retombe sur `fallback`.
+// dans cette session, ex: lien partagé, ou pause/reprise de l'app), on
+// retombe sur `fallback`.
 export function useGoBack(fallback = '/') {
   const navigate = useNavigate()
   return () => {
-    if (window.history.state?.idx > 0) {
+    if (sessionNavCount > 0) {
       navigate(-1)
     } else {
       navigate(fallback)

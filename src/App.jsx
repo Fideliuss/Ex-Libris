@@ -5,6 +5,7 @@ import { TutorialProvider } from './context/TutorialContext'
 import { ChangelogProvider } from './context/ChangelogContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import LoadingScreen from './components/LoadingScreen'
+import { useTrackSessionNavigation } from './lib/navigation'
 
 // Découpage par route : chaque page part dans son propre chunk, chargé au
 // premier accès à son URL plutôt que d'être bundlé pour tout le monde dans
@@ -22,6 +23,7 @@ const LegalNotice = lazy(() => import('./pages/LegalNotice'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 
 function App() {
+  useTrackSessionNavigation()
   return (
     <AuthProvider>
       <TutorialProvider>
