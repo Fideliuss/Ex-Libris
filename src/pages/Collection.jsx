@@ -411,13 +411,13 @@ export default function Collection() {
     return direction === 'desc' ? (a, b) => -compare(a, b) : compare
   }, [sort, direction])
 
-  const sortedIncompleteBooks = useMemo(
-    () => [...incompleteBooks].sort(effectiveCompare),
-    [incompleteBooks, effectiveCompare],
-  )
-
   const filteredBooks = useMemo(() => {
-    const pool = collectionTab === 'wishlist' ? wishlistBooks : collectionBooks
+    const pool =
+      collectionTab === 'wishlist'
+        ? wishlistBooks
+        : collectionTab === 'todo'
+          ? incompleteBooks
+          : collectionBooks
     const query = search.trim().toLowerCase()
     return pool.filter((book) => {
       if (query) {
@@ -444,6 +444,7 @@ export default function Collection() {
     collectionTab,
     collectionBooks,
     wishlistBooks,
+    incompleteBooks,
     search,
     selectedTags,
     publisher,
@@ -461,8 +462,7 @@ export default function Collection() {
     [filteredBooks, effectiveCompare],
   )
 
-  const visibleBooks =
-    collectionTab === 'todo' ? sortedIncompleteBooks : sortedBooks
+  const visibleBooks = sortedBooks
 
   // Une entrée "header" avant chaque nouveau groupe (lettre/mois/statut),
   // ou juste les livres si le tri actif ne se groupe pas (note, tome).
@@ -822,7 +822,9 @@ export default function Collection() {
         {!loading &&
           !error &&
           books.length > 0 &&
-          (collectionTab === 'collection' || collectionTab === 'wishlist') && (
+          (collectionTab === 'collection' ||
+            collectionTab === 'wishlist' ||
+            collectionTab === 'todo') && (
             <CollectionFilters
               search={search}
               onSearchChange={setSearch}
@@ -910,7 +912,9 @@ export default function Collection() {
               Tout est encore dans la wishlist pour l'instant.
             </p>
           </div>
-        ) : (collectionTab === 'collection' || collectionTab === 'wishlist') &&
+        ) : (collectionTab === 'collection' ||
+            collectionTab === 'wishlist' ||
+            collectionTab === 'todo') &&
           filteredBooks.length === 0 ? (
           <div className="text-center py-16">
             <p className="font-serif text-xl mb-2">
@@ -951,6 +955,7 @@ export default function Collection() {
                     <>
                       {visibleBooks.length} livre
                       {visibleBooks.length > 1 ? 's' : ''} à compléter
+                      {hasActiveFilters ? ` sur ${incompleteBooks.length}` : ''}
                     </>
                   ) : collectionTab === 'wishlist' ? (
                     <>
