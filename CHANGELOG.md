@@ -9,6 +9,12 @@ l'app. Pour le pop-up "Quoi de neuf" vu par l'utilisateur, voir
 `src/lib/whatsNew.js`, à tenir à jour en parallèle (voir README.md,
 section GitFlow).
 
+## 1.12.1 (2026-10-02)
+
+### Bug Fixes
+
+* the household member selection (EXL A.6, v1.12.0) never actually persisted across pages in production: a per-route error boundary was wrapping the entire app and keyed on the URL, so it fully remounted every provider — including the one holding that selection — on every single navigation, not just after a crash ([#146](https://github.com/Fideliuss/Ex-Libris/pull/146))
+
 ## 1.12.0 (2026-10-01)
 
 ### Features
