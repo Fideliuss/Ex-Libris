@@ -551,6 +551,21 @@ export default function Collection() {
       status,
   )
 
+  // Une recherche/filtre sans résultat dans Collection ou Wishlist peut très
+  // bien avoir une correspondance dans l'autre onglet (ex: un titre encore
+  // en wishlist alors qu'on est sur Collection) — sans indice, ça ressemble
+  // à "ce livre n'existe pas" plutôt qu'à "il est juste ailleurs" (EXL D.2).
+  // "À compléter" n'est pas concerné : c'est un sous-ensemble de Collection
+  // (les livres incomplets qu'on possède déjà), donc une absence là n'a pas
+  // la même ambiguïté — soit le livre est complet, soit il est en wishlist
+  // et Collection le signale déjà.
+  const otherTabMatchCount = useMemo(() => {
+    if (collectionTab !== 'collection' && collectionTab !== 'wishlist') return 0
+    if (filteredBooks.length > 0) return 0
+    const otherPool = collectionTab === 'collection' ? wishlistBooks : collectionBooks
+    return otherPool.filter((b) => bookMatchesFilters(b, filters, null)).length
+  }, [collectionTab, filteredBooks, wishlistBooks, collectionBooks, filters])
+
   function resetFilters() {
     setSearchParams(
       (prev) => {
@@ -922,7 +937,26 @@ export default function Collection() {
               Aucun livre ne correspond
             </p>
             <p className="text-sm text-ink/70 mb-6">
-              Essaie d'autres critères de recherche ou de filtres.
+              {otherTabMatchCount > 0 ? (
+                <>
+                  Essaie d'autres critères, ou{' '}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCollectionTab(
+                        collectionTab === 'collection' ? 'wishlist' : 'collection',
+                      )
+                    }
+                    className="text-library underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                  >
+                    {otherTabMatchCount} résultat
+                    {otherTabMatchCount > 1 ? 's' : ''} dans{' '}
+                    {collectionTab === 'collection' ? 'la Wishlist' : 'la Collection'} →
+                  </button>
+                </>
+              ) : (
+                "Essaie d'autres critères de recherche ou de filtres."
+              )}
             </p>
             <button
               type="button"
