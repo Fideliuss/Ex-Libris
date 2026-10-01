@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { bulkDeleteBooks, bulkUpdateBooks } from '../lib/books'
 import { isBookIncomplete } from '../lib/bookCompleteness'
+import { bookMatchesFilters } from '../lib/collectionFilters'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import { describeError } from '../lib/errors'
 import BookCard from '../components/BookCard'
@@ -311,13 +312,39 @@ export default function Collection() {
     requestAnimationFrame(() => window.scrollTo(0, Number(saved)))
   }, [loading])
 
+  // Un filtre actif réduit les options proposées par les AUTRES filtres —
+  // sélectionner Type = Manga ne laisse plus apparaître, dans la liste
+  // Auteur, que les auteurs ayant au moins un manga, au lieu de toujours
+  // proposer tous les auteurs de toute la bibliothèque (EXL D.1). Chaque
+  // liste d'options ci-dessous s'appuie donc sur bookMatchesFilters avec
+  // elle-même exclue (sinon cocher une valeur la ferait disparaître de sa
+  // propre liste) — voir collectionFilters.js pour la logique et ses tests.
+  // `filters` est mémoïsé séparément pour que chaque useMemo n'ait besoin
+  // que de `books` et de cette seule référence stable en dépendance.
+  const filters = useMemo(
+    () => ({
+      search,
+      selectedTags,
+      publisher,
+      author,
+      collection,
+      edition,
+      series,
+      universe,
+      type,
+      status,
+    }),
+    [search, selectedTags, publisher, author, collection, edition, series, universe, type, status],
+  )
+
   const tags = useMemo(() => {
+    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'tags'))
     const set = new Set()
-    for (const book of books) {
+    for (const book of pool) {
       for (const t of book.tags ?? []) set.add(t)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books])
+  }, [books, filters])
 
   const selectedBooksTags = useMemo(() => {
     const set = new Set()
@@ -329,58 +356,65 @@ export default function Collection() {
   }, [books, selectedIds])
 
   const publishers = useMemo(() => {
+    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'publisher'))
     const set = new Set()
-    for (const book of books) {
+    for (const book of pool) {
       if (book.publisher) set.add(book.publisher)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books])
+  }, [books, filters])
 
   const authors = useMemo(() => {
+    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'author'))
     const set = new Set()
-    for (const book of books) {
+    for (const book of pool) {
       for (const a of book.author ?? []) set.add(a)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books])
+  }, [books, filters])
 
   const collections = useMemo(() => {
+    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'collection'))
     const set = new Set()
-    for (const book of books) {
+    for (const book of pool) {
       if (book.collection) set.add(book.collection)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books])
+  }, [books, filters])
 
   const editions = useMemo(() => {
+    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'edition'))
     const set = new Set()
-    for (const book of books) {
+    for (const book of pool) {
       for (const e of book.edition ?? []) set.add(e)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books])
+  }, [books, filters])
 
   const seriesList = useMemo(() => {
+    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'series'))
     const set = new Set()
-    for (const book of books) {
+    for (const book of pool) {
       if (book.series) set.add(book.series)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books])
+  }, [books, filters])
 
   const universeList = useMemo(() => {
+    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'universe'))
     const set = new Set()
-    for (const book of books) {
+    for (const book of pool) {
       if (book.universe) set.add(book.universe)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books])
+  }, [books, filters])
 
   const statusCounts = useMemo(() => {
+    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'status'))
     const counts = {}
-    for (const book of books) counts[book.status] = (counts[book.status] ?? 0) + 1
+    for (const book of pool) counts[book.status] = (counts[book.status] ?? 0) + 1
     return counts
-  }, [books])
+  }, [books, filters])
 
   // La wishlist a son propre onglet (voir plus bas) : la Collection
   // elle-même ne montre que ce qui est vraiment possédé, pas ce qu'on
@@ -418,44 +452,11 @@ export default function Collection() {
         : collectionTab === 'todo'
           ? incompleteBooks
           : collectionBooks
-    const query = search.trim().toLowerCase()
-    return pool.filter((book) => {
-      if (query) {
-        const isbn = (book.isbn ?? '').replace(/[\s-]/g, '')
-        const haystack = `${book.title} ${(book.author ?? []).join(' ')} ${isbn}`.toLowerCase()
-        if (!haystack.includes(query)) return false
-      }
-      if (
-        selectedTags.length > 0 &&
-        !selectedTags.some((t) => book.tags?.includes(t))
-      )
-        return false
-      if (publisher && book.publisher !== publisher) return false
-      if (author && !book.author?.includes(author)) return false
-      if (collection && book.collection !== collection) return false
-      if (edition && !book.edition?.includes(edition)) return false
-      if (series && book.series !== series) return false
-      if (universe && book.universe !== universe) return false
-      if (type && book.type !== type) return false
-      if (status && book.status !== status) return false
-      return true
-    })
-  }, [
-    collectionTab,
-    collectionBooks,
-    wishlistBooks,
-    incompleteBooks,
-    search,
-    selectedTags,
-    publisher,
-    author,
-    collection,
-    edition,
-    series,
-    universe,
-    type,
-    status,
-  ])
+    // Aucune exclusion : la liste réellement affichée respecte tous les
+    // filtres actifs, contrairement aux listes d'options ci-dessus qui en
+    // excluent chacune un pour rester choisissables.
+    return pool.filter((book) => bookMatchesFilters(book, filters, null))
+  }, [collectionTab, collectionBooks, wishlistBooks, incompleteBooks, filters])
 
   const sortedBooks = useMemo(
     () => [...filteredBooks].sort(effectiveCompare),
