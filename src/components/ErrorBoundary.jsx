@@ -42,6 +42,16 @@ class ErrorBoundaryImpl extends Component {
 // Remonte (donc réinitialise) la boundary à chaque changement de page : une
 // erreur sur un écran ne doit pas empêcher de naviguer ailleurs pour s'en
 // sortir, seul un rechargement complet le faisait avant.
+//
+// Monté dans App.jsx, sous les providers (Auth, HouseholdView...) et pas
+// autour de <App/> dans main.jsx comme avant : changer la `key` d'un
+// composant le démonte et remonte entièrement, lui ET tout ce qu'il
+// contient. Au-dessus des providers, ça les remontait aussi à chaque
+// navigation — un `useState` censé survivre d'une page à l'autre (la
+// sélection du foyer partagé, EXL A.6) repartait alors à zéro à chaque
+// clic, sans erreur ni requête réseau pour le trahir (bug réel, long à
+// diagnostiquer). Ne jamais remonter cette boundary au-dessus d'un
+// provider qui doit tenir sur plusieurs pages.
 export default function ErrorBoundary({ children }) {
   const location = useLocation()
   return (
