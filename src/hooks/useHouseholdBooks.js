@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { useHouseholdView } from '../context/HouseholdViewContext'
 import { listBooks } from '../lib/books'
 import { getMyHousehold } from '../lib/household'
 import { describeError } from '../lib/errors'
@@ -11,9 +12,10 @@ export function useHouseholdBooks() {
   const { user } = useAuth()
   const [members, setMembers] = useState([])
   // null = pas de choix explicite, on regarde ses propres livres par
-  // défaut ; évite d'avoir à synchroniser ownerId sur user.id dans un
-  // effet (user n'est pas connu tout de suite au montage).
-  const [selectedId, setSelectedId] = useState(null)
+  // défaut. La sélection elle-même vit dans HouseholdViewContext (partagée
+  // entre Collection/Stats/Succès) plutôt qu'un useState local ici, pour
+  // tenir d'une page à l'autre au lieu de repartir de zéro à chaque montage.
+  const { selectedId, setSelectedId } = useHouseholdView()
   const [allBooks, setAllBooks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
