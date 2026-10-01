@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { bulkDeleteBooks, bulkUpdateBooks } from '../lib/books'
 import { isBookIncomplete } from '../lib/bookCompleteness'
+import { bookMatchesFilters } from '../lib/collectionFilters'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import { describeError } from '../lib/errors'
 import BookCard from '../components/BookCard'
@@ -311,13 +312,39 @@ export default function Collection() {
     requestAnimationFrame(() => window.scrollTo(0, Number(saved)))
   }, [loading])
 
+  // Un filtre actif réduit les options proposées par les AUTRES filtres —
+  // sélectionner Type = Manga ne laisse plus apparaître, dans la liste
+  // Auteur, que les auteurs ayant au moins un manga, au lieu de toujours
+  // proposer tous les auteurs de toute la bibliothèque (EXL D.1). Chaque
+  // liste d'options ci-dessous s'appuie donc sur bookMatchesFilters avec
+  // elle-même exclue (sinon cocher une valeur la ferait disparaître de sa
+  // propre liste) — voir collectionFilters.js pour la logique et ses tests.
+  // `filters` est mémoïsé séparément pour que chaque useMemo n'ait besoin
+  // que de `books` et de cette seule référence stable en dépendance.
+  const filters = useMemo(
+    () => ({
+      search,
+      selectedTags,
+      publisher,
+      author,
+      collection,
+      edition,
+      series,
+      universe,
+      type,
+      status,
+    }),
+    [search, selectedTags, publisher, author, collection, edition, series, universe, type, status],
+  )
+
   const tags = useMemo(() => {
+    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'tags'))
     const set = new Set()
-    for (const book of books) {
+    for (const book of pool) {
       for (const t of book.tags ?? []) set.add(t)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books])
+  }, [books, filters])
 
   const selectedBooksTags = useMemo(() => {
     const set = new Set()
@@ -329,58 +356,65 @@ export default function Collection() {
   }, [books, selectedIds])
 
   const publishers = useMemo(() => {
+    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'publisher'))
     const set = new Set()
-    for (const book of books) {
+    for (const book of pool) {
       if (book.publisher) set.add(book.publisher)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books])
+  }, [books, filters])
 
   const authors = useMemo(() => {
+    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'author'))
     const set = new Set()
-    for (const book of books) {
+    for (const book of pool) {
       for (const a of book.author ?? []) set.add(a)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books])
+  }, [books, filters])
 
   const collections = useMemo(() => {
+    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'collection'))
     const set = new Set()
-    for (const book of books) {
+    for (const book of pool) {
       if (book.collection) set.add(book.collection)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books])
+  }, [books, filters])
 
   const editions = useMemo(() => {
+    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'edition'))
     const set = new Set()
-    for (const book of books) {
+    for (const book of pool) {
       for (const e of book.edition ?? []) set.add(e)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books])
+  }, [books, filters])
 
   const seriesList = useMemo(() => {
+    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'series'))
     const set = new Set()
-    for (const book of books) {
+    for (const book of pool) {
       if (book.series) set.add(book.series)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books])
+  }, [books, filters])
 
   const universeList = useMemo(() => {
+    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'universe'))
     const set = new Set()
-    for (const book of books) {
+    for (const book of pool) {
       if (book.universe) set.add(book.universe)
     }
     return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books])
+  }, [books, filters])
 
   const statusCounts = useMemo(() => {
+    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'status'))
     const counts = {}
-    for (const book of books) counts[book.status] = (counts[book.status] ?? 0) + 1
+    for (const book of pool) counts[book.status] = (counts[book.status] ?? 0) + 1
     return counts
-  }, [books])
+  }, [books, filters])
 
   // La wishlist a son propre onglet (voir plus bas) : la Collection
   // elle-même ne montre que ce qui est vraiment possédé, pas ce qu'on
@@ -411,58 +445,25 @@ export default function Collection() {
     return direction === 'desc' ? (a, b) => -compare(a, b) : compare
   }, [sort, direction])
 
-  const sortedIncompleteBooks = useMemo(
-    () => [...incompleteBooks].sort(effectiveCompare),
-    [incompleteBooks, effectiveCompare],
-  )
-
   const filteredBooks = useMemo(() => {
-    const pool = collectionTab === 'wishlist' ? wishlistBooks : collectionBooks
-    const query = search.trim().toLowerCase()
-    return pool.filter((book) => {
-      if (query) {
-        const isbn = (book.isbn ?? '').replace(/[\s-]/g, '')
-        const haystack = `${book.title} ${(book.author ?? []).join(' ')} ${isbn}`.toLowerCase()
-        if (!haystack.includes(query)) return false
-      }
-      if (
-        selectedTags.length > 0 &&
-        !selectedTags.some((t) => book.tags?.includes(t))
-      )
-        return false
-      if (publisher && book.publisher !== publisher) return false
-      if (author && !book.author?.includes(author)) return false
-      if (collection && book.collection !== collection) return false
-      if (edition && !book.edition?.includes(edition)) return false
-      if (series && book.series !== series) return false
-      if (universe && book.universe !== universe) return false
-      if (type && book.type !== type) return false
-      if (status && book.status !== status) return false
-      return true
-    })
-  }, [
-    collectionTab,
-    collectionBooks,
-    wishlistBooks,
-    search,
-    selectedTags,
-    publisher,
-    author,
-    collection,
-    edition,
-    series,
-    universe,
-    type,
-    status,
-  ])
+    const pool =
+      collectionTab === 'wishlist'
+        ? wishlistBooks
+        : collectionTab === 'todo'
+          ? incompleteBooks
+          : collectionBooks
+    // Aucune exclusion : la liste réellement affichée respecte tous les
+    // filtres actifs, contrairement aux listes d'options ci-dessus qui en
+    // excluent chacune un pour rester choisissables.
+    return pool.filter((book) => bookMatchesFilters(book, filters, null))
+  }, [collectionTab, collectionBooks, wishlistBooks, incompleteBooks, filters])
 
   const sortedBooks = useMemo(
     () => [...filteredBooks].sort(effectiveCompare),
     [filteredBooks, effectiveCompare],
   )
 
-  const visibleBooks =
-    collectionTab === 'todo' ? sortedIncompleteBooks : sortedBooks
+  const visibleBooks = sortedBooks
 
   // Une entrée "header" avant chaque nouveau groupe (lettre/mois/statut),
   // ou juste les livres si le tri actif ne se groupe pas (note, tome).
@@ -549,6 +550,21 @@ export default function Collection() {
       type ||
       status,
   )
+
+  // Une recherche/filtre sans résultat dans Collection ou Wishlist peut très
+  // bien avoir une correspondance dans l'autre onglet (ex: un titre encore
+  // en wishlist alors qu'on est sur Collection) — sans indice, ça ressemble
+  // à "ce livre n'existe pas" plutôt qu'à "il est juste ailleurs" (EXL D.2).
+  // "À compléter" n'est pas concerné : c'est un sous-ensemble de Collection
+  // (les livres incomplets qu'on possède déjà), donc une absence là n'a pas
+  // la même ambiguïté — soit le livre est complet, soit il est en wishlist
+  // et Collection le signale déjà.
+  const otherTabMatchCount = useMemo(() => {
+    if (collectionTab !== 'collection' && collectionTab !== 'wishlist') return 0
+    if (filteredBooks.length > 0) return 0
+    const otherPool = collectionTab === 'collection' ? wishlistBooks : collectionBooks
+    return otherPool.filter((b) => bookMatchesFilters(b, filters, null)).length
+  }, [collectionTab, filteredBooks, wishlistBooks, collectionBooks, filters])
 
   function resetFilters() {
     setSearchParams(
@@ -822,7 +838,9 @@ export default function Collection() {
         {!loading &&
           !error &&
           books.length > 0 &&
-          (collectionTab === 'collection' || collectionTab === 'wishlist') && (
+          (collectionTab === 'collection' ||
+            collectionTab === 'wishlist' ||
+            collectionTab === 'todo') && (
             <CollectionFilters
               search={search}
               onSearchChange={setSearch}
@@ -910,14 +928,35 @@ export default function Collection() {
               Tout est encore dans la wishlist pour l'instant.
             </p>
           </div>
-        ) : (collectionTab === 'collection' || collectionTab === 'wishlist') &&
+        ) : (collectionTab === 'collection' ||
+            collectionTab === 'wishlist' ||
+            collectionTab === 'todo') &&
           filteredBooks.length === 0 ? (
           <div className="text-center py-16">
             <p className="font-serif text-xl mb-2">
               Aucun livre ne correspond
             </p>
             <p className="text-sm text-ink/70 mb-6">
-              Essaie d'autres critères de recherche ou de filtres.
+              {otherTabMatchCount > 0 ? (
+                <>
+                  Essaie d'autres critères, ou{' '}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setCollectionTab(
+                        collectionTab === 'collection' ? 'wishlist' : 'collection',
+                      )
+                    }
+                    className="text-library underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+                  >
+                    {otherTabMatchCount} résultat
+                    {otherTabMatchCount > 1 ? 's' : ''} dans{' '}
+                    {collectionTab === 'collection' ? 'la Wishlist' : 'la Collection'} →
+                  </button>
+                </>
+              ) : (
+                "Essaie d'autres critères de recherche ou de filtres."
+              )}
             </p>
             <button
               type="button"
@@ -951,6 +990,7 @@ export default function Collection() {
                     <>
                       {visibleBooks.length} livre
                       {visibleBooks.length > 1 ? 's' : ''} à compléter
+                      {hasActiveFilters ? ` sur ${incompleteBooks.length}` : ''}
                     </>
                   ) : collectionTab === 'wishlist' ? (
                     <>

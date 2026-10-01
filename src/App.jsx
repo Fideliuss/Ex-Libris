@@ -3,8 +3,10 @@ import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { TutorialProvider } from './context/TutorialContext'
 import { ChangelogProvider } from './context/ChangelogContext'
+import { HouseholdViewProvider } from './context/HouseholdViewContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import LoadingScreen from './components/LoadingScreen'
+import { useTrackSessionNavigation } from './lib/navigation'
 
 // Découpage par route : chaque page part dans son propre chunk, chargé au
 // premier accès à son URL plutôt que d'être bundlé pour tout le monde dans
@@ -22,29 +24,32 @@ const LegalNotice = lazy(() => import('./pages/LegalNotice'))
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'))
 
 function App() {
+  useTrackSessionNavigation()
   return (
     <AuthProvider>
-      <TutorialProvider>
-        <ChangelogProvider>
-          <Suspense fallback={<LoadingScreen />}>
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/mentions-legales" element={<LegalNotice />} />
-              <Route path="/confidentialite" element={<PrivacyPolicy />} />
-              <Route element={<ProtectedRoute />}>
-                <Route path="/account" element={<Account />} />
-                <Route path="/books/new" element={<BookForm />} />
-                <Route path="/books/:id" element={<BookDetail />} />
-                <Route path="/books/:id/edit" element={<BookForm />} />
-                <Route path="/stats" element={<Stats />} />
-                <Route path="/succes" element={<Achievements />} />
-              </Route>
-            </Routes>
-          </Suspense>
-        </ChangelogProvider>
-      </TutorialProvider>
+      <HouseholdViewProvider>
+        <TutorialProvider>
+          <ChangelogProvider>
+            <Suspense fallback={<LoadingScreen />}>
+              <Routes>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/mentions-legales" element={<LegalNotice />} />
+                <Route path="/confidentialite" element={<PrivacyPolicy />} />
+                <Route element={<ProtectedRoute />}>
+                  <Route path="/account" element={<Account />} />
+                  <Route path="/books/new" element={<BookForm />} />
+                  <Route path="/books/:id" element={<BookDetail />} />
+                  <Route path="/books/:id/edit" element={<BookForm />} />
+                  <Route path="/stats" element={<Stats />} />
+                  <Route path="/succes" element={<Achievements />} />
+                </Route>
+              </Routes>
+            </Suspense>
+          </ChangelogProvider>
+        </TutorialProvider>
+      </HouseholdViewProvider>
     </AuthProvider>
   )
 }
