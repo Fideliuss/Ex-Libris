@@ -9,6 +9,16 @@
 // prend du recul sur tout ce qui vient d'être livré d'un coup.
 export const WHATS_NEW = [
   {
+    id: '2026-10-smarter-filters',
+    title: 'Des filtres plus malins',
+    items: [
+      'Les filtres de la Collection se resserrent maintenant entre eux : choisir un type (ou toute autre option) ne propose plus que ce qui existe vraiment dans ce sous-ensemble.',
+      'Les filtres sont maintenant aussi disponibles sur l’onglet "À compléter", et une recherche sans résultat te propose d’aller voir dans l’autre onglet (Collection ↔ Wishlist).',
+      'Changer de membre du foyer ne se réinitialise plus en changeant de page (Stats, Succès, retour d’une fiche).',
+      'Un bug qui pouvait bloquer la navigation avec "Retour" après une mise en veille de l’app est corrigé.',
+    ],
+  },
+  {
     id: '2026-09-format-reliure-webp',
     title: 'Format et reliure repensés',
     items: [

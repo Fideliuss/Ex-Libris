@@ -9,6 +9,19 @@ l'app. Pour le pop-up "Quoi de neuf" vu par l'utilisateur, voir
 `src/lib/whatsNew.js`, à tenir à jour en parallèle (voir README.md,
 section GitFlow).
 
+## 1.12.0 (2026-10-01)
+
+### Features
+
+* Collection filters now narrow each other down — selecting a type or any other filter only offers matching values in the remaining filters, instead of listing every value in the whole library ([#142](https://github.com/Fideliuss/Ex-Libris/pull/142))
+* filters are now available on the "À compléter" tab, not just Collection and Wishlist ([#141](https://github.com/Fideliuss/Ex-Libris/pull/141))
+* a filtered search with no results in Collection or Wishlist now offers a shortcut to the matching results in the other tab, instead of looking like the book doesn't exist ([#143](https://github.com/Fideliuss/Ex-Libris/pull/143))
+
+### Bug Fixes
+
+* the book detail and edit form's "back" button could loop between the two pages after the app was resumed from being backgrounded/discarded by the OS, with no way out except closing it ([#139](https://github.com/Fideliuss/Ex-Libris/pull/139))
+* viewing a household member's library then navigating to Stats, Succès, or back from a book detail page silently reset the view to your own library ([#140](https://github.com/Fideliuss/Ex-Libris/pull/140))
+
 ## 1.11.0 (2026-09-16)
 
 ### Features
