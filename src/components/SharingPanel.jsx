@@ -27,7 +27,7 @@ function initials(label) {
 
 export default function SharingPanel({ user }) {
   const { profile } = useProfile() // undefined = chargement, null = compte sans profil
-  const { refreshMembers } = useLibraryData()
+  const { refreshMembers, invalidate } = useLibraryData()
   const [household, setHousehold] = useState(undefined)
   const [tab, setTab] = useState('membres')
   const [codeInput, setCodeInput] = useState('')
@@ -56,8 +56,11 @@ export default function SharingPanel({ user }) {
     try {
       await fn()
       await loadHousehold()
-      // Le sélecteur de foyer des pages Collection/Stats/Succès doit suivre.
+      // Le sélecteur de foyer des pages Collection/Stats/Succès doit suivre, et
+      // les livres visibles changent (invitation acceptée, membre retiré...) :
+      // le cache est marqué périmé pour que la prochaine page le recharge.
       refreshMembers()
+      invalidate()
     } catch (err) {
       setError(describeError(err))
     } finally {
