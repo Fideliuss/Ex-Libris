@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import { useCollectionFilters } from '../hooks/useCollectionFilters'
 import { useSignOut } from '../hooks/useSignOut'
 import { useAuth } from '../context/AuthContext'
 import { bulkDeleteBooks, bulkSetField, bulkUpdateBooks } from '../lib/books'
@@ -15,6 +16,7 @@ import BulkActionBar from '../components/BulkActionBar'
 import HouseholdSwitchBadge from '../components/HouseholdSwitchBadge'
 import TabBar from '../components/TabBar'
 import LoadingScreen from '../components/LoadingScreen'
+import EmptyState from '../components/EmptyState'
 import AlphabetIndex from '../components/AlphabetIndex'
 import {
   STATUS_LABELS,
@@ -25,7 +27,7 @@ import {
 import { authorSortKey } from '../lib/authorSort'
 import { parseDateOnly } from '../lib/dates'
 import { prefersReducedMotion } from '../lib/motion'
-import { safeLocal, safeSession } from '../lib/safeStorage'
+import { safeSession } from '../lib/safeStorage'
 import { primaryButtonClass, secondaryButtonClass, labelClass } from '../lib/ui'
 
 // Départage à l'alphabétique (titre) toute égalité de tri : deux livres du
@@ -97,30 +99,6 @@ const SORT_GROUPS = [
 
 const SCROLL_KEY = 'exlibris:collectionScroll'
 
-function sortStorageKey(userId) {
-  return `exlibris:${userId ?? 'anon'}:collectionSort`
-}
-
-function directionStorageKey(userId) {
-  return `exlibris:${userId ?? 'anon'}:collectionSortDir`
-}
-
-function readStoredSort(userId) {
-  return safeLocal.get(sortStorageKey(userId))
-}
-
-function writeStoredSort(userId, value) {
-  safeLocal.set(sortStorageKey(userId), value)
-}
-
-function readStoredDirection(userId) {
-  return safeLocal.get(directionStorageKey(userId))
-}
-
-function writeStoredDirection(userId, value) {
-  safeLocal.set(directionStorageKey(userId), value)
-}
-
 function monthLabel(date) {
   return new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(
     date,
@@ -178,77 +156,26 @@ export default function Collection() {
   const selectedLabel = selectedMember?.displayName ?? selectedMember?.email
   const handleSignOut = useSignOut()
 
-  // Filtres/tri/recherche vivent dans l'URL (et non un useState local) pour
-  // survivre à un aller-retour vers la fiche d'un livre : la page se
-  // démonte/remonte à chaque navigation, un useState repartirait à zéro.
-  const [searchParams, setSearchParams] = useSearchParams()
-
-  const search = searchParams.get('q') ?? ''
-  // Mémoïsé sur searchParams : getAll() renvoie un nouveau tableau à chaque
-  // appel, ce qui invaliderait `filters` (et tous les calculs en aval) à
-  // chaque render, même sans changement d'URL.
-  const selectedTags = useMemo(() => searchParams.getAll('tag'), [searchParams])
-  const publisher = searchParams.get('publisher') ?? ''
-  const author = searchParams.get('author') ?? ''
-  const collection = searchParams.get('collection') ?? ''
-  const edition = searchParams.get('edition') ?? ''
-  const series = searchParams.get('series') ?? ''
-  const universe = searchParams.get('universe') ?? ''
-  const type = searchParams.get('type') ?? ''
-  const status = searchParams.get('status') ?? ''
-  const sort = searchParams.get('sort') ?? readStoredSort(user?.id) ?? 'title'
-  const direction =
-    (searchParams.get('dir') ?? readStoredDirection(user?.id)) === 'desc'
-      ? 'desc'
-      : 'asc'
-  const collectionTab = searchParams.get('tab') ?? 'collection'
-
-  function setParam(key, value) {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev)
-        if (!value) next.delete(key)
-        else next.set(key, value)
-        return next
-      },
-      { replace: true },
-    )
-  }
-
-  const setSearch = (value) => setParam('q', value)
-  const setPublisher = (value) => setParam('publisher', value)
-  const setAuthor = (value) => setParam('author', value)
-  const setCollection = (value) => setParam('collection', value)
-  const setEdition = (value) => setParam('edition', value)
-  const setUniverse = (value) => setParam('universe', value)
-  const setType = (value) => setParam('type', value)
-  const setStatus = (value) => setParam('status', value)
-  function setSort(value) {
-    setParam('sort', value)
-    writeStoredSort(user?.id, value)
-  }
-
-  function toggleDirection() {
-    const next = direction === 'desc' ? 'asc' : 'desc'
-    setParam('dir', next === 'asc' ? null : next)
-    writeStoredDirection(user?.id, next)
-  }
+  const {
+    filters,
+    hasActiveFilters,
+    setFilter,
+    setSelectedTags,
+    setSeries,
+    resetFilters,
+    sort,
+    setSort,
+    direction,
+    toggleDirection,
+    collectionTab,
+    setCollectionTab: setTab,
+  } = useCollectionFilters(user?.id)
+  const { search, selectedTags, publisher, author, collection, edition, series, universe, type, status } =
+    filters
 
   function setCollectionTab(next) {
-    setParam('tab', next === 'collection' ? null : next)
+    setTab(next)
     exitSelectionMode()
-  }
-
-  function setSelectedTags(nextTags) {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev)
-        next.delete('tag')
-        for (const t of nextTags) next.append('tag', t)
-        return next
-      },
-      { replace: true },
-    )
   }
 
   const [selectionMode, setSelectionMode] = useState(false)
@@ -287,31 +214,10 @@ export default function Collection() {
     requestAnimationFrame(() => window.scrollTo(0, Number(saved)))
   }, [loading])
 
-  // Un filtre actif réduit les options proposées par les AUTRES filtres —
+  // Un filtre actif réduit les options proposées par les AUTRES filtres :
   // sélectionner Type = Manga ne laisse plus apparaître, dans la liste
-  // Auteur, que les auteurs ayant au moins un manga, au lieu de toujours
-  // proposer tous les auteurs de toute la bibliothèque (EXL D.1). Chaque
-  // liste d'options ci-dessous s'appuie donc sur bookMatchesFilters avec
-  // elle-même exclue (sinon cocher une valeur la ferait disparaître de sa
-  // propre liste) — voir collectionFilters.js pour la logique et ses tests.
-  // `filters` est mémoïsé séparément pour que chaque useMemo n'ait besoin
-  // que de `books` et de cette seule référence stable en dépendance.
-  const filters = useMemo(
-    () => ({
-      search,
-      selectedTags,
-      publisher,
-      author,
-      collection,
-      edition,
-      series,
-      universe,
-      type,
-      status,
-    }),
-    [search, selectedTags, publisher, author, collection, edition, series, universe, type, status],
-  )
-
+  // Auteur, que les auteurs ayant au moins un manga (EXL D.1). Voir
+  // collectionFilters.js pour la logique et ses tests.
   // Options de tous les filtres calculées en une seule passe sur les livres
   // (voir computeFacets) plutôt qu'un refiltrage complet par champ.
   const facets = useMemo(() => computeFacets(books, filters), [books, filters])
@@ -453,19 +359,6 @@ export default function Collection() {
     })
   }
 
-  const hasActiveFilters = Boolean(
-    search ||
-      selectedTags.length > 0 ||
-      publisher ||
-      author ||
-      collection ||
-      edition ||
-      series ||
-      universe ||
-      type ||
-      status,
-  )
-
   // Une recherche/filtre sans résultat dans Collection ou Wishlist peut très
   // bien avoir une correspondance dans l'autre onglet (ex: un titre encore
   // en wishlist alors qu'on est sur Collection) — sans indice, ça ressemble
@@ -480,48 +373,6 @@ export default function Collection() {
     const otherPool = collectionTab === 'collection' ? wishlistBooks : collectionBooks
     return otherPool.filter((b) => bookMatchesFilters(b, filters, null)).length
   }, [collectionTab, filteredBooks, wishlistBooks, collectionBooks, filters])
-
-  function resetFilters() {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev)
-        for (const key of [
-          'q',
-          'tag',
-          'publisher',
-          'author',
-          'collection',
-          'edition',
-          'series',
-          'universe',
-          'type',
-          'status',
-        ]) {
-          next.delete(key)
-        }
-        return next
-      },
-      { replace: true },
-    )
-  }
-
-  function handleSeriesChange(next) {
-    // Regarder une série précise ? Le tri par tome est presque toujours ce
-    // qu'on veut, plutôt que l'ordre d'ajout par défaut.
-    setSearchParams(
-      (prev) => {
-        const params = new URLSearchParams(prev)
-        if (next) {
-          params.set('series', next)
-          params.set('sort', 'tome')
-        } else {
-          params.delete('series')
-        }
-        return params
-      },
-      { replace: true },
-    )
-  }
 
   function switchView(memberId) {
     setOwnerId(memberId)
@@ -735,7 +586,7 @@ export default function Collection() {
                 active={status === key}
                 count={statusCounts[key] ?? 0}
                 label={STATUS_LABELS[key]}
-                onClick={() => setStatus(status === key ? '' : key)}
+                onClick={() => setFilter.status(status === key ? '' : key)}
                 fillClass={STATUS_BADGE_CLASS[key]}
                 borderClass={STATUS_BORDER_CLASS[key]}
               />
@@ -751,30 +602,30 @@ export default function Collection() {
             collectionTab === 'todo') && (
             <CollectionFilters
               search={search}
-              onSearchChange={setSearch}
+              onSearchChange={setFilter.search}
               selectedTags={selectedTags}
               onSelectedTagsChange={setSelectedTags}
               tags={tags}
               publisher={publisher}
-              onPublisherChange={setPublisher}
+              onPublisherChange={setFilter.publisher}
               publishers={publishers}
               author={author}
-              onAuthorChange={setAuthor}
+              onAuthorChange={setFilter.author}
               authors={authors}
               collection={collection}
-              onCollectionChange={setCollection}
+              onCollectionChange={setFilter.collection}
               collections={collections}
               edition={edition}
-              onEditionChange={setEdition}
+              onEditionChange={setFilter.edition}
               editions={editions}
               series={series}
-              onSeriesChange={handleSeriesChange}
+              onSeriesChange={setSeries}
               seriesList={seriesList}
               universe={universe}
-              onUniverseChange={setUniverse}
+              onUniverseChange={setFilter.universe}
               universeList={universeList}
               type={type}
-              onTypeChange={setType}
+              onTypeChange={setFilter.type}
               status={status}
               hasActiveFilters={hasActiveFilters}
               onReset={resetFilters}
@@ -788,12 +639,13 @@ export default function Collection() {
             Erreur : {error}
           </p>
         ) : books.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="font-serif text-xl mb-2">
-              {isMine
+          <EmptyState
+            title={
+              isMine
                 ? 'Ta bibliothèque est vide'
-                : `La bibliothèque de ${selectedLabel} est vide`}
-            </p>
+                : `La bibliothèque de ${selectedLabel} est vide`
+            }
+          >
             {isMine ? (
               <>
                 <p className="text-sm text-ink/70 mb-6">
@@ -812,38 +664,30 @@ export default function Collection() {
                 Rien à afficher pour l'instant.
               </p>
             )}
-          </div>
+          </EmptyState>
         ) : collectionTab === 'todo' && incompleteBooks.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="font-serif text-xl mb-2">Tout est renseigné 🎉</p>
+          <EmptyState title="Tout est renseigné 🎉">
             <p className="text-sm text-ink/70">
               Aucun livre à compléter pour l'instant.
             </p>
-          </div>
+          </EmptyState>
         ) : collectionTab === 'wishlist' && wishlistBooks.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="font-serif text-xl mb-2">Ta wishlist est vide</p>
+          <EmptyState title="Ta wishlist est vide">
             <p className="text-sm text-ink/70">
               Ajoute un livre en statut Wishlist pour le retrouver ici.
             </p>
-          </div>
+          </EmptyState>
         ) : collectionTab === 'collection' && collectionBooks.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="font-serif text-xl mb-2">
-              Pas encore de livre en collection
-            </p>
+          <EmptyState title="Pas encore de livre en collection">
             <p className="text-sm text-ink/70">
               Tout est encore dans la wishlist pour l'instant.
             </p>
-          </div>
+          </EmptyState>
         ) : (collectionTab === 'collection' ||
             collectionTab === 'wishlist' ||
             collectionTab === 'todo') &&
           filteredBooks.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="font-serif text-xl mb-2">
-              Aucun livre ne correspond
-            </p>
+          <EmptyState title="Aucun livre ne correspond">
             <p className="text-sm text-ink/70 mb-6">
               {otherTabMatchCount > 0 ? (
                 <>
@@ -873,7 +717,7 @@ export default function Collection() {
             >
               Réinitialiser les filtres
             </button>
-          </div>
+          </EmptyState>
         ) : (
           <>
             <div className="flex items-center justify-between gap-3 mb-3">

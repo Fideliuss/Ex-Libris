@@ -59,6 +59,13 @@ export default function BulkActionBar({
   const [tagsToRemove, setTagsToRemove] = useState([])
 
   const disabled = working || count === 0
+  // Champs texte avec suggestions : la liste proposée dépend du champ.
+  const suggestionsByField = {
+    publisher: publishers,
+    collection: collections,
+    series,
+    universe: universes,
+  }
 
   function handleFieldChange(nextField) {
     setField(nextField)
@@ -126,35 +133,11 @@ export default function BulkActionBar({
                   ))}
                 </select>
               )}
-              {field === 'publisher' && (
+              {suggestionsByField[field] && (
                 <SuggestInput
                   value={value}
                   onChange={setValue}
-                  suggestions={publishers}
-                  className={inputClass}
-                />
-              )}
-              {field === 'collection' && (
-                <SuggestInput
-                  value={value}
-                  onChange={setValue}
-                  suggestions={collections}
-                  className={inputClass}
-                />
-              )}
-              {field === 'series' && (
-                <SuggestInput
-                  value={value}
-                  onChange={setValue}
-                  suggestions={series}
-                  className={inputClass}
-                />
-              )}
-              {field === 'universe' && (
-                <SuggestInput
-                  value={value}
-                  onChange={setValue}
-                  suggestions={universes}
+                  suggestions={suggestionsByField[field]}
                   className={inputClass}
                 />
               )}

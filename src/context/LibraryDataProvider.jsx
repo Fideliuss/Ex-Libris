@@ -1,14 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from './AuthContext'
 import { listBooks } from '../lib/books'
+import { needsRefresh, removeFromList, upsertInList } from '../lib/libraryCache'
 import { getMyHousehold } from '../lib/household'
 import { describeError } from '../lib/errors'
 import { LibraryDataContext } from '../hooks/useLibraryData'
-
-// Au-delà de cet âge, un consommateur qui monte relance un rechargement en
-// arrière-plan : les livres d'un membre du foyer peuvent avoir changé sans
-// que cette session le sache.
-const STALE_AFTER_MS = 60_000
 
 // Référence stable : un `[]` recréé à chaque render invaliderait le useMemo.
 const NO_BOOKS = []
@@ -82,7 +78,7 @@ export function LibraryDataProvider({ children }) {
   // rechargement discret le remplace s'il est périmé.
   const ensureFresh = useCallback(() => {
     if (!userId) return
-    if (stale.current || Date.now() - fetchedAt.current > STALE_AFTER_MS) {
+    if (needsRefresh({ invalidated: stale.current, fetchedAt: fetchedAt.current, now: Date.now() })) {
       refresh().catch(() => {})
     }
   }, [userId, refresh])
@@ -92,17 +88,11 @@ export function LibraryDataProvider({ children }) {
   }, [])
 
   const upsertBook = useCallback((book) => {
-    setBooksState((prev) => {
-      const exists = prev.books.some((b) => b.id === book.id)
-      const books = exists
-        ? prev.books.map((b) => (b.id === book.id ? book : b))
-        : [book, ...prev.books]
-      return { ...prev, books }
-    })
+    setBooksState((prev) => ({ ...prev, books: upsertInList(prev.books, book) }))
   }, [])
 
   const removeBook = useCallback((id) => {
-    setBooksState((prev) => ({ ...prev, books: prev.books.filter((b) => b.id !== id) }))
+    setBooksState((prev) => ({ ...prev, books: removeFromList(prev.books, id) }))
   }, [])
 
   const mine = booksState.userId === userId

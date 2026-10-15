@@ -3,16 +3,12 @@ import { useAuth } from '../context/AuthContext'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import { useProfile } from '../hooks/useProfile'
 import { listClaims, migrateLocalStorageClaims, upsertClaim } from '../lib/achievementClaims'
-import { useGoBack } from '../lib/navigation'
-import HouseholdSwitchBadge from '../components/HouseholdSwitchBadge'
+import HouseholdPage from '../components/HouseholdPage'
 import AchievementsGallery from '../components/AchievementsGallery'
-import LoadingScreen from '../components/LoadingScreen'
-import { backLinkClass } from '../lib/ui'
 
 export default function Achievements() {
   const { user } = useAuth()
   const { members, ownerId, setOwnerId, isMine, books, loading, error } = useHouseholdBooks()
-  const goBack = useGoBack('/')
   const { profile } = useProfile()
   const myFirstName = profile?.first_name ?? null
   const [claims, setClaims] = useState(new Map())
@@ -71,52 +67,29 @@ export default function Achievements() {
     : selectedLabel ?? null
 
   return (
-    <div className="min-h-svh p-6">
-      <div className="max-w-3xl mx-auto">
-        <button
-          type="button"
-          onClick={goBack}
-          className={backLinkClass}
-        >
-          ← Retour à la collection
-        </button>
-
-        <h1 className="font-serif text-2xl font-semibold mt-4 mb-6">Succès</h1>
-
-        {members.length > 1 && (
-          <div className="mb-6">
-            <HouseholdSwitchBadge
-              members={members}
-              selectedId={ownerId}
-              onSelect={setOwnerId}
-              currentUserId={user.id}
-            />
-          </div>
-        )}
-
-        {loading || claimsLoading ? (
-          <LoadingScreen fullScreen={false} />
-        ) : error ? (
-          <p role="alert" className="text-sm text-stamp text-center py-16">
-            Erreur : {error}
-          </p>
-        ) : books.length === 0 ? (
-          <p className="text-sm text-ink/70 text-center py-16">
-            {isMine
-              ? 'Ajoute des livres à ta collection pour débloquer des succès.'
-              : `${selectedLabel} n'a pas encore de livres.`}
-          </p>
-        ) : (
-          <AchievementsGallery
-            books={books}
-            partner={members.length > 1}
-            ownerName={ownerName}
-            isMine={isMine}
-            claims={claims}
-            onClaim={handleClaim}
-          />
-        )}
-      </div>
-    </div>
+    <HouseholdPage
+      title="Succès"
+      members={members}
+      ownerId={ownerId}
+      onSelectOwner={setOwnerId}
+      loading={loading || claimsLoading}
+      error={error}
+      emptyMessage={
+        books.length === 0
+          ? isMine
+            ? 'Ajoute des livres à ta collection pour débloquer des succès.'
+            : `${selectedLabel} n'a pas encore de livres.`
+          : null
+      }
+    >
+      <AchievementsGallery
+        books={books}
+        partner={members.length > 1}
+        ownerName={ownerName}
+        isMine={isMine}
+        claims={claims}
+        onClaim={handleClaim}
+      />
+    </HouseholdPage>
   )
 }
