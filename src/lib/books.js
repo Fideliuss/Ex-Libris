@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient'
 import { deleteCover } from './storage'
+import { getCurrentUserId } from './session'
 
 const LIST_PAGE_SIZE = 1000
 
@@ -22,23 +23,22 @@ async function fetchAllPages(buildQuery) {
   return rows
 }
 
-export function listBooks() {
-  return fetchAllPages((from, to) =>
-    supabase
-      .from('books')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .range(from, to),
-  )
+// Sans `userId` : tous les livres visibles (les miens + ceux du foyer, selon
+// la RLS). Avec `userId` : uniquement ceux de ce propriétaire, filtrés côté
+// serveur (export/import n'ont aucune raison de rapatrier ceux du foyer).
+export function listBooks({ userId } = {}) {
+  return fetchAllPages((from, to) => {
+    let query = supabase.from('books').select('*')
+    if (userId) query = query.eq('user_id', userId)
+    return query.order('created_at', { ascending: false }).range(from, to)
+  })
 }
 
 export async function createBook(book) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const userId = await getCurrentUserId()
   const { data, error } = await supabase
     .from('books')
-    .insert({ ...book, user_id: user.id })
+    .insert({ ...book, user_id: userId })
     .select()
     .single()
   if (error) throw error
@@ -91,11 +91,9 @@ export async function getSeriesSiblings(series, userId) {
 }
 
 export async function bulkCreateBooks(books) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const userId = await getCurrentUserId()
 
-  const rows = books.map((book) => ({ ...book, user_id: user.id }))
+  const rows = books.map((book) => ({ ...book, user_id: userId }))
   const chunkSize = 100
   for (let i = 0; i < rows.length; i += chunkSize) {
     const chunk = rows.slice(i, i + chunkSize)
@@ -104,11 +102,30 @@ export async function bulkCreateBooks(books) {
   }
 }
 
+// Nombre de requêtes UPDATE envoyées en parallèle : assez pour ne pas
+// attendre chaque aller-retour l'un après l'autre, assez peu pour ne pas
+// saturer la connexion.
+const UPDATE_CONCURRENCY = 8
+
+// Patchs différents d'un livre à l'autre (ajout/retrait de tag, réparation
+// de série...) : une requête par livre, mais par vagues parallèles.
 export async function bulkUpdateBooks(updates) {
-  for (const { id, patch } of updates) {
-    const { error } = await supabase.from('books').update(patch).eq('id', id)
-    if (error) throw error
+  for (let i = 0; i < updates.length; i += UPDATE_CONCURRENCY) {
+    const wave = updates.slice(i, i + UPDATE_CONCURRENCY)
+    const results = await Promise.all(
+      wave.map(({ id, patch }) => supabase.from('books').update(patch).eq('id', id)),
+    )
+    const failed = results.find((r) => r.error)
+    if (failed) throw failed.error
   }
+}
+
+// Même valeur pour tous les livres : une seule requête, quel que soit leur
+// nombre.
+export async function bulkSetField(ids, patch) {
+  if (ids.length === 0) return
+  const { error } = await supabase.from('books').update(patch).in('id', ids)
+  if (error) throw error
 }
 
 export async function bulkDeleteBooks(ids) {
@@ -121,113 +138,39 @@ export async function bulkDeleteBooks(ids) {
   await Promise.all(data.map((row) => deleteCover(row.cover_url)))
 }
 
-// Valeurs distinctes d'une colonne à valeurs multiples (tags, author,
-// translator, illustrator...) sur les livres de l'utilisateur courant, pour
-// alimenter les suggestions de saisie (TagInput). Un seul aller-retour
-// réseau par colonne : on aplatit côté client plutôt que de demander à
-// Postgres de le faire, pour rester simple.
-async function listDistinctArrayValues(column) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const data = await fetchAllPages((from, to) =>
-    supabase.from('books').select(column).eq('user_id', user.id).range(from, to),
-  )
-  const values = new Set()
-  for (const row of data) {
-    for (const value of row[column] ?? []) values.add(value)
-  }
-  return [...values].sort((a, b) => a.localeCompare(b, 'fr'))
-}
-
-export function listAllTags() {
-  return listDistinctArrayValues('tags')
-}
-
-export function listAllAuthors() {
-  return listDistinctArrayValues('author')
-}
-
-export function listAllTranslators() {
-  return listDistinctArrayValues('translator')
-}
-
-export function listAllIllustrators() {
-  return listDistinctArrayValues('illustrator')
-}
-
-// Valeurs distinctes d'une colonne simple (pas un tableau, contrairement à
-// listDistinctArrayValues ci-dessus) sur les livres de l'utilisateur courant.
-async function listDistinctColumnValues(column) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  const data = await fetchAllPages((from, to) =>
-    supabase
-      .from('books')
-      .select(column)
-      .eq('user_id', user.id)
-      .not(column, 'is', null)
-      .range(from, to),
-  )
-  const values = new Set(data.map((row) => row[column]).filter(Boolean))
-  return [...values].sort((a, b) => a.localeCompare(b, 'fr'))
-}
-
-export function listAllCollections() {
-  return listDistinctColumnValues('collection')
-}
-
-export function listAllPublishers() {
-  return listDistinctColumnValues('publisher')
-}
-
-export function listAllSeries() {
-  return listDistinctColumnValues('series')
-}
-
-export function listAllUniverses() {
-  return listDistinctColumnValues('universe')
-}
-
 // Migration : un tag utilisé comme nom de collection éditeur (ex: "folio sf")
 // devient la valeur du champ `collection` sur tous les livres concernés, et
 // est retiré de leurs tags. Retourne le nombre de livres modifiés.
 export async function convertTagToCollection(tag) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const userId = await getCurrentUserId()
   const matching = await fetchAllPages((from, to) =>
     supabase
       .from('books')
       .select('id, tags')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .contains('tags', [tag])
       .range(from, to),
   )
 
-  for (const book of matching) {
-    const { error } = await supabase
-      .from('books')
-      .update({
+  await bulkUpdateBooks(
+    matching.map((book) => ({
+      id: book.id,
+      patch: {
         collection: tag,
         tags: (book.tags ?? []).filter((t) => t !== tag),
-      })
-      .eq('id', book.id)
-    if (error) throw error
-  }
+      },
+    })),
+  )
   return matching.length
 }
 
 // Renomme une collection ou une série sur tous les livres qui la portent.
 async function renameFieldValue(field, oldValue, newValue) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const userId = await getCurrentUserId()
   const { error } = await supabase
     .from('books')
     .update({ [field]: newValue })
-    .eq('user_id', user.id)
+    .eq('user_id', userId)
     .eq(field, oldValue)
   if (error) throw error
 }

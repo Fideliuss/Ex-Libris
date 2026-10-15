@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { bulkDeleteBooks, bulkUpdateBooks } from '../lib/books'
+import { bulkDeleteBooks, bulkSetField, bulkUpdateBooks } from '../lib/books'
 import { isBookIncomplete } from '../lib/bookCompleteness'
 import { bookMatchesFilters } from '../lib/collectionFilters'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
@@ -676,9 +676,7 @@ export default function Collection() {
   function handleBulkApplyField(targetField, raw) {
     const patchValue = normalizeBulkValue(targetField, raw)
     return runBulkAction(() =>
-      bulkUpdateBooks(
-        [...selectedIds].map((id) => ({ id, patch: { [targetField]: patchValue } })),
-      ),
+      bulkSetField([...selectedIds], { [targetField]: patchValue }),
     )
   }
 

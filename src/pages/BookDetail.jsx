@@ -9,7 +9,7 @@ import {
   BINDING_TYPES,
 } from '../lib/editionTypes'
 import { useAuth } from '../context/AuthContext'
-import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
+import { useLibraryData } from '../hooks/useLibraryData'
 import {
   STATUS_BADGE_CLASS,
   STATUS_BORDER_CLASS,
@@ -160,7 +160,7 @@ export default function BookDetail() {
   const navigate = useNavigate()
   const goBack = useGoBack('/')
   const { user } = useAuth()
-  const { members } = useHouseholdBooks()
+  const { members, upsertBook } = useLibraryData()
   const [book, setBook] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -208,6 +208,7 @@ export default function BookDetail() {
       const leavingWishlist = book.status === 'wishlist' && newStatus !== 'wishlist'
       const updated = await updateBook(id, patch)
       setBook(updated)
+      upsertBook(updated)
       if (newStatus === 'read' && wasUnrated) {
         setShowRatingPrompt(true)
       } else if (leavingWishlist && !book.purchase_date) {
@@ -225,6 +226,7 @@ export default function BookDetail() {
     try {
       const updated = await updateBook(id, { rating })
       setBook(updated)
+      upsertBook(updated)
     } catch (err) {
       setStatusError(describeError(err))
     }
@@ -235,6 +237,7 @@ export default function BookDetail() {
     try {
       const updated = await updateBook(id, patch)
       setBook(updated)
+      upsertBook(updated)
     } catch (err) {
       setStatusError(describeError(err))
     }

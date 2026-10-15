@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
-import { getMyProfile } from '../lib/friendCode'
+import { useProfile } from '../hooks/useProfile'
 import { listClaims, migrateLocalStorageClaims, upsertClaim } from '../lib/achievementClaims'
 import { useGoBack } from '../lib/navigation'
 import HouseholdSwitchBadge from '../components/HouseholdSwitchBadge'
@@ -12,25 +12,10 @@ export default function Achievements() {
   const { user } = useAuth()
   const { members, ownerId, setOwnerId, isMine, books, loading, error } = useHouseholdBooks()
   const goBack = useGoBack('/')
-  const [myFirstName, setMyFirstName] = useState(null)
+  const { profile } = useProfile()
+  const myFirstName = profile?.first_name ?? null
   const [claims, setClaims] = useState(new Map())
   const [claimsLoading, setClaimsLoading] = useState(true)
-
-  // Pour la ligne "Ex-Libris {prénom}" gravée sur les plaques de succès :
-  // le prénom du membre du foyer affiché est déjà sur selectedMember, mais
-  // le sien propre n'est nulle part ailleurs dans l'app à ce niveau.
-  useEffect(() => {
-    if (!user) return
-    let active = true
-    getMyProfile(user.id)
-      .then((profile) => {
-        if (active) setMyFirstName(profile?.first_name ?? null)
-      })
-      .catch(() => {})
-    return () => {
-      active = false
-    }
-  }, [user])
 
   useEffect(() => {
     if (!ownerId) return

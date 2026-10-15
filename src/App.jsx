@@ -1,6 +1,8 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { ProfileProvider } from './context/ProfileProvider'
+import { LibraryDataProvider } from './context/LibraryDataProvider'
 import { TutorialProvider } from './context/TutorialContext'
 import { ChangelogProvider } from './context/ChangelogContext'
 import { HouseholdViewProvider } from './context/HouseholdViewContext'
@@ -28,31 +30,35 @@ function App() {
   useTrackSessionNavigation()
   return (
     <AuthProvider>
-      <HouseholdViewProvider>
-        <TutorialProvider>
-          <ChangelogProvider>
-            <ErrorBoundary>
-              <Suspense fallback={<LoadingScreen />}>
-                <Routes>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/reset-password" element={<ResetPassword />} />
-                  <Route path="/mentions-legales" element={<LegalNotice />} />
-                  <Route path="/confidentialite" element={<PrivacyPolicy />} />
-                  <Route element={<ProtectedRoute />}>
-                    <Route path="/account" element={<Account />} />
-                    <Route path="/books/new" element={<BookForm />} />
-                    <Route path="/books/:id" element={<BookDetail />} />
-                    <Route path="/books/:id/edit" element={<BookForm />} />
-                    <Route path="/stats" element={<Stats />} />
-                    <Route path="/succes" element={<Achievements />} />
-                  </Route>
-                </Routes>
-              </Suspense>
-            </ErrorBoundary>
-          </ChangelogProvider>
-        </TutorialProvider>
-      </HouseholdViewProvider>
+      <ProfileProvider>
+        <LibraryDataProvider>
+          <HouseholdViewProvider>
+            <TutorialProvider>
+              <ChangelogProvider>
+                <ErrorBoundary>
+                  <Suspense fallback={<LoadingScreen />}>
+                    <Routes>
+                      <Route path="/" element={<Home />} />
+                      <Route path="/login" element={<Login />} />
+                      <Route path="/reset-password" element={<ResetPassword />} />
+                      <Route path="/mentions-legales" element={<LegalNotice />} />
+                      <Route path="/confidentialite" element={<PrivacyPolicy />} />
+                      <Route element={<ProtectedRoute />}>
+                        <Route path="/account" element={<Account />} />
+                        <Route path="/books/new" element={<BookForm />} />
+                        <Route path="/books/:id" element={<BookDetail />} />
+                        <Route path="/books/:id/edit" element={<BookForm />} />
+                        <Route path="/stats" element={<Stats />} />
+                        <Route path="/succes" element={<Achievements />} />
+                      </Route>
+                    </Routes>
+                  </Suspense>
+                </ErrorBoundary>
+              </ChangelogProvider>
+            </TutorialProvider>
+          </HouseholdViewProvider>
+        </LibraryDataProvider>
+      </ProfileProvider>
     </AuthProvider>
   )
 }

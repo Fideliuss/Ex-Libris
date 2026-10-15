@@ -8,11 +8,13 @@ import {
 } from '../lib/libibImport'
 import { mapMyLibraryRowToBook, parseMyLibraryXlsx } from '../lib/myLibraryImport'
 import { useAuth } from '../context/AuthContext'
+import { useLibraryData } from '../hooks/useLibraryData'
 import { describeError } from '../lib/errors'
 import { primaryButtonClass } from '../lib/ui'
 
 export default function ImportPanel() {
   const { user } = useAuth()
+  const { refresh: refreshLibrary } = useLibraryData()
   const [step, setStep] = useState('idle') // idle | ready | importing | done
   const [error, setError] = useState(null)
   const [fileName, setFileName] = useState('')
@@ -46,11 +48,9 @@ export default function ImportPanel() {
         }))
       }
 
-      const existingBooks = await listBooks()
+      const existingBooks = await listBooks({ userId: user.id })
       const existingByIsbn = new Map(
-        existingBooks
-          .filter((b) => b.isbn && b.user_id === user.id)
-          .map((b) => [b.isbn, b]),
+        existingBooks.filter((b) => b.isbn).map((b) => [b.isbn, b]),
       )
 
       const nextToImport = []
@@ -106,6 +106,7 @@ export default function ImportPanel() {
           toEnrich.map(({ id, patch }) => ({ id, patch })),
         )
       }
+      refreshLibrary().catch(() => {})
       setImportedCount(toImport.length)
       setEnrichedCount(toEnrich.length)
       setStep('done')

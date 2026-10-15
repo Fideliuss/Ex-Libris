@@ -1,4 +1,5 @@
 import { supabase } from './supabaseClient'
+import { getCurrentUserId } from './session'
 
 const COVER_URL_MARKER = '/storage/v1/object/public/covers/'
 const MAX_DIMENSION = 1200
@@ -40,11 +41,9 @@ export async function compressImage(file) {
 // rétroactif des covers existantes), l'extension n'a donc plus besoin
 // d'être déduite du fichier d'origine.
 export async function uploadCover(file) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const userId = await getCurrentUserId()
 
-  const path = `${user.id}/${crypto.randomUUID()}.webp`
+  const path = `${userId}/${crypto.randomUUID()}.webp`
 
   const { error } = await supabase.storage
     .from('covers')

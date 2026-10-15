@@ -1,19 +1,9 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import {
-  createBook,
-  deleteBook,
-  getBook,
-  listAllAuthors,
-  listAllCollections,
-  listAllIllustrators,
-  listAllPublishers,
-  listAllSeries,
-  listAllTags,
-  listAllTranslators,
-  listAllUniverses,
-  updateBook,
-} from '../lib/books'
+import { createBook, deleteBook, getBook, updateBook } from '../lib/books'
+import { useAuth } from '../context/AuthContext'
+import { useLibraryData } from '../hooks/useLibraryData'
+import { bookSuggestions } from '../lib/bookSuggestions'
 import { lookupIsbn } from '../lib/isbnLookup'
 import { getMissingFields } from '../lib/bookCompleteness'
 import { compressImage, deleteCover, uploadCover } from '../lib/storage'
@@ -79,14 +69,14 @@ export default function BookForm() {
   const goBack = useGoBack(isEdit ? `/books/${id}` : '/')
 
   const [book, setBook] = useState(emptyBook)
-  const [existingTags, setExistingTags] = useState([])
-  const [existingAuthors, setExistingAuthors] = useState([])
-  const [existingTranslators, setExistingTranslators] = useState([])
-  const [existingIllustrators, setExistingIllustrators] = useState([])
-  const [existingCollections, setExistingCollections] = useState([])
-  const [existingPublishers, setExistingPublishers] = useState([])
-  const [existingSeries, setExistingSeries] = useState([])
-  const [existingUniverses, setExistingUniverses] = useState([])
+  const { user } = useAuth()
+  const { allBooks, upsertBook, removeBook } = useLibraryData()
+  // Suggestions de saisie dérivées du cache partagé (mes livres seulement),
+  // sans requête réseau supplémentaire à l'ouverture du formulaire.
+  const suggestions = useMemo(
+    () => bookSuggestions(allBooks.filter((b) => b.user_id === user?.id)),
+    [allBooks, user?.id],
+  )
   const [loading, setLoading] = useState(isEdit)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -131,17 +121,6 @@ export default function BookForm() {
         URL.revokeObjectURL(pendingCoverPreviewUrlRef.current)
       }
     }
-  }, [])
-
-  useEffect(() => {
-    listAllTags().then(setExistingTags).catch(() => {})
-    listAllAuthors().then(setExistingAuthors).catch(() => {})
-    listAllTranslators().then(setExistingTranslators).catch(() => {})
-    listAllIllustrators().then(setExistingIllustrators).catch(() => {})
-    listAllCollections().then(setExistingCollections).catch(() => {})
-    listAllPublishers().then(setExistingPublishers).catch(() => {})
-    listAllSeries().then(setExistingSeries).catch(() => {})
-    listAllUniverses().then(setExistingUniverses).catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -341,7 +320,7 @@ export default function BookForm() {
     }
     try {
       if (isEdit) {
-        await updateBook(id, payload)
+        upsertBook(await updateBook(id, payload))
         const previousCoverUrl = originalCoverUrlRef.current
         if (previousCoverUrl && previousCoverUrl !== payload.cover_url) {
           deleteCover(previousCoverUrl)
@@ -353,7 +332,7 @@ export default function BookForm() {
         // atterrit sur ce formulaire fantôme au lieu de la collection.
         goBack()
       } else {
-        await createBook(payload)
+        upsertBook(await createBook(payload))
         clearPendingCover()
         navigate('/')
       }
@@ -373,6 +352,7 @@ export default function BookForm() {
     setError(null)
     try {
       await deleteBook(id)
+      removeBook(id)
       navigate('/')
     } catch (err) {
       setError(describeError(err))
@@ -503,7 +483,7 @@ export default function BookForm() {
               <TagInput
                 value={book.author ?? []}
                 onChange={(v) => set('author', v)}
-                suggestions={existingAuthors}
+                suggestions={suggestions.authors}
                 placeholder="Ajouter un auteur, Entrée pour valider"
               />
             </Field>
@@ -513,7 +493,7 @@ export default function BookForm() {
                 <TagInput
                   value={book.translator ?? []}
                   onChange={(v) => set('translator', v)}
-                  suggestions={existingTranslators}
+                  suggestions={suggestions.translators}
                   placeholder="Ajouter, Entrée pour valider"
                 />
               </Field>
@@ -521,7 +501,7 @@ export default function BookForm() {
                 <TagInput
                   value={book.illustrator ?? []}
                   onChange={(v) => set('illustrator', v)}
-                  suggestions={existingIllustrators}
+                  suggestions={suggestions.illustrators}
                   placeholder="Ajouter, Entrée pour valider"
                 />
               </Field>
@@ -531,7 +511,7 @@ export default function BookForm() {
               <SuggestInput
                 value={book.publisher}
                 onChange={(v) => set('publisher', v)}
-                suggestions={existingPublishers}
+                suggestions={suggestions.publishers}
                 className={inputClass}
               />
             </Field>
@@ -540,7 +520,7 @@ export default function BookForm() {
               <SuggestInput
                 value={book.collection}
                 onChange={(v) => set('collection', v)}
-                suggestions={existingCollections}
+                suggestions={suggestions.collections}
                 placeholder="Folio SF, Champs…"
                 className={inputClass}
               />
@@ -565,7 +545,7 @@ export default function BookForm() {
                   <SuggestInput
                     value={book.series}
                     onChange={(v) => set('series', v)}
-                    suggestions={existingSeries}
+                    suggestions={suggestions.series}
                     className={inputClass}
                   />
                 </Field>
@@ -586,7 +566,7 @@ export default function BookForm() {
               <SuggestInput
                 value={book.universe}
                 onChange={(v) => set('universe', v)}
-                suggestions={existingUniverses}
+                suggestions={suggestions.universes}
                 placeholder="Hercule Poirot, Avengers, X-Men…"
                 className={inputClass}
               />
@@ -759,7 +739,7 @@ export default function BookForm() {
               <TagInput
                 value={book.tags ?? []}
                 onChange={(tags) => set('tags', tags)}
-                suggestions={existingTags}
+                suggestions={suggestions.tags}
               />
             </Field>
           </FormSection>

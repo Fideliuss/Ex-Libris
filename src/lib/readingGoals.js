@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient'
+import { getCurrentUserId } from './session'
 
-const DEFAULT_GOAL = 12
+export const DEFAULT_GOAL = 12
 
 // Pas de ligne tant que l'utilisateur n'a jamais fixé d'objectif pour cette
 // année : on retombe sur la valeur par défaut plutôt que d'exiger une ligne
@@ -17,12 +18,10 @@ export async function getReadingGoal(userId, year) {
 }
 
 export async function updateReadingGoal(year, goal) {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const userId = await getCurrentUserId()
   const { error } = await supabase
     .from('reading_goals')
-    .upsert({ user_id: user.id, year, goal })
+    .upsert({ user_id: userId, year, goal })
   if (error) throw error
 }
 

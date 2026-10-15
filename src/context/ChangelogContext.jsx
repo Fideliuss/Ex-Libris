@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useAuth } from './AuthContext'
-import { getMyProfile, markChangelogSeen } from '../lib/friendCode'
+import { useProfile } from '../hooks/useProfile'
+import { markChangelogSeen } from '../lib/profile'
 import { LATEST_CHANGELOG_ID, getMissedEntries } from '../lib/whatsNew'
 import ChangelogModal from '../components/ChangelogModal'
 
@@ -9,28 +10,20 @@ import ChangelogModal from '../components/ChangelogModal'
 // pop-up "quoi de neuf" au bon moment.
 export function ChangelogProvider({ children }) {
   const { user } = useAuth()
+  const { profile } = useProfile()
   const [missedEntries, setMissedEntries] = useState([])
+  const checkedFor = useRef(null)
 
   useEffect(() => {
-    if (!user) return
-    let active = true
-    getMyProfile(user.id)
-      .then((profile) => {
-        if (!active || !profile) return
-        // has_seen_tutorial=false : compte flambant neuf, TutorialContext
-        // s'occupe de le marquer à jour dès qu'il ferme le tutoriel : pas la
-        // peine d'empiler ce pop-up par-dessus le tutoriel en plus.
-        if (!profile.has_seen_tutorial) return
-        const missed = getMissedEntries(profile.last_seen_changelog)
-        if (missed.length > 0) setMissedEntries(missed)
-      })
-      .catch(() => {
-        // Optionnel : une erreur ici ne doit pas bloquer le reste de l'app.
-      })
-    return () => {
-      active = false
-    }
-  }, [user])
+    if (!profile || checkedFor.current === profile.user_id) return
+    checkedFor.current = profile.user_id
+    // has_seen_tutorial=false : compte flambant neuf, TutorialContext
+    // s'occupe de le marquer à jour dès qu'il ferme le tutoriel : pas la
+    // peine d'empiler ce pop-up par-dessus le tutoriel en plus.
+    if (!profile.has_seen_tutorial) return
+    const missed = getMissedEntries(profile.last_seen_changelog)
+    if (missed.length > 0) setMissedEntries(missed)
+  }, [profile])
 
   function close() {
     setMissedEntries([])
