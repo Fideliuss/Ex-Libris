@@ -2,221 +2,118 @@
 
 ![build-check](https://github.com/Fideliuss/Ex-Libris/actions/workflows/build-check.yml/badge.svg)
 
-PWA personnelle de gestion de bibliothèque (livres, BD, comics, mangas),
-née pour remplacer un tableur Excel qu'on se repassait à deux. Chacun garde
-ses propres livres ; deux comptes qui s'échangent un code ami voient leurs
-bibliothèques respectives côte à côte, en lecture seule.
+Ex Libris est une application web installable (PWA) pour suivre une bibliothèque personnelle : livres, BD, comics et mangas. Elle a remplacé un tableur que deux personnes se passaient. Chaque compte garde ses propres livres ; les membres d'un même foyer peuvent consulter la bibliothèque des autres, en lecture seule.
 
-## Fonctionnalités
+L'usage visé est familial, quelques comptes tout au plus. L'application n'est pas pensée pour une diffusion publique à grande échelle.
 
-- Fiche livre complète : titre, auteur, traducteur, illustrateur, éditeur,
-  collection, série/tome, univers (BD), tags, statut, note, prix, dates,
-  notes libres.
-- Scan de code-barres ISBN à la caméra, avec recherche automatique en
-  cascade sur Google Books, Open Library, puis le catalogue SRU de la BNF
-  en dernier recours — les deux premiers ratent souvent les éditions
-  françaises.
-- Couverture par URL, import de fichier, ou photo prise directement depuis
-  le formulaire (utile sans connexion internet correcte).
-- Import depuis un export Libib (CSV) ou My Library (Excel), avec
-  dédoublonnage par ISBN.
-- Export CSV de sa propre bibliothèque.
-- Partage en lecture seule entre deux comptes via un code ami échangé à la
-  main — pas de foyer figé à l'avance, n'importe quel compte peut inviter
-  n'importe quel autre.
-- Statistiques : objectif de lecture annuel (système de points par type),
-  historique année par année, rythme de lecture, notes, calendrier façon
-  GitHub des livres terminés, répartition par tag/éditeur/collection/série.
-- Installable comme PWA.
+## Ce que l'application fait
 
-## Stack
+**Collection**
+- Fiche livre : titre, auteurs, traducteur, illustrateur, éditeur, collection, série et tome, univers, tags, format et reliure, statut (wishlist, à lire, en cours, lu), note à la demi-étoile, prix et date d'achat, dates de lecture, notes libres et citation favorite.
+- Recherche et filtres qui se limitent entre eux, tri sur sept critères, index alphabétique, sélection multiple avec modification en masse.
+- Onglets Collection, Wishlist et « À compléter » (livres auxquels il manque ISBN, couverture, auteur, éditeur, pages, résumé, format ou reliure).
 
-- Vite + React (JavaScript)
-- Tailwind CSS v4
-- Supabase (Postgres + Auth + Row Level Security)
-- `html5-qrcode` pour le scan de code-barres
-- `papaparse` pour le CSV, `xlsx` (build SheetJS, pas le paquet npm — voir
-  plus bas) pour l'Excel
-- `vite-plugin-pwa` pour l'installabilité
-- Déploiement Netlify
+**Ajout d'un livre**
+- Scan du code-barres ISBN à la caméra, ou saisie à la main. La recherche interroge Google Books, puis Open Library, puis le catalogue de la BNF, qui comble les éditions françaises que les deux autres ratent souvent.
+- Couverture par URL, import de fichier, glisser-déposer ou photo. L'image est réduite et convertie en WebP avant l'envoi, et seulement quand le livre est enregistré.
+- Import depuis Libib (CSV) ou My Library (Excel), sans doublons si on réimporte le même fichier. Export CSV de sa propre bibliothèque.
 
-## Développement
+**Suivi de lecture**
+- Objectif annuel avec un barème par type (1 point par livre, 0,5 par BD ou comics, un tiers par manga) et historique année par année.
+- Statistiques : rythme de lecture, notes, calendrier des livres terminés, répartition par type, tag, éditeur, collection et série.
+- Succès à paliers, présentés comme des plaques d'ex-libris.
+
+**Partage et compte**
+- Foyer à plusieurs membres, constitué par échange de codes ami. Un sélecteur permet de basculer d'une bibliothèque à l'autre dans la collection, les statistiques et les succès.
+- Thème clair, sombre ou automatique, tutoriel de première connexion, fenêtre « Quoi de neuf », suppression complète du compte.
+
+## Technologies
+
+| Rôle | Choix |
+|---|---|
+| Interface | React 19, React Router 7, Tailwind CSS 4 |
+| Build | Vite, `vite-plugin-pwa` |
+| Données et authentification | Supabase (Postgres, Auth, Row Level Security, Storage) |
+| Scan, CSV, Excel | `html5-qrcode`, `papaparse`, `xlsx` |
+| Tests | Vitest, pgTAP |
+| Qualité | oxlint |
+| Hébergement | Netlify |
+
+`xlsx` est installé depuis le build officiel de SheetJS et non depuis npm, dont la version publiée a des vulnérabilités connues non corrigées. Cette bibliothèque pèse environ 360 ko : elle n'est chargée qu'à l'import d'un fichier Excel.
+
+## Démarrer
+
+Prérequis : Node 22, et un projet Supabase dont le schéma est en place (voir « Base de données »).
 
 ```bash
 npm install
-cp .env.example .env   # puis renseigner VITE_SUPABASE_URL et VITE_SUPABASE_ANON_KEY
+cp .env.example .env
 npm run dev
 ```
 
-## Variables d'environnement
+Renseignez dans `.env` l'URL du projet et sa clé publique (`anon`) :
 
-Voir `.env.example`. Ne jamais commiter `.env`.
-
-## Build
-
-```bash
-npm run build
-npm run preview
+```
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
 ```
 
-## Tester en local avant de livrer
+Le fichier `.env` ne doit jamais être commité.
 
-Netlify (plan gratuit) a un quota de crédits limité — chaque déploiement
-(chaque push sur `main`) en consomme. Pour ne pas le griller :
+| Commande | Effet |
+|---|---|
+| `npm run dev` | Serveur de développement (sans service worker) |
+| `npm run build` | Build de production dans `dist/` |
+| `npm run preview` | Sert `dist/` sur le port 4173, service worker compris |
+| `npm run lint` | Vérification avec oxlint |
+| `npm test` | Tests unitaires, une passe |
+| `npm run test:watch` | Tests unitaires en continu |
 
-- Développement courant : `npm run dev` (rechargement à chaud, mais pas de
-  service worker/PWA — normal en mode dev).
-- **Avant d'ouvrir une PR `develop → main`** : valider la vraie build de
-  prod en local, PWA comprise :
-  ```bash
-  npm run build
-  npm run preview   # sert dist/ sur http://localhost:4173, avec service worker
-  ```
-  Vérifier qu'il n'y a pas d'erreur console et que l'écran de connexion (au
-  minimum) s'affiche correctement.
-- Grouper plusieurs fonctionnalités sur `develop` avant de livrer, plutôt
-  que d'ouvrir une PR vers `main` à chaque petit changement — chaque
-  promotion vers `main` = un déploiement Netlify.
-- Le seul cas qui échappe au test local : le scan caméra sur téléphone
-  (a besoin d'HTTPS + d'un vrai appareil).
+## Organisation du code
 
-## Tests unitaires (Vitest)
-
-```bash
-npm run test         # une passe
-npm run test:watch   # mode watch pendant le dev
+```
+src/
+  pages/        écrans, une route chacun (chargés à la demande)
+  components/   composants d'interface ; stats/ pour les blocs de la page Statistiques
+  context/      fournisseurs (session, profil, livres du foyer, tutoriel, nouveautés)
+  hooks/        hooks partagés et contextes associés
+  lib/          logique sans React : accès Supabase, imports, succès, filtres, dates
+supabase/
+  migrations/   schéma complet (baseline.sql)
+  tests/        tests pgTAP des politiques d'accès
 ```
 
-Couvre les fonctions pures de `src/lib/` : parsing des imports Libib/My
-Library, extraction série/tome, tri des auteurs par nom de famille, calcul
-des points de lecture, génération du CSV d'export. Pas de mock Supabase —
-ces fonctions ne touchent ni le réseau ni le DOM, elles prennent des
-données en entrée et renvoient un résultat. `src/lib/authorSort.js` a été
-extrait de `Collection.jsx` uniquement pour ça : importer la page
-directement aurait entraîné l'initialisation du client Supabase (donc un
-échec en CI, où `.env` n'existe pas).
+Les livres visibles (les miens et ceux du foyer) sont chargés une fois à la connexion et partagés entre les pages par `LibraryDataProvider`. Les écritures mettent ce cache à jour directement ; il se recharge aussi en arrière-plan s'il a plus d'une minute.
 
-Ne couvre pas le rendu ni les interactions des composants React — ça reste
-vérifié à la main en local avant chaque livraison.
+## Tests
 
-## Tests RLS (pgTAP)
+Les tests unitaires (`npm test`) couvrent la logique de `src/lib/` : imports Libib et My Library, plan d'import, filtres et facettes, calcul des succès, points de lecture, export CSV, règles du cache. Ils ne touchent ni au réseau ni au DOM. Le rendu et les interactions des composants se vérifient à la main avant chaque livraison, et le scan à la caméra demande en plus HTTPS et un vrai téléphone.
 
-Les policies RLS (`books`, `household_links`, `profiles`,
-`find_user_by_code`) sont testées avec [pgTAP](https://pgtap.org/) via la
-CLI Supabase — c'est elles qui ont causé les deux bugs de sécurité les
-plus sérieux du projet jusqu'ici, donc ça vaut le coup de les couvrir.
-Nécessite [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-(une seule fois) :
+Les politiques d'accès de la base sont testées avec [pgTAP](https://pgtap.org/) via la CLI Supabase, qui demande Docker :
 
 ```bash
-# Coupe les services inutiles pour pgTAP (Studio/Storage/etc.). Garde kong/
-# rest/realtime : le health-check interne de `supabase start` échoue sinon.
 supabase start -x analytics -x edge-runtime -x functions -x imgproxy \
   -x inbucket -x meta -x storage -x studio -x vector
-
 supabase test db supabase/tests/database
-
-supabase stop   # quand t'as fini, libère les conteneurs
+supabase stop
 ```
 
-Les fichiers de test vivent dans `supabase/tests/database/`. Le schéma
-utilisé pour les lancer — et pour reconstruire la vraie base depuis zéro
-le cas échéant — est `supabase/migrations/20260101000000_baseline.sql` :
-c'est le seul et unique fichier de référence, rien à garder synchronisé
-ailleurs. Tourne automatiquement via `.github/workflows/rls-tests.yml`,
-mais seulement sur les PR qui touchent à `supabase/` — inutile de payer
-~2 min de démarrage Docker pour une PR qui ne change que du React. Ce
-n'est pas un check obligatoire pour merger (seul `build` l'est), donc
-aucun risque qu'une PR reste bloquée si le workflow ne se déclenche pas.
-
-Ce que cette suite ne couvre pas : la logique React elle-même (formulaires,
-imports, stats), et les policies de stockage (upload des couvertures).
+Le workflow `rls-tests` lance cette suite sur les pull requests qui modifient `supabase/`.
 
 ## Base de données
 
-Schéma géré à la main : les changements sont écrits dans
-`supabase/migrations/20260101000000_baseline.sql`, puis copiés-collés dans
-le SQL Editor de Supabase (Dashboard → SQL Editor) sur le vrai projet — pas
-de `supabase db push` automatisé vers la prod. Le fichier de migration sert
-uniquement à faire tourner une base locale identique pour les tests pgTAP.
+Le schéma tient dans un seul fichier, `supabase/migrations/20260101000000_baseline.sql`. Il décrit les tables `profiles`, `households`, `household_invites`, `books`, `reading_goals` et `achievement_claims`, le bucket de stockage `covers` et les fonctions SQL associées. La sécurité par ligne est activée partout : chacun lit et écrit ses données, les membres d'un foyer lisent celles des autres.
 
-Cinq tables, RLS activée partout : `books`, `reading_goals`,
-`household_links`, `profiles`, et le bucket de stockage `covers`. Deux
-fonctions `security definer` à accès restreint (`find_user_by_code`,
-`generate_friend_code`) pour la résolution de code ami sans exposer toute
-la table `profiles`.
+Ce fichier sert à construire une base vierge (nouveau projet, tests locaux). Sur le projet Supabase réel, les changements s'appliquent à la main, par le SQL Editor du tableau de bord ou par `supabase db query --linked`. N'utilisez pas `supabase db push` : l'historique de migrations du projet distant est vide, la commande rejouerait tout le fichier.
 
-## Workflow de contribution
+## Déploiement
 
-GitFlow simplifié, pour ne jamais déclencher un build Netlify (payant en
-crédits) en dehors d'un vrai merge sur `main` :
+Netlify construit le site à chaque fusion sur `main` (`netlify.toml`) et redirige toutes les routes vers `index.html`. Les variables `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` sont à définir dans les réglages du site.
 
-- `develop` est la branche de travail. Chaque fonctionnalité part d'une
-  branche `feature/xxx` créée depuis `develop`.
-- Commits au format [conventionnel](https://www.conventionalcommits.org/) :
-  `feat:`, `fix:`, `chore:`, `docs:`, `refactor:` — pour garder un
-  historique lisible.
-- Chaque `feature/xxx` termine par une pull request vers `develop`. La CI
-  (`.github/workflows/build-check.yml`) lance `npm ci`, `npm run lint`,
-  `npm run test` et `npm run build` sur chaque PR, et doit passer avant
-  merge. Les tests pgTAP
-  (`.github/workflows/rls-tests.yml`, voir plus haut) tournent en plus sur
-  les PR qui touchent `supabase/`, à titre informatif.
-- `main` et `develop` sont protégées : push direct interdit, merge
-  uniquement via PR avec la CI au vert.
-- Quand `develop` est stable, promotion `develop` -> `main`. Le merge de
-  cette PR déclenche le déploiement (Netlify ne surveille que `main`,
-  branch deploys et previews désactivés) — donc jamais de petite
-  promotion isolée, on groupe plusieurs `feature/xxx` avant d'en ouvrir
-  une. Pas de versionnage automatique (release-please retiré), un
-  versionnage manuel a repris depuis le 2026-09-14 (voir
-  [GitHub Releases](https://github.com/Fideliuss/Ex-Libris/releases)).
-  Checklist, dans l'ordre :
-  1. Lister les commits/PR sur `develop` absents de `main` (périmètre de
-     la promotion).
-  2. Vérifier que les migrations SQL du lot sont déjà appliquées à la
-     vraie base.
-  3. Décider du numéro de version (semver : MINOR si le lot contient au
-     moins une vraie fonctionnalité, PATCH si fixes seulement).
-  4. Ajouter une entrée dans `CHANGELOG.md` (historique technique, une
-     section datée, un paragraphe par version) — seulement si les
-     changements embarqués sont visibles pour l'utilisateur, pas pour un
-     refactor interne ou un fix invisible.
-  5. Ajouter une entrée dans `src/lib/whatsNew.js` (texte pensé pour
-     l'utilisateur, affiché dans l'app via le pop-up "Quoi de neuf" —
-     voir son commentaire d'en-tête), si ça mérite une annonce. Distinct
-     de `CHANGELOG.md`, les deux doivent être tenus à jour ensemble, pas
-     l'un à la place de l'autre.
-  6. Bump `package.json`/`package-lock.json` avec le numéro décidé à
-     l'étape 3.
-  7. Vérifier que cette section du README décrit toujours la pratique
-     réelle.
-  8. `npm run build && npm run lint && npm run test` propres en local.
-  9. Ouvrir la PR `develop` -> `main`, titre
-     `chore(main): promote develop to production (vX.Y.Z)`.
-  10. CI au vert, y compris `.github/workflows/promotion-checklist.yml`
-      (vérifie que `CHANGELOG.md` et `package.json` font bien partie du
-      diff, pour ne pas les oublier ni les livrer dans une PR séparée).
-  11. Merge classique (jamais squash, pour garder l'historique des PR
-      individuelles visible sur `main`).
-  12. Une fois mergée : tag léger `ExLibris-vX.Y.Z` sur le commit de
-      merge (pour le badge "Verified", signé par GitHub contrairement à
-      un tag annoté créé en local) puis `gh release create`.
-  13. Vérifier le déploiement live (pas d'erreur console, la nouveauté
-      est bien visible).
-- Protection des branches via [Repository Rulesets](https://github.com/Fideliuss/Ex-Libris/rules)
-  (pas l'ancienne "branch protection" classique, qui ne bloque pas
-  vraiment les push directs quand 0 review est requise).
+## Contribuer
+
+La façon de travailler (branches, revues, livraison vers `main`, versions) est décrite dans [CONTRIBUTING.md](CONTRIBUTING.md). L'historique des versions est dans [CHANGELOG.md](CHANGELOG.md).
 
 ## Licence
 
-Tous droits réservés — voir [`LICENSE`](LICENSE).
-
-## État du projet
-
-Usage familial (2-3 comptes), pas pensé pour un déploiement public à
-grande échelle. Les fonctions pures (`src/lib/`) et les policies RLS sont
-testées automatiquement ; le rendu et les interactions des composants
-React (formulaires, filtres, panneaux) se vérifient encore à la main
-avant chaque livraison. `xlsx` est installé depuis le build SheetJS
-officiel plutôt que le paquet npm, qui traîne deux CVE non corrigés.
+Tous droits réservés, voir [LICENSE](LICENSE).

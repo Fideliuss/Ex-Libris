@@ -6,8 +6,8 @@ promotion `develop` -> `main`.
 
 Historique technique (commits, PR, hashes) : pas ce qui est montré dans
 l'app. Pour le pop-up "Quoi de neuf" vu par l'utilisateur, voir
-`src/lib/whatsNew.js`, à tenir à jour en parallèle (voir README.md,
-section GitFlow).
+`src/lib/whatsNew.js`, à tenir à jour en parallèle (voir CONTRIBUTING.md,
+section « Livrer vers main »).
 
 ## 1.12.1 (2026-10-02)
 

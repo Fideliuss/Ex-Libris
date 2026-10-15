@@ -5,7 +5,7 @@
 // utilisateur·rice dans l'app. On ajoute une entrée en tête de liste à
 // chaque nouveauté qui mérite d'être annoncée (pas à chaque PR), au moment
 // de la promotion `develop` -> `main`, en même temps que CHANGELOG.md
-// (voir README.md, section GitFlow) : c'est le seul moment fiable où on
+// (voir CONTRIBUTING.md, section « Livrer vers main ») : c'est le seul moment fiable où on
 // prend du recul sur tout ce qui vient d'être livré d'un coup.
 export const WHATS_NEW = [
   {
