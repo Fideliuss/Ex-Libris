@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { deleteMyAccount } from '../lib/account'
 import { describeError } from '../lib/errors'
-import { dangerButtonClass } from '../lib/ui'
+import InlineConfirm from './InlineConfirm'
 
 export default function DeleteAccountSection() {
   const { user, signOut } = useAuth()
@@ -41,27 +41,13 @@ export default function DeleteAccountSection() {
       )}
 
       {confirming ? (
-        <div className="flex items-center gap-3">
-          <p className="text-sm text-stamp">
-            Confirmer la suppression définitive ?
-          </p>
-          <button
-            type="button"
-            onClick={() => setConfirming(false)}
-            disabled={working}
-            className="text-xs text-ink/70 underline underline-offset-2 disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
-          >
-            Annuler
-          </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={working}
-            className={`rounded-sm font-medium px-3 py-1.5 text-xs ${dangerButtonClass}`}
-          >
-            {working ? 'Suppression…' : 'Oui, tout supprimer'}
-          </button>
-        </div>
+        <InlineConfirm
+          message="Confirmer la suppression définitive ?"
+          confirmLabel={working ? 'Suppression…' : 'Oui, tout supprimer'}
+          onCancel={() => setConfirming(false)}
+          onConfirm={handleDelete}
+          disabled={working}
+        />
       ) : (
         <button
           type="button"
