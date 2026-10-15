@@ -1,15 +1,11 @@
-import { useEffect } from 'react'
+import { useEscapeKey } from '../hooks/useEscapeKey'
 
-// Couverture en grand, plein écran — partagé entre BookDetail.jsx et
+// Couverture en grand, plein écran, partagé entre BookDetail.jsx et
 // BookForm.jsx (ajout/édition), plutôt que deux copies de la même modal.
+// Un clic n'importe où (image comprise) ferme : d'où l'absence de <Modal>,
+// dont le contenu ne ferme pas au clic.
 export default function CoverLightbox({ src, alt, onClose }) {
-  useEffect(() => {
-    function handleKeyDown(e) {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
+  useEscapeKey(onClose)
 
   return (
     <div

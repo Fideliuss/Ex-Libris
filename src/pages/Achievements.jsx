@@ -7,6 +7,7 @@ import { useGoBack } from '../lib/navigation'
 import HouseholdSwitchBadge from '../components/HouseholdSwitchBadge'
 import AchievementsGallery from '../components/AchievementsGallery'
 import LoadingScreen from '../components/LoadingScreen'
+import { backLinkClass } from '../lib/ui'
 
 export default function Achievements() {
   const { user } = useAuth()
@@ -75,7 +76,7 @@ export default function Achievements() {
         <button
           type="button"
           onClick={goBack}
-          className="text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+          className={backLinkClass}
         >
           ← Retour à la collection
         </button>

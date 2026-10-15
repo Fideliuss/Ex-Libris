@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { useSignOut } from '../hooks/useSignOut'
 import { useAuth } from '../context/AuthContext'
 import { bulkDeleteBooks, bulkSetField, bulkUpdateBooks } from '../lib/books'
 import { isBookIncomplete } from '../lib/bookCompleteness'
@@ -18,11 +19,13 @@ import {
   STATUS_LABELS,
   STATUS_BADGE_CLASS,
   STATUS_BORDER_CLASS,
+  STATUS_ORDER,
 } from '../lib/statusLabels'
 import { authorSortKey } from '../lib/authorSort'
+import { parseDateOnly } from '../lib/dates'
+import { prefersReducedMotion } from '../lib/motion'
+import { safeLocal, safeSession } from '../lib/safeStorage'
 import { primaryButtonClass, secondaryButtonClass, labelClass } from '../lib/ui'
-
-const STATUS_ORDER = Object.keys(STATUS_LABELS)
 
 // Départage à l'alphabétique (titre) toute égalité de tri : deux livres du
 // même auteur, à la même note, etc. sinon leur ordre relatif ne voudrait
@@ -91,6 +94,8 @@ const SORT_GROUPS = [
   { label: 'Évaluation & série', keys: ['rating', 'status', 'tome'] },
 ]
 
+const SCROLL_KEY = 'exlibris:collectionScroll'
+
 function sortStorageKey(userId) {
   return `exlibris:${userId ?? 'anon'}:collectionSort`
 }
@@ -99,45 +104,20 @@ function directionStorageKey(userId) {
   return `exlibris:${userId ?? 'anon'}:collectionSortDir`
 }
 
-function readStored(key) {
-  try {
-    return localStorage.getItem(key)
-  } catch {
-    return null
-  }
-}
-
-function writeStored(key, value) {
-  try {
-    localStorage.setItem(key, value)
-  } catch {
-    // Stockage indisponible (navigation privée, quota plein...) : tant pis,
-    // ce n'est qu'une préférence de confort.
-  }
-}
-
 function readStoredSort(userId) {
-  return readStored(sortStorageKey(userId))
+  return safeLocal.get(sortStorageKey(userId))
 }
 
 function writeStoredSort(userId, value) {
-  writeStored(sortStorageKey(userId), value)
+  safeLocal.set(sortStorageKey(userId), value)
 }
 
 function readStoredDirection(userId) {
-  return readStored(directionStorageKey(userId))
+  return safeLocal.get(directionStorageKey(userId))
 }
 
 function writeStoredDirection(userId, value) {
-  writeStored(directionStorageKey(userId), value)
-}
-
-// Les champs date_finished sont des "date" Postgres (pas d'heure) : les
-// parser avec `new Date(string)` les interprète en UTC et peut décaler d'un
-// jour selon le fuseau du navigateur. On construit la date en local.
-function parseDateOnly(str) {
-  const [y, m, d] = str.split('-').map(Number)
-  return new Date(y, m - 1, d)
+  safeLocal.set(directionStorageKey(userId), value)
 }
 
 function monthLabel(date) {
@@ -190,17 +170,12 @@ function groupKeyFor(book, sortKey) {
 }
 
 export default function Collection() {
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
   const { members, ownerId, isMine, books, loading, error, refresh, setOwnerId } =
     useHouseholdBooks()
   const selectedMember = members.find((m) => m.userId === ownerId)
   const selectedLabel = selectedMember?.displayName ?? selectedMember?.email
-  const navigate = useNavigate()
-
-  async function handleSignOut() {
-    await signOut()
-    navigate('/', { replace: true })
-  }
+  const handleSignOut = useSignOut()
 
   // Filtres/tri/recherche vivent dans l'URL (et non un useState local) pour
   // survivre à un aller-retour vers la fiche d'un livre : la page se
@@ -295,11 +270,7 @@ export default function Collection() {
       if (ticking) return
       ticking = true
       requestAnimationFrame(() => {
-        try {
-          sessionStorage.setItem('exlibris:collectionScroll', String(window.scrollY))
-        } catch {
-          // Stockage indisponible (navigation privée...) : tant pis.
-        }
+        safeSession.set(SCROLL_KEY, String(window.scrollY))
         ticking = false
       })
     }
@@ -309,14 +280,9 @@ export default function Collection() {
 
   useEffect(() => {
     if (loading) return
-    let saved
-    try {
-      saved = sessionStorage.getItem('exlibris:collectionScroll')
-      if (saved !== null) sessionStorage.removeItem('exlibris:collectionScroll')
-    } catch {
-      saved = null
-    }
+    const saved = safeSession.get(SCROLL_KEY)
     if (saved === null) return
+    safeSession.remove(SCROLL_KEY)
     requestAnimationFrame(() => window.scrollTo(0, Number(saved)))
   }, [loading])
 
@@ -480,11 +446,8 @@ export default function Collection() {
   }, [availableLetters])
 
   function scrollToLetter(letter) {
-    const reduceMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
     document.getElementById(`h-${letter}`)?.scrollIntoView({
-      behavior: reduceMotion ? 'auto' : 'smooth',
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
       block: 'start',
     })
   }
@@ -633,18 +596,17 @@ export default function Collection() {
     )
   }
 
+  const booksById = useMemo(() => new Map(books.map((b) => [b.id, b])), [books])
+
   function handleBulkAddTag(newTag) {
     const clean = newTag.trim()
     if (!clean) return Promise.resolve()
     return runBulkAction(() =>
       bulkUpdateBooks(
-        [...selectedIds].map((id) => {
-          const book = books.find((b) => b.id === id)
-          return {
-            id,
-            patch: { tags: [...new Set([...(book?.tags ?? []), clean])] },
-          }
-        }),
+        [...selectedIds].map((id) => ({
+          id,
+          patch: { tags: [...new Set([...(booksById.get(id)?.tags ?? []), clean])] },
+        })),
       ),
     )
   }
@@ -653,15 +615,12 @@ export default function Collection() {
     if (!tagsToRemove?.length) return Promise.resolve()
     return runBulkAction(() =>
       bulkUpdateBooks(
-        [...selectedIds].map((id) => {
-          const book = books.find((b) => b.id === id)
-          return {
-            id,
-            patch: {
-              tags: (book?.tags ?? []).filter((t) => !tagsToRemove.includes(t)),
-            },
-          }
-        }),
+        [...selectedIds].map((id) => ({
+          id,
+          patch: {
+            tags: (booksById.get(id)?.tags ?? []).filter((t) => !tagsToRemove.includes(t)),
+          },
+        })),
       ),
     )
   }

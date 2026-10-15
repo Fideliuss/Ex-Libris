@@ -1,6 +1,9 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { navigateWithViewTransition } from '../lib/navigation'
+import { isPlainLeftClick, navigateWithViewTransition } from '../lib/navigation'
+import { prefersReducedMotion } from '../lib/motion'
+import { safeLocal } from '../lib/safeStorage'
+import Pin from '../components/Pin'
 import BookCoverPlaceholder from '../components/BookCoverPlaceholder'
 import { STATUS_LABELS } from '../lib/statusLabels'
 import { primaryButtonClass } from '../lib/ui'
@@ -188,7 +191,7 @@ function useT() {
 
 function detectLang() {
   if (typeof window === 'undefined') return 'fr'
-  const saved = window.localStorage.getItem(LANG_STORAGE_KEY)
+  const saved = safeLocal.get(LANG_STORAGE_KEY)
   if (saved === 'fr' || saved === 'en') return saved
   return navigator.language?.toLowerCase().startsWith('fr') ? 'fr' : 'en'
 }
@@ -197,7 +200,7 @@ export default function Landing() {
   const [lang, setLang] = useState(detectLang)
 
   useEffect(() => {
-    window.localStorage.setItem(LANG_STORAGE_KEY, lang)
+    safeLocal.set(LANG_STORAGE_KEY, lang)
   }, [lang])
 
   return (
@@ -388,7 +391,7 @@ function useFixedShelf(rangeRef, rootRef, colRefs, speeds) {
   useEffect(() => {
     const root = rootRef.current
     if (!root) return
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const reducedMotion = prefersReducedMotion()
 
     let frame = null
     function update() {
@@ -501,7 +504,7 @@ function Features() {
   const count = t.features.length
 
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (prefersReducedMotion()) {
       setPinned(false)
       return
     }
@@ -706,23 +709,6 @@ function BillingToggle({ billing, onChange, labels }) {
 // en pied), mais dimensionnée pour une carte de tarif plutôt qu'une
 // vignette de collection : le nom du palier tient lieu de titre, sa
 // tagline de note d'accroche.
-// Punaise de coin, identique à celle du mur à trophées des succès
-// (Pin dans ExLibrisPlate.jsx, non exportée) : dupliquée ici plutôt
-// qu'importée, cette page n'a pas d'autre raison de dépendre du module
-// succès.
-function Pin({ className }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={`absolute w-2.5 h-2.5 rounded-full ${className}`}
-      style={{
-        background: 'radial-gradient(circle at 35% 35%, #f0dcae, #8e7145 75%)',
-        boxShadow: '0 2px 3px rgba(0,0,0,0.5)',
-      }}
-    />
-  )
-}
-
 // Même matière que les plaques du mur à trophées (TIER_METAL : bronze,
 // argent, or, platine — un dégradé par palier, du même module que les
 // succès) mais sans leur mécanique de verrouillage/révélation : ça n'a
@@ -739,10 +725,10 @@ function PricingCard({ tier, price, tierIndex }) {
           'inset 1px 1px 2px rgba(255,255,255,0.35), inset -2px -2px 4px rgba(15,10,5,0.25), 0 10px 16px rgba(0,0,0,0.25)',
       }}
     >
-      <Pin className="-top-[5px] -left-[5px]" />
-      <Pin className="-top-[5px] -right-[5px]" />
-      <Pin className="-bottom-[5px] -left-[5px]" />
-      <Pin className="-bottom-[5px] -right-[5px]" />
+      <Pin size="w-2.5" className="-top-[5px] -left-[5px]" />
+      <Pin size="w-2.5" className="-top-[5px] -right-[5px]" />
+      <Pin size="w-2.5" className="-bottom-[5px] -left-[5px]" />
+      <Pin size="w-2.5" className="-bottom-[5px] -right-[5px]" />
 
       {/* Sticker (étiquette plate, bord clair, légère rotation) plutôt
           qu'un cachet de cire ou un tampon en diagonale. En bas à droite,
@@ -860,8 +846,7 @@ function LoginCta({ className, children }) {
   const navigate = useNavigate()
 
   function handleClick(e) {
-    if (e.defaultPrevented || e.button !== 0) return
-    if (e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) return
+    if (!isPlainLeftClick(e)) return
     e.preventDefault()
     navigateWithViewTransition(navigate, '/login', {
       direction: 'top',

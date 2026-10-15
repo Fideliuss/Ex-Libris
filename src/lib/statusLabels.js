@@ -5,6 +5,9 @@ export const STATUS_LABELS = {
   read: 'Lu',
 }
 
+// Ordre de progression d'un livre, du moins au plus avancé.
+export const STATUS_ORDER = Object.keys(STATUS_LABELS)
+
 // Signal discret de statut, sur la bordure des cartes et les badges.
 export const STATUS_BORDER_CLASS = {
   wishlist: 'border-wishlist',

@@ -8,15 +8,11 @@ import { lookupIsbn } from '../lib/isbnLookup'
 import { getMissingFields } from '../lib/bookCompleteness'
 import { compressImage, deleteCover, uploadCover } from '../lib/storage'
 import TagInput from '../components/TagInput'
-import {
-  inputClass,
-  primaryButtonClass,
-  secondaryButtonClass,
-  dangerOutlineButtonClass,
-} from '../lib/ui'
+import { inputClass, primaryButtonClass, secondaryButtonClass, dangerOutlineButtonClass, backLinkClass, cardClass } from '../lib/ui'
 import { describeError } from '../lib/errors'
 import { BOOK_TYPES } from '../lib/bookTypes'
 import { useGoBack } from '../lib/navigation'
+import { prefersReducedMotion } from '../lib/motion'
 import LoadingScreen from '../components/LoadingScreen'
 import BookCardVisual from '../components/BookCardVisual'
 import InlineConfirm from '../components/InlineConfirm'
@@ -371,7 +367,7 @@ export default function BookForm() {
         <button
           type="button"
           onClick={goBack}
-          className="text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+          className={backLinkClass}
         >
           {isEdit ? '← Retour à la fiche' : '← Retour à la collection'}
         </button>
@@ -397,7 +393,7 @@ export default function BookForm() {
         <form
           id="book-form"
           onSubmit={handleSubmit}
-          className="bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6 space-y-5"
+          className={`${cardClass} p-6 space-y-5`}
         >
           <Field label="ISBN">
             <input
@@ -1056,9 +1052,7 @@ function FormSection({ title, defaultOpen = false, children }) {
   // recalculait pas de façon fiable au toggle dans les tests : la même
   // propriété posée en style inline fonctionne correctement, donc on passe
   // par là plutôt que par une classe pour cette propriété précise.
-  const reduceMotion =
-    typeof window !== 'undefined' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const reduceMotion = prefersReducedMotion()
   return (
     <div className="border-t border-ink/10 pt-5">
       <button

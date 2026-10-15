@@ -10,7 +10,7 @@ import { mapMyLibraryRowToBook, parseMyLibraryXlsx } from '../lib/myLibraryImpor
 import { useAuth } from '../context/AuthContext'
 import { useLibraryData } from '../hooks/useLibraryData'
 import { describeError } from '../lib/errors'
-import { primaryButtonClass } from '../lib/ui'
+import { primaryButtonClass, backLinkClass } from '../lib/ui'
 
 export default function ImportPanel() {
   const { user } = useAuth()
@@ -205,7 +205,7 @@ export default function ImportPanel() {
           <button
             type="button"
             onClick={() => setStep('idle')}
-            className="block text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+            className={`block ${backLinkClass}`}
           >
             Choisir un autre fichier
           </button>

@@ -25,3 +25,16 @@ export const dangerOutlineButtonClass =
 // Étiquette de section/champ (petites capitales espacées) : Collection,
 // BookDetail, Stats, Account...
 export const labelClass = 'font-mono text-xs uppercase tracking-widest text-ink/70'
+
+// Carte "fiche" : fond, filet pointillé laiton en haut, ombre légère. À
+// combiner avec le padding propre à chaque emplacement, ex.
+// `${cardClass} p-6`.
+export const cardClass = 'bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm'
+
+// Petit lien-bouton souligné couleur bibliothèque (Modifier, Valider...).
+export const linkButtonClass =
+    'text-xs text-library underline underline-offset-2 hover:text-library/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm'
+
+// Lien "← Retour" sobre, en haut des pages.
+export const backLinkClass =
+    'text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm'

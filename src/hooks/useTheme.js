@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { safeLocal } from '../lib/safeStorage'
 
 export const THEME_STORAGE_KEY = 'theme-preference'
 
@@ -27,12 +28,12 @@ function updateThemeColorMeta(isDark) {
 // l'appliquer avant le premier rendu et éviter un flash du mauvais thème.
 export function useTheme() {
   const [theme, setTheme] = useState(
-    () => localStorage.getItem(THEME_STORAGE_KEY) ?? 'system',
+    () => safeLocal.get(THEME_STORAGE_KEY) ?? 'system',
   )
 
   useEffect(() => {
     applyTheme(theme)
-    localStorage.setItem(THEME_STORAGE_KEY, theme)
+    safeLocal.set(THEME_STORAGE_KEY, theme)
 
     if (theme !== 'system') {
       updateThemeColorMeta(theme === 'dark')

@@ -2,7 +2,7 @@ import { memo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { STATUS_BORDER_CLASS } from '../lib/statusLabels'
 import BookCardVisual from './BookCardVisual'
-import { navigateWithViewTransition } from '../lib/navigation'
+import { isPlainLeftClick, navigateWithViewTransition } from '../lib/navigation'
 
 function BookCard({
   book,
@@ -14,10 +14,7 @@ function BookCard({
   const navigate = useNavigate()
 
   function handleOpen(e) {
-    // Laisse le navigateur gérer normalement les clics du milieu / avec
-    // modificateur (ouvrir dans un nouvel onglet, etc.).
-    if (e.defaultPrevented || e.button !== 0) return
-    if (e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) return
+    if (!isPlainLeftClick(e)) return
     e.preventDefault()
     navigateWithViewTransition(navigate, `/books/${book.id}`, {
       preload: () => import('../pages/BookDetail'),

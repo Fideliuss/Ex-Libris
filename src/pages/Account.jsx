@@ -1,5 +1,6 @@
 import { lazy, Suspense, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import { useSignOut } from '../hooks/useSignOut'
 import { useAuth } from '../context/AuthContext'
 import { useTutorial } from '../context/TutorialContext'
 import { useGoBack } from '../lib/navigation'
@@ -12,7 +13,7 @@ import ThemeToggle from '../components/ThemeToggle'
 import DeleteAccountSection from '../components/DeleteAccountSection'
 import PersonalInfoSection from '../components/PersonalInfoSection'
 import ChangelogModal from '../components/ChangelogModal'
-import { secondaryButtonClass } from '../lib/ui'
+import { secondaryButtonClass, backLinkClass, cardClass } from '../lib/ui'
 
 const ImportPanel = lazy(() => import('../components/ImportPanel'))
 const ExportPanel = lazy(() => import('../components/ExportPanel'))
@@ -96,17 +97,12 @@ function SecuritySection() {
 }
 
 export default function Account() {
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
   const goBack = useGoBack('/')
-  const navigate = useNavigate()
+  const handleSignOut = useSignOut()
   const [tab, setTab] = useState('info')
   const navRef = useRef(null)
   const edgeFade = useEdgeFade(navRef)
-
-  async function handleSignOut() {
-    await signOut()
-    navigate('/', { replace: true })
-  }
 
   const tabs = [
     { key: 'info', label: 'Informations personnelles', content: <PersonalInfoSection user={user} /> },
@@ -124,7 +120,7 @@ export default function Account() {
           <button
             type="button"
             onClick={goBack}
-            className="text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+            className={backLinkClass}
           >
             ← Retour à la collection
           </button>
@@ -181,7 +177,7 @@ export default function Account() {
 
           <div
             role="tabpanel"
-            className="flex-1 min-w-0 bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-6"
+            className={`flex-1 min-w-0 ${cardClass} p-6`}
           >
             {activeTab.content}
           </div>

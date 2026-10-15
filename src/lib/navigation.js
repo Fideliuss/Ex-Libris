@@ -106,3 +106,11 @@ export async function navigateWithViewTransition(
   transition.ready.catch(() => {})
   transition.finished.catch(() => {})
 }
+
+// Vrai pour un clic gauche simple : les clics du milieu ou avec modificateur
+// (nouvel onglet, nouvelle fenêtre...) doivent rester gérés par le
+// navigateur, sans transition ni navigation programmatique.
+export function isPlainLeftClick(e) {
+  if (e.defaultPrevented || e.button !== 0) return false
+  return !(e.metaKey || e.altKey || e.ctrlKey || e.shiftKey)
+}
