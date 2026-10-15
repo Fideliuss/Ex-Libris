@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { createBook, deleteBook, getBook, updateBook } from '../lib/books'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { useLibraryData } from '../hooks/useLibraryData'
 import { bookSuggestions } from '../lib/bookSuggestions'
 import { lookupIsbn } from '../lib/isbnLookup'

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 
 // Déconnexion puis retour à l'accueil (remplace l'historique : "Retour" ne
 // ramène pas sur une page protégée).

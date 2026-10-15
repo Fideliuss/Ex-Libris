@@ -14,6 +14,8 @@ import {
 import { describeError } from '../lib/errors'
 import { inputClass, labelClass, secondaryButtonClass } from '../lib/ui'
 import LoadingScreen from './LoadingScreen'
+import InlineConfirm from './InlineConfirm'
+import TabBar from './TabBar'
 
 function initials(label) {
   return (label ?? '?')
@@ -195,31 +197,16 @@ export default function SharingPanel({ user }) {
             </div>
           </div>
 
-          <div className="flex gap-4 border-b border-ink/20 mb-4">
-            <button
-              type="button"
-              onClick={() => setTab('membres')}
-              className={`text-sm pb-2 border-b-2 -mb-px ${
-                tab === 'membres' ? 'border-library text-library font-medium' : 'border-transparent text-ink/70'
-              }`}
-            >
-              Membres
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab('invitations')}
-              className={`flex items-center gap-1.5 text-sm pb-2 border-b-2 -mb-px ${
-                tab === 'invitations' ? 'border-library text-library font-medium' : 'border-transparent text-ink/70'
-              }`}
-            >
-              Invitations
-              {invitesCount > 0 && (
-                <span className="bg-stamp-fill text-white rounded-full text-[10px] leading-none px-1.5 py-0.5">
-                  {invitesCount}
-                </span>
-              )}
-            </button>
-          </div>
+          <TabBar
+            variant="underline"
+            tabs={[
+              { key: 'membres', label: 'Membres' },
+              { key: 'invitations', label: 'Invitations', badge: invitesCount },
+            ]}
+            active={tab}
+            onChange={setTab}
+            ariaLabel="Sections du partage"
+          />
 
           {tab === 'membres' ? (
             <div>
@@ -241,23 +228,12 @@ export default function SharingPanel({ user }) {
                       ) : (
                         household.isOwner &&
                         (confirmingRemove === m.userId ? (
-                          <span className="flex items-center gap-2 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => handleRemove(m.userId)}
-                              disabled={working}
-                              className="text-xs text-stamp underline underline-offset-2 disabled:opacity-50"
-                            >
-                              Confirmer
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setConfirmingRemove(null)}
-                              className="text-xs text-ink/70 underline underline-offset-2"
-                            >
-                              Annuler
-                            </button>
-                          </span>
+                          <InlineConfirm
+                            message="Retirer ce membre ?"
+                            onCancel={() => setConfirmingRemove(null)}
+                            onConfirm={() => handleRemove(m.userId)}
+                            disabled={working}
+                          />
                         ) : (
                           <button
                             type="button"
@@ -295,23 +271,13 @@ export default function SharingPanel({ user }) {
 
               {household.id &&
                 (confirmingLeave ? (
-                  <div className="flex items-center gap-3 mt-4">
-                    <p className="text-sm text-stamp">Quitter le foyer ?</p>
-                    <button
-                      type="button"
-                      onClick={handleLeave}
+                  <div className="mt-4">
+                    <InlineConfirm
+                      message="Quitter le foyer ?"
+                      onCancel={() => setConfirmingLeave(false)}
+                      onConfirm={handleLeave}
                       disabled={working}
-                      className="text-xs text-stamp underline underline-offset-2 disabled:opacity-50"
-                    >
-                      Confirmer
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmingLeave(false)}
-                      className="text-xs text-ink/70 underline underline-offset-2"
-                    >
-                      Annuler
-                    </button>
+                    />
                   </div>
                 ) : (
                   <button
