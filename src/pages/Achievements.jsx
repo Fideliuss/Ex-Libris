@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import { useProfile } from '../hooks/useProfile'
@@ -54,10 +54,13 @@ export default function Achievements() {
   // censés être égaux ici (onClaim n'est branché que si isMine), mais un
   // bug similaire à celui qu'on vient de corriger dans AchievementsGallery
   // aurait sinon pu de nouveau attribuer la réclamation au mauvais compte.
-  function handleClaim(badgeId, rank) {
-    setClaims((prev) => new Map(prev).set(badgeId, rank))
-    upsertClaim(ownerId, badgeId, rank).catch(() => {})
-  }
+  const handleClaim = useCallback(
+    (badgeId, rank) => {
+      setClaims((prev) => new Map(prev).set(badgeId, rank))
+      upsertClaim(ownerId, badgeId, rank).catch(() => {})
+    },
+    [ownerId],
+  )
 
   const selectedMember = members.find((m) => m.userId === ownerId)
   const selectedLabel = selectedMember?.displayName ?? selectedMember?.email
