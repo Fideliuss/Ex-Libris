@@ -3,20 +3,6 @@ import { getCurrentUserId } from './session'
 
 export const DEFAULT_GOAL = 12
 
-// Pas de ligne tant que l'utilisateur n'a jamais fixé d'objectif pour cette
-// année : on retombe sur la valeur par défaut plutôt que d'exiger une ligne
-// créée à l'avance pour chaque année.
-export async function getReadingGoal(userId, year) {
-  const { data, error } = await supabase
-    .from('reading_goals')
-    .select('goal')
-    .eq('user_id', userId)
-    .eq('year', year)
-    .maybeSingle()
-  if (error) throw error
-  return data?.goal ?? DEFAULT_GOAL
-}
-
 export async function updateReadingGoal(year, goal) {
   const userId = await getCurrentUserId()
   const { error } = await supabase

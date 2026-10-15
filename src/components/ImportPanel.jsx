@@ -41,7 +41,7 @@ export default function ImportPanel() {
         mappedRows = rows.map((row) => ({ mapped: mapLibibRowToBook(row), raw: row }))
       } else {
         const buffer = await file.arrayBuffer()
-        const rows = parseMyLibraryXlsx(buffer)
+        const rows = await parseMyLibraryXlsx(buffer)
         mappedRows = rows.map((entry) => ({
           mapped: mapMyLibraryRowToBook(entry),
           raw: null,

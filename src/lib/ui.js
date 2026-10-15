@@ -38,3 +38,7 @@ export const linkButtonClass =
 // Lien "← Retour" sobre, en haut des pages.
 export const backLinkClass =
     'text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm'
+
+// Variante discrète du lien-bouton (Annuler...).
+export const mutedLinkButtonClass =
+  'text-xs text-ink/70 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm'

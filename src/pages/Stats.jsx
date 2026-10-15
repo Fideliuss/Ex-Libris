@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
@@ -8,12 +8,7 @@ import {
   renamePublisher,
   renameSeries,
 } from '../lib/books'
-import {
-  getReadingGoal,
-  updateReadingGoal,
-  getReadingGoalHistory,
-  DEFAULT_GOAL,
-} from '../lib/readingGoals'
+import { useReadingGoals } from '../hooks/useReadingGoals'
 import { bookPoints, TYPE_POINTS } from '../lib/points'
 import { describeError } from '../lib/errors'
 import { useGoBack } from '../lib/navigation'
@@ -28,6 +23,12 @@ import BarChart from '../components/BarChart'
 import DonutChart from '../components/DonutChart'
 import ReadingHeatmap from '../components/ReadingHeatmap'
 import LoadingScreen from '../components/LoadingScreen'
+import StatTile from '../components/stats/StatTile'
+import CountBar from '../components/stats/CountBar'
+import PaginatedList from '../components/stats/PaginatedList'
+import RenameableStatRow from '../components/stats/RenameableStatRow'
+import ObjectiveCard from '../components/stats/ObjectiveCard'
+import GoalHistorySection from '../components/stats/GoalHistorySection'
 
 const PERIOD_OPTIONS = {
   all: 'Tout',
@@ -60,6 +61,7 @@ export default function Stats() {
   const { members, ownerId, isMine, books, loading, error, refresh, setOwnerId } =
     useHouseholdBooks()
   const viewedUserId = ownerId
+  const readingGoals = useReadingGoals(viewedUserId)
   const selectedMember = members.find((m) => m.userId === ownerId)
   const selectedLabel = selectedMember?.displayName ?? selectedMember?.email
   const goBack = useGoBack('/')
@@ -405,10 +407,10 @@ export default function Stats() {
             {statsTab === 'overview' && (
               <div className="space-y-6">
                 <ObjectiveCard
-                  viewedUserId={viewedUserId}
                   isMine={isMine}
                   score={currentYearScore}
                   breakdown={currentYearBreakdown}
+                  readingGoals={readingGoals}
                 />
 
                 <div className="grid sm:grid-cols-2 gap-6">
@@ -664,9 +666,9 @@ export default function Stats() {
                 </section>
 
                 <GoalHistorySection
-                  viewedUserId={viewedUserId}
                   isMine={isMine}
                   books={books}
+                  readingGoals={readingGoals}
                 />
               </div>
             )}
@@ -809,532 +811,6 @@ export default function Stats() {
           </div>
         )}
       </div>
-    </div>
-  )
-}
-
-function StatTile({ label, value, accent }) {
-  return (
-    <div className={`${cardClass} p-4 text-center`}>
-      <p className={`font-mono text-2xl font-semibold ${accent ?? 'text-ink'}`}>
-        {value}
-      </p>
-      <p className="text-xs text-ink/70 mt-1">{label}</p>
-    </div>
-  )
-}
-
-// Enlève les zéros inutiles après la virgule (9.50 -> 9.5, 12.00 -> 12), le
-// score cumulant des points fractionnaires (1, 1/2, 1/3 selon le type).
-function formatScore(value) {
-  return value.toFixed(2).replace(/\.?0+$/, '')
-}
-
-function ObjectiveCard({ viewedUserId, isMine, score, breakdown }) {
-  // Garde le userId avec le résultat : si viewedUserId change (bascule
-  // Mine/Partenaire) avant que la requête ne revienne, ce résultat est
-  // "périmé" et on retombe sur l'état de chargement au lieu d'afficher
-  // brièvement l'objectif de l'autre.
-  const [result, setResult] = useState({ userId: null, goal: null, error: null })
-  const isStale = result.userId !== viewedUserId
-  const goal = isStale ? null : result.goal
-  const loadError = isStale ? null : result.error
-
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState(null)
-
-  const year = new Date().getFullYear()
-
-  useEffect(() => {
-    if (!viewedUserId) return
-    let active = true
-    getReadingGoal(viewedUserId, year)
-      .then((g) => {
-        if (active) setResult({ userId: viewedUserId, goal: g, error: null })
-      })
-      .catch((err) => {
-        if (active) {
-          setResult({ userId: viewedUserId, goal: null, error: describeError(err) })
-        }
-      })
-    return () => {
-      active = false
-    }
-  }, [viewedUserId, year])
-
-  function startEditing() {
-    setDraft(String(goal ?? DEFAULT_GOAL))
-    setEditing(true)
-    setSaveError(null)
-  }
-
-  async function submit() {
-    const value = Number(draft)
-    if (!value || value <= 0) {
-      setSaveError('Entre un nombre positif.')
-      return
-    }
-    setSaving(true)
-    setSaveError(null)
-    try {
-      await updateReadingGoal(year, value)
-      setResult({ userId: viewedUserId, goal: value, error: null })
-      setEditing(false)
-    } catch (err) {
-      setSaveError(describeError(err))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const pct = goal ? Math.min(100, Math.round((score / goal) * 100)) : 0
-
-  return (
-    <section className="bg-card border-t-4 border-dashed border-library rounded-sm shadow-sm p-6">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h2 className="font-serif text-lg">Objectif de lecture {year}</h2>
-        {isMine && !editing && goal != null && (
-          <button
-            type="button"
-            onClick={startEditing}
-            className={linkButtonClass}
-          >
-            Modifier l'objectif
-          </button>
-        )}
-      </div>
-
-      {loadError ? (
-        <p role="alert" className="text-sm text-stamp">
-          {loadError}
-        </p>
-      ) : goal == null ? (
-        <p className="text-sm text-ink/70">Chargement…</p>
-      ) : editing ? (
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            min="1"
-            step="0.5"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            autoFocus
-            className="w-24 rounded-sm border border-ink/20 bg-surface px-2 py-1 text-sm text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-          />
-          <button
-            type="button"
-            onClick={submit}
-            disabled={saving}
-            className={`${linkButtonClass} disabled:opacity-60`}
-          >
-            {saving ? 'Enregistrement…' : 'Valider'}
-          </button>
-          <button
-            type="button"
-            onClick={() => setEditing(false)}
-            className="text-xs text-ink/70 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
-          >
-            Annuler
-          </button>
-        </div>
-      ) : (
-        <>
-          <p className="font-mono text-3xl font-semibold text-library">
-            {formatScore(score)}
-            <span className="text-lg text-ink/70 font-normal"> / {goal}</span>
-          </p>
-          <div className="h-3 w-full rounded-full bg-ink/5 overflow-hidden mt-3">
-            <div
-              className="h-full bg-library rounded-full"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-          <p className="text-xs text-ink/70 mt-2">
-            {pct}% de l'objectif · 1 livre = 1 pt, BD/Comics = 0,5 pt, Manga =
-            1/3 pt
-          </p>
-          {breakdown.length > 0 && (
-            <ul className="flex flex-wrap gap-x-4 gap-y-1 mt-3 text-xs text-ink/70">
-              {breakdown.map((entry) => (
-                <li key={entry.key}>
-                  {entry.count} {entry.label.toLowerCase()}
-                  {entry.count > 1 && !['bd', 'comics'].includes(entry.key) && 's'}{' '}
-                  · {formatScore(entry.points)} pt
-                  {entry.points > 1 ? 's' : ''}
-                </li>
-              ))}
-            </ul>
-          )}
-        </>
-      )}
-      {saveError && (
-        <p role="alert" className="text-xs text-stamp mt-2">
-          {saveError}
-        </p>
-      )}
-    </section>
-  )
-}
-
-// Une ligne par année où soit un objectif a été fixé, soit au moins un
-// livre a été fini (+ l'année en cours, pour pouvoir y fixer un objectif
-// même sans historique). L'objectif est indépendant par année : pas de
-// valeur par défaut reportée d'une année à l'autre.
-function GoalHistorySection({ viewedUserId, isMine, books }) {
-  const [result, setResult] = useState({ userId: null, goals: null, error: null })
-  const isStale = result.userId !== viewedUserId
-  const goals = isStale ? null : result.goals
-  const loadError = isStale ? null : result.error
-
-  const [editingYear, setEditingYear] = useState(null)
-  const [draft, setDraft] = useState('')
-  const [saving, setSaving] = useState(false)
-  const [saveError, setSaveError] = useState(null)
-
-  useEffect(() => {
-    if (!viewedUserId) return
-    let active = true
-    getReadingGoalHistory(viewedUserId)
-      .then((rows) => {
-        if (active) setResult({ userId: viewedUserId, goals: rows, error: null })
-      })
-      .catch((err) => {
-        if (active) {
-          setResult({ userId: viewedUserId, goals: null, error: describeError(err) })
-        }
-      })
-    return () => {
-      active = false
-    }
-  }, [viewedUserId])
-
-  const scoreByYear = useMemo(() => {
-    const map = new Map()
-    for (const b of books) {
-      if (!b.date_finished) continue
-      const year = Number(b.date_finished.slice(0, 4))
-      map.set(year, (map.get(year) ?? 0) + bookPoints(b))
-    }
-    return map
-  }, [books])
-
-  const rows = useMemo(() => {
-    if (!goals) return []
-    const goalByYear = new Map(goals.map((g) => [g.year, g.goal]))
-    const years = new Set(goalByYear.keys())
-    for (const year of scoreByYear.keys()) years.add(year)
-    years.add(new Date().getFullYear())
-    return [...years]
-      .sort((a, b) => b - a)
-      .map((year) => ({
-        year,
-        goal: goalByYear.get(year) ?? null,
-        score: scoreByYear.get(year) ?? 0,
-      }))
-  }, [goals, scoreByYear])
-
-  function startEditing(row) {
-    setEditingYear(row.year)
-    setDraft(String(row.goal ?? DEFAULT_GOAL))
-    setSaveError(null)
-  }
-
-  async function submit(year) {
-    const value = Number(draft)
-    if (!value || value <= 0) {
-      setSaveError('Entre un nombre positif.')
-      return
-    }
-    setSaving(true)
-    setSaveError(null)
-    try {
-      await updateReadingGoal(year, value)
-      setResult((prev) => ({
-        userId: viewedUserId,
-        error: null,
-        goals: [
-          ...(prev.goals ?? []).filter((g) => g.year !== year),
-          { year, goal: value },
-        ],
-      }))
-      setEditingYear(null)
-    } catch (err) {
-      setSaveError(describeError(err))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <section className={`${cardClass} p-6`}>
-      <h2 className="font-serif text-lg mb-4">Historique des objectifs</h2>
-
-      {loadError ? (
-        <p role="alert" className="text-sm text-stamp">
-          {loadError}
-        </p>
-      ) : goals == null ? (
-        <p className="text-sm text-ink/70">Chargement…</p>
-      ) : (
-        <>
-          <ul className="space-y-3">
-            {rows.map((row) => {
-              const pct =
-                row.goal != null
-                  ? Math.min(100, Math.round((row.score / row.goal) * 100))
-                  : null
-              return (
-                <li key={row.year}>
-                  <div className="flex items-baseline justify-between gap-2 mb-1">
-                    <span className="font-mono text-sm text-ink/70">
-                      {row.year}
-                    </span>
-                    {editingYear === row.year ? (
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          min="1"
-                          step="0.5"
-                          value={draft}
-                          onChange={(e) => setDraft(e.target.value)}
-                          autoFocus
-                          className="w-20 rounded-sm border border-ink/20 bg-surface px-2 py-0.5 text-xs text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => submit(row.year)}
-                          disabled={saving}
-                          className={`${linkButtonClass} disabled:opacity-60`}
-                        >
-                          {saving ? 'Enregistrement…' : 'Valider'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEditingYear(null)}
-                          className="text-xs text-ink/70 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
-                        >
-                          Annuler
-                        </button>
-                      </div>
-                    ) : (
-                      <span className="font-mono text-xs text-ink/70">
-                        {formatScore(row.score)}
-                        {row.goal != null ? ` / ${row.goal}` : ''}
-                      </span>
-                    )}
-                  </div>
-                  {row.goal != null && (
-                    <div className="h-2 w-full bg-ink/10 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-library rounded-full"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  )}
-                  {isMine && editingYear !== row.year && (
-                    <button
-                      type="button"
-                      onClick={() => startEditing(row)}
-                      className={`mt-1 ${linkButtonClass}`}
-                    >
-                      {row.goal != null ? 'Modifier' : "Fixer un objectif"}
-                    </button>
-                  )}
-                </li>
-              )
-            })}
-          </ul>
-          {saveError && (
-            <p role="alert" className="text-xs text-stamp mt-3">
-              {saveError}
-            </p>
-          )}
-        </>
-      )}
-    </section>
-  )
-}
-
-const PAGE_SIZE = 6
-
-// Les listes Par tag/éditeur/collection/série peuvent compter des dizaines
-// d'entrées : on les pagine plutôt que de dérouler un mur de texte.
-function PaginatedList({ items, children }) {
-  const [page, setPage] = useState(0)
-  const pageCount = Math.max(1, Math.ceil(items.length / PAGE_SIZE))
-  const clampedPage = Math.min(page, pageCount - 1)
-  const visible = items.slice(
-    clampedPage * PAGE_SIZE,
-    clampedPage * PAGE_SIZE + PAGE_SIZE,
-  )
-
-  return (
-    <>
-      <ul className="space-y-3">{visible.map(children)}</ul>
-      {pageCount > 1 && (
-        <div className="flex items-center justify-between mt-3">
-          <button
-            type="button"
-            onClick={() => setPage((p) => Math.max(0, p - 1))}
-            disabled={clampedPage === 0}
-            className={`${linkButtonClass} disabled:opacity-30 disabled:no-underline`}
-          >
-            ← Précédent
-          </button>
-          <span className="text-xs text-ink/70 font-mono">
-            {clampedPage + 1} / {pageCount}
-          </span>
-          <button
-            type="button"
-            onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-            disabled={clampedPage === pageCount - 1}
-            className={`${linkButtonClass} disabled:opacity-30 disabled:no-underline`}
-          >
-            Suivant →
-          </button>
-        </div>
-      )}
-    </>
-  )
-}
-
-function RenameableStatRow({
-  name,
-  count,
-  max,
-  colorClass,
-  existingNames,
-  onRename,
-  onRenamed,
-  isMine,
-}) {
-  const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(name)
-  const [confirmingMerge, setConfirmingMerge] = useState(false)
-  const [working, setWorking] = useState(false)
-  const [error, setError] = useState(null)
-
-  const trimmed = draft.trim()
-  const collidingName = existingNames.find(
-    (n) => n !== name && n.toLowerCase() === trimmed.toLowerCase(),
-  )
-
-  function startEditing() {
-    setDraft(name)
-    setEditing(true)
-    setConfirmingMerge(false)
-    setError(null)
-  }
-
-  function cancel() {
-    setEditing(false)
-    setConfirmingMerge(false)
-    setError(null)
-  }
-
-  async function submit() {
-    if (!trimmed || trimmed === name) {
-      cancel()
-      return
-    }
-    if (collidingName && !confirmingMerge) {
-      setConfirmingMerge(true)
-      return
-    }
-    setWorking(true)
-    setError(null)
-    try {
-      await onRename(name, trimmed)
-      await onRenamed()
-      setEditing(false)
-      setConfirmingMerge(false)
-    } catch (err) {
-      setError(describeError(err))
-    } finally {
-      setWorking(false)
-    }
-  }
-
-  return (
-    <li>
-      <div className="flex items-baseline justify-between gap-2 mb-1">
-        {editing ? (
-          <input
-            type="text"
-            value={draft}
-            onChange={(e) => {
-              setDraft(e.target.value)
-              setConfirmingMerge(false)
-            }}
-            autoFocus
-            className="text-sm border-b border-ink/30 bg-transparent focus:outline-none focus:border-library flex-1 min-w-0"
-          />
-        ) : (
-          <span className="text-sm truncate">{name}</span>
-        )}
-        <span className="font-mono text-xs text-ink/70 shrink-0">{count}</span>
-      </div>
-      <CountBar count={count} max={max} colorClass={colorClass} />
-      {editing ? (
-        <div className="mt-1 space-y-1">
-          {confirmingMerge && (
-            <p className="text-xs text-stamp">
-              « {collidingName} » existe déjà : les livres seront regroupés
-              ensemble. Confirmer ?
-            </p>
-          )}
-          {error && (
-            <p role="alert" className="text-xs text-stamp">
-              {error}
-            </p>
-          )}
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={submit}
-              disabled={working}
-              className={`${linkButtonClass} disabled:opacity-60`}
-            >
-              {working
-                ? 'Renommage…'
-                : confirmingMerge
-                  ? 'Confirmer la fusion'
-                  : 'Valider'}
-            </button>
-            <button
-              type="button"
-              onClick={cancel}
-              className="text-xs text-ink/70 underline underline-offset-2 hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
-            >
-              Annuler
-            </button>
-          </div>
-        </div>
-      ) : (
-        isMine && (
-          <button
-            type="button"
-            onClick={startEditing}
-            className={`mt-1 ${linkButtonClass}`}
-          >
-            Renommer
-          </button>
-        )
-      )}
-    </li>
-  )
-}
-
-function CountBar({ count, max, colorClass = 'bg-library' }) {
-  const pct = max > 0 ? Math.max(4, Math.round((count / max) * 100)) : 0
-  return (
-    <div className="h-2 w-full bg-ink/10 rounded-full overflow-hidden">
-      <div
-        className={`h-full rounded-full ${colorClass}`}
-        style={{ width: `${pct}%` }}
-      />
     </div>
   )
 }

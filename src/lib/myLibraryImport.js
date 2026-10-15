@@ -1,4 +1,3 @@
-import { read, utils } from 'xlsx'
 import { clean, splitList } from './importUtils'
 
 // Les deux seules feuilles avec des données dans un export "My Library" —
@@ -39,7 +38,10 @@ function extractSeries(raw) {
   return { series: match[1].trim(), seriesIndex: Number(match[2]) }
 }
 
-export function parseMyLibraryXlsx(arrayBuffer) {
+// SheetJS pèse plus de 300 ko : chargé à la demande, seulement quand un
+// fichier Excel est réellement choisi (pas pour un import Libib CSV).
+export async function parseMyLibraryXlsx(arrayBuffer) {
+  const { read, utils } = await import('xlsx')
   const workbook = read(arrayBuffer, { type: 'array' })
   const rows = []
   for (const { name, type } of SHEETS) {

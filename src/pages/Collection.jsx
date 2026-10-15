@@ -6,6 +6,7 @@ import { bulkDeleteBooks, bulkSetField, bulkUpdateBooks } from '../lib/books'
 import { isBookIncomplete } from '../lib/bookCompleteness'
 import { bookMatchesFilters, computeFacets } from '../lib/collectionFilters'
 import { compareFr, sortedUnique } from '../lib/text'
+import { nullIfEmpty } from '../lib/bookPayload'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import { describeError } from '../lib/errors'
 import BookCard from '../components/BookCard'
@@ -581,10 +582,7 @@ export default function Collection() {
   // pour rester cohérents avec la fiche livre (BookForm.jsx) plutôt que de
   // stocker une chaîne ou un tableau vide.
   function normalizeBulkValue(targetField, raw) {
-    if (targetField === 'edition') {
-      const clean = (raw ?? []).filter(Boolean)
-      return clean.length > 0 ? clean : null
-    }
+    if (targetField === 'edition') return nullIfEmpty(raw)
     if (typeof raw === 'string') return raw.trim() || null
     return raw
   }
