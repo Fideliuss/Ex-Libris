@@ -9,6 +9,28 @@ l'app. Pour le pop-up "Quoi de neuf" vu par l'utilisateur, voir
 `src/lib/whatsNew.js`, à tenir à jour en parallèle (voir CONTRIBUTING.md,
 section « Livrer vers main »).
 
+## 1.12.2 (2026-10-16)
+
+### Bug Fixes
+
+* re-importing a Libib or My Library file no longer creates duplicates of books without an ISBN: they are now matched on title and first author ([#151](https://github.com/Fideliuss/Ex-Libris/pull/151))
+* Escape now closes every dialog (purchase, rating, "Quoi de neuf"), not only the cover viewer and the achievement dialog ([#149](https://github.com/Fideliuss/Ex-Libris/pull/149))
+* signing in with an unconfirmed account now asks the user to open the confirmation email, instead of showing instructions meant for the Supabase console ([#151](https://github.com/Fideliuss/Ex-Libris/pull/151))
+* the ISBN search gives up after 8 seconds per source instead of freezing the "Chercher" button when a source does not answer ([#151](https://github.com/Fideliuss/Ex-Libris/pull/151))
+
+### Performance
+
+* books, household members and profile are loaded once per session and shared between pages, instead of reloading the whole library on every page ([#149](https://github.com/Fideliuss/Ex-Libris/pull/149))
+* opening a book no longer downloads the whole library, and the add/edit form no longer sends 16 requests when it opens ([#149](https://github.com/Fideliuss/Ex-Libris/pull/149))
+* Collection filters are computed in one pass, cards only redraw when they change, and covers load as they scroll into view ([#149](https://github.com/Fideliuss/Ex-Libris/pull/149))
+* the first install download of the app is halved (1.5 MB to 0.8 MB): the Excel import and the barcode scanner are only fetched when used ([#149](https://github.com/Fideliuss/Ex-Libris/pull/149))
+* database access rules are evaluated once per query instead of once per row (applied to the production database directly, see [#152](https://github.com/Fideliuss/Ex-Libris/pull/152) and [#153](https://github.com/Fideliuss/Ex-Libris/pull/153))
+
+### Internal
+
+* code audit: duplication down from 2.4% to 0.8%, lint warnings from 6 to 0, unit tests from 55 to 105 ([#149](https://github.com/Fideliuss/Ex-Libris/pull/149), [#151](https://github.com/Fideliuss/Ex-Libris/pull/151), [#154](https://github.com/Fideliuss/Ex-Libris/pull/154))
+* README rewritten, workflow documentation moved to `CONTRIBUTING.md` ([#154](https://github.com/Fideliuss/Ex-Libris/pull/154))
+
 ## 1.12.1 (2026-10-02)
 
 ### Bug Fixes
