@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { getMyProfile } from '../lib/friendCode'
+import { useProfile } from '../hooks/useProfile'
+import { useLibraryData } from '../hooks/useLibraryData'
 import {
   getMyHousehold,
   inviteToHousehold,
@@ -25,7 +26,8 @@ function initials(label) {
 }
 
 export default function SharingPanel({ user }) {
-  const [profile, setProfile] = useState(undefined) // undefined = chargement, null = compte sans profil
+  const { profile } = useProfile() // undefined = chargement, null = compte sans profil
+  const { refreshMembers } = useLibraryData()
   const [household, setHousehold] = useState(undefined)
   const [tab, setTab] = useState('membres')
   const [codeInput, setCodeInput] = useState('')
@@ -37,14 +39,14 @@ export default function SharingPanel({ user }) {
   const [working, setWorking] = useState(false)
   const [error, setError] = useState(null)
 
-  async function loadAll() {
-    const [p, h] = await Promise.all([getMyProfile(user.id), getMyHousehold(user.id)])
-    setProfile(p)
-    setHousehold(h)
+  // Le profil (code ami compris) ne change pas avec les actions du foyer :
+  // seul le foyer est rechargé après chacune d'elles.
+  async function loadHousehold() {
+    setHousehold(await getMyHousehold(user.id))
   }
 
   useEffect(() => {
-    loadAll().catch((err) => setError(describeError(err)))
+    loadHousehold().catch((err) => setError(describeError(err)))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user.id])
 
@@ -53,7 +55,9 @@ export default function SharingPanel({ user }) {
     setError(null)
     try {
       await fn()
-      await loadAll()
+      await loadHousehold()
+      // Le sélecteur de foyer des pages Collection/Stats/Succès doit suivre.
+      refreshMembers()
     } catch (err) {
       setError(describeError(err))
     } finally {

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { STATUS_BADGE_CLASS, STATUS_LABELS } from '../lib/statusLabels'
 import { primaryButtonClass } from '../lib/ui'
 import BookCoverPlaceholder from './BookCoverPlaceholder'
+import { prefersReducedMotion } from '../lib/motion'
 
 const TOTAL_STEPS = 5
 // Distance minimale (px) pour compter comme un swipe plutôt qu'un tap ou un
@@ -35,9 +36,7 @@ const COLUMNS = [
 ]
 
 function CoverColumn({ duration, direction, offset }) {
-  const reduceMotion =
-    typeof window !== 'undefined' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const reduceMotion = prefersReducedMotion()
   const books = [...Array(COLUMN_BOOK_COUNT)].map(
     (_, i) => SAMPLE_BOOKS[(i + offset) % SAMPLE_BOOKS.length],
   )
@@ -268,9 +267,7 @@ export default function OnboardingModal({ step, onStepChange, onSkip, onFinish, 
   const requestClose = useCallback(
     (action) => {
       if (closing) return
-      const reduceMotion =
-        typeof window !== 'undefined' &&
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      const reduceMotion = prefersReducedMotion()
       if (reduceMotion) {
         action()
         return

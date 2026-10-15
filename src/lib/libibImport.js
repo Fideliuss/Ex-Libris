@@ -1,4 +1,5 @@
 import Papa from 'papaparse'
+import { clean, splitList } from './importUtils'
 
 const STATUS_MAP = {
   'not begun': 'to-read',
@@ -18,10 +19,6 @@ export function parseLibibCsv(fileText) {
   return result.data
 }
 
-function clean(value) {
-  return (value ?? '').trim()
-}
-
 // Extrait un éventuel "N - " en tête de titre quand le livre appartient à une série.
 function extractSeriesIndex(title, hasSeries) {
   if (!hasSeries) return { title, seriesIndex: null }
@@ -33,10 +30,7 @@ function extractSeriesIndex(title, hasSeries) {
 export function mapLibibRowToBook(row) {
   const isbn = clean(row.ean_isbn13) || clean(row.upc_isbn10)
   const series = clean(row.group)
-  const tags = clean(row.tags)
-    .split(',')
-    .map((t) => t.trim())
-    .filter(Boolean)
+  const tags = splitList(row.tags)
   const status = STATUS_MAP[clean(row.status).toLowerCase()] ?? 'to-read'
   const rating = clean(row.rating)
   const pageCount = clean(row.length)
@@ -48,10 +42,7 @@ export function mapLibibRowToBook(row) {
 
   return {
     title,
-    author: clean(row.creators)
-      .split(',')
-      .map((a) => a.trim())
-      .filter(Boolean),
+    author: splitList(row.creators),
     publisher: clean(row.publisher),
     isbn,
     description: clean(row.description),

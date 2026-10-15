@@ -14,8 +14,7 @@ export default function ExportPanel() {
     setWorking(true)
     setError(null)
     try {
-      const allBooks = await listBooks()
-      const myBooks = allBooks.filter((b) => b.user_id === user.id)
+      const myBooks = await listBooks({ userId: user.id })
       const csv = booksToCsv(myBooks)
       const date = new Date().toISOString().slice(0, 10)
       downloadTextFile(`ex-libris-${date}.csv`, csv, 'text/csv;charset=utf-8;')

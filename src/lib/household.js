@@ -103,39 +103,31 @@ export async function getMyHousehold(userId) {
   }
 }
 
+// Toutes les actions du foyer passent par une fonction SQL (RPC) qui porte
+// elle-même les contrôles de droits.
+async function rpc(name, args) {
+  const { error } = await supabase.rpc(name, args)
+  if (error) throw error
+}
+
 export async function inviteToHousehold(code) {
   const clean = code.trim().toUpperCase()
   if (!clean) throw new Error('Entre un code ami.')
-  const { error } = await supabase.rpc('invite_to_household', { code: clean })
-  if (error) throw error
+  await rpc('invite_to_household', { code: clean })
 }
 
-export async function acceptHouseholdInvite(inviteId) {
-  const { error } = await supabase.rpc('accept_household_invite', { invite_id: inviteId })
-  if (error) throw error
-}
+export const acceptHouseholdInvite = (inviteId) =>
+  rpc('accept_household_invite', { invite_id: inviteId })
 
-export async function declineHouseholdInvite(inviteId) {
-  const { error } = await supabase.rpc('decline_household_invite', { invite_id: inviteId })
-  if (error) throw error
-}
+export const declineHouseholdInvite = (inviteId) =>
+  rpc('decline_household_invite', { invite_id: inviteId })
 
-export async function cancelHouseholdInvite(inviteId) {
-  const { error } = await supabase.rpc('cancel_household_invite', { invite_id: inviteId })
-  if (error) throw error
-}
+export const cancelHouseholdInvite = (inviteId) =>
+  rpc('cancel_household_invite', { invite_id: inviteId })
 
-export async function leaveHousehold() {
-  const { error } = await supabase.rpc('leave_household')
-  if (error) throw error
-}
+export const leaveHousehold = () => rpc('leave_household')
 
-export async function removeHouseholdMember(userId) {
-  const { error } = await supabase.rpc('remove_member', { target_user_id: userId })
-  if (error) throw error
-}
+export const removeHouseholdMember = (userId) =>
+  rpc('remove_member', { target_user_id: userId })
 
-export async function renameHousehold(name) {
-  const { error } = await supabase.rpc('rename_household', { new_name: name })
-  if (error) throw error
-}
+export const renameHousehold = (name) => rpc('rename_household', { new_name: name })

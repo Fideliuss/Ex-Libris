@@ -4,12 +4,27 @@ import { hasSpecialEdition } from './editionTypes'
 const MIN_SERIES_RUN = 3
 const TIER_LABELS = ['Bronze', 'Argent', 'Or', 'Platine']
 
+// Dates mixtes (date seule "2024-05-03" ou horodatage complet) : on compare
+// toujours par instant, jamais par ordre de chaîne.
+function ms(date) {
+  return new Date(date).getTime()
+}
+
+function byDate(a, b) {
+  return ms(a) - ms(b)
+}
+
+// Date d'obtention d'un livre : la fin de lecture si elle existe, sinon la
+// date d'ajout.
+const finishedOrAdded = (b) => b.date_finished ?? b.created_at
+const added = (b) => b.created_at
+
 function earliestDate(items, dateOf) {
   let best = null
   for (const item of items) {
     const date = dateOf(item)
     if (!date) continue
-    if (!best || new Date(date) < new Date(best)) best = date
+    if (!best || ms(date) < ms(best)) best = date
   }
   return best
 }
@@ -18,11 +33,30 @@ function earliestDate(items, dateOf) {
 // atteint : sert à dater précisément l'obtention d'un palier de comptage
 // (livres lus, notes données, taille de bibliothèque...).
 function nthDate(items, dateOf, n) {
-  const dates = items
-    .map(dateOf)
-    .filter(Boolean)
-    .sort((a, b) => new Date(a) - new Date(b))
+  const dates = items.map(dateOf).filter(Boolean).sort(byDate)
   return dates[n - 1] ?? null
+}
+
+// Première date à laquelle N valeurs distinctes (extraites par `keysOf`, une
+// ou plusieurs par élément) sont apparues : ex. 5 éditeurs différents, c'est
+// la date du livre qui a fait apparaître le 5ème éditeur distinct.
+function nthDistinctDate(items, keysOf, dateOf, n) {
+  const firstByKey = new Map()
+  for (const item of items) {
+    const date = dateOf(item)
+    if (!date) continue
+    for (const key of keysOf(item)) {
+      const known = firstByKey.get(key)
+      if (known === undefined || ms(date) < ms(known)) firstByKey.set(key, date)
+    }
+  }
+  if (firstByKey.size < n) return null
+  return [...firstByKey.values()].sort(byDate)[n - 1]
+}
+
+const singleKey = (getter) => (item) => {
+  const key = getter(item)
+  return key ? [key] : []
 }
 
 // Première date à laquelle les 4 catégories (livre/BD/comics/manga) ont
@@ -33,80 +67,12 @@ function allTypesReadDate(books) {
   for (const b of books) {
     if (b.status !== 'read') continue
     const type = b.type ?? 'book'
-    const date = b.date_finished ?? b.created_at
+    const date = finishedOrAdded(b)
     if (!date) continue
-    if (!firstByType[type] || new Date(date) < new Date(firstByType[type])) {
-      firstByType[type] = date
-    }
+    if (!firstByType[type] || ms(date) < ms(firstByType[type])) firstByType[type] = date
   }
   if (!types.every((t) => firstByType[t])) return null
   return types.map((t) => firstByType[t]).sort().at(-1)
-}
-
-// Première date à laquelle N groupes distincts (par `keyOf`) ont chacun
-// au moins un élément — ex. 5 éditeurs différents : la date du livre qui a
-// fait apparaître le 5ème éditeur distinct.
-function nthDistinctGroupDate(items, keyOf, dateOf, n) {
-  const firstByKey = {}
-  for (const item of items) {
-    const key = keyOf(item)
-    if (!key) continue
-    const date = dateOf(item)
-    if (!date) continue
-    if (!firstByKey[key] || new Date(date) < new Date(firstByKey[key])) {
-      firstByKey[key] = date
-    }
-  }
-  const dates = Object.values(firstByKey).sort((a, b) => new Date(a) - new Date(b))
-  if (dates.length < n) return null
-  return dates[n - 1]
-}
-
-// Même principe que nthDistinctGroupDate, mais pour un champ à valeurs
-// multiples par livre (les tags) plutôt qu'une seule clé.
-function nthDistinctTagDate(books, n) {
-  const firstByTag = {}
-  for (const b of books) {
-    const date = b.created_at
-    if (!date) continue
-    for (const tag of b.tags ?? []) {
-      if (!firstByTag[tag] || new Date(date) < new Date(firstByTag[tag])) {
-        firstByTag[tag] = date
-      }
-    }
-  }
-  const dates = Object.values(firstByTag).sort((a, b) => new Date(a) - new Date(b))
-  return dates.length < n ? null : dates[n - 1]
-}
-
-// Même principe, mais pour le champ auteur (lui aussi à valeurs multiples
-// par livre depuis son passage en tableau) et la date de fin de lecture
-// plutôt que la date d'ajout.
-function nthDistinctAuthorDate(books, n) {
-  const firstByAuthor = {}
-  for (const b of books) {
-    const date = b.date_finished ?? b.created_at
-    if (!date) continue
-    for (const author of b.author ?? []) {
-      if (!firstByAuthor[author] || new Date(date) < new Date(firstByAuthor[author])) {
-        firstByAuthor[author] = date
-      }
-    }
-  }
-  const dates = Object.values(firstByAuthor).sort((a, b) => new Date(a) - new Date(b))
-  return dates.length < n ? null : dates[n - 1]
-}
-
-// Rejoue les éléments triés chronologiquement et retourne la date du
-// premier moment où `isSatisfied(itemsSoFar)` devient vrai.
-function firstMomentWhere(items, dateOf, isSatisfied) {
-  const sorted = [...items]
-    .filter((i) => dateOf(i))
-    .sort((a, b) => new Date(dateOf(a)) - new Date(dateOf(b)))
-  for (let i = 0; i < sorted.length; i += 1) {
-    if (isSatisfied(sorted.slice(0, i + 1))) return dateOf(sorted[i])
-  }
-  return null
 }
 
 function firstGaplessSeries(books) {
@@ -118,9 +84,7 @@ function firstGaplessSeries(books) {
   }
   let best = null
   for (const list of bySeries.values()) {
-    const sorted = [...list].sort(
-      (a, b) => new Date(a.created_at) - new Date(b.created_at),
-    )
+    const sorted = [...list].sort((a, b) => ms(a.created_at) - ms(b.created_at))
     for (let i = 0; i < sorted.length; i += 1) {
       const indices = sorted.slice(0, i + 1).map((b) => b.series_index)
       const min = Math.min(...indices)
@@ -128,7 +92,7 @@ function firstGaplessSeries(books) {
       const span = max - min + 1
       if (span < MIN_SERIES_RUN || new Set(indices).size !== span) continue
       const unlockedAt = sorted[i].created_at
-      if (!best || new Date(unlockedAt) < new Date(best)) best = unlockedAt
+      if (!best || ms(unlockedAt) < ms(best)) best = unlockedAt
       break
     }
   }
@@ -146,8 +110,8 @@ function authorWithFiveBooksDate(books) {
   let best = null
   for (const list of byAuthor.values()) {
     if (list.length < 5) continue
-    const date = nthDate(list, (b) => b.created_at, 5)
-    if (date && (!best || new Date(date) < new Date(best))) best = date
+    const date = nthDate(list, added, 5)
+    if (date && (!best || ms(date) < ms(best))) best = date
   }
   return best
 }
@@ -157,13 +121,16 @@ function monthKey(dateStr) {
   return dateStr.slice(0, 7)
 }
 
+// Date du livre terminé qui a porté à 12 le nombre de mois calendaires
+// distincts : on rejoue les fins de lecture dans l'ordre chronologique.
 function twelveMonthsDate(books) {
-  const read = books.filter((b) => b.date_finished)
-  return firstMomentWhere(
-    read,
-    (b) => b.date_finished,
-    (soFar) => new Set(soFar.map((b) => monthKey(b.date_finished))).size >= 12,
-  )
+  const sorted = books.filter((b) => b.date_finished).sort((a, b) => byDate(a.date_finished, b.date_finished))
+  const months = new Set()
+  for (const b of sorted) {
+    months.add(monthKey(b.date_finished))
+    if (months.size >= 12) return b.date_finished
+  }
+  return null
 }
 
 function speedReadDate(books) {
@@ -176,7 +143,7 @@ function speedReadDate(books) {
 }
 
 // Compte de livres lus par genre (book/bd/comics/manga) : le nombre lu du
-// genre le MOINS lu — contrairement à "Libri Lecti" (volume brut), ça ne
+// genre le MOINS lu, contrairement à "Libri Lecti" (volume brut), ne
 // progresse que si tous les genres suivent, pas juste le total.
 function readCountsByType(books) {
   const types = Object.keys(BOOK_TYPES)
@@ -198,9 +165,9 @@ function genreBalanceDate(books, n) {
   const types = Object.keys(BOOK_TYPES)
   const read = books
     .filter((b) => b.status === 'read')
-    .map((b) => ({ type: b.type ?? 'book', date: b.date_finished ?? b.created_at }))
+    .map((b) => ({ type: b.type ?? 'book', date: finishedOrAdded(b) }))
     .filter((b) => b.date)
-    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .sort((a, b) => byDate(a.date, b.date))
   const counts = Object.fromEntries(types.map((t) => [t, 0]))
   for (const b of read) {
     counts[b.type] = (counts[b.type] ?? 0) + 1
@@ -209,12 +176,69 @@ function genreBalanceDate(books, n) {
   return null
 }
 
+// --- Fabriques ---------------------------------------------------------
+
+// Famille à paliers dont la progression est "le nombre de livres qui passent
+// `filter`", datée par la date `dateOf` du N-ième d'entre eux.
+function countFamily({ filter, dateOf, ...family }) {
+  return {
+    ...family,
+    metric: (books) => books.filter(filter).length,
+    dateForCount: (books, n) => nthDate(books.filter(filter), dateOf, n),
+  }
+}
+
+// Résultat d'un succès à compteur : `current` plafonné à `target`, daté
+// seulement une fois débloqué.
+function progress(current, target, dateIfUnlocked) {
+  const unlocked = current >= target
+  return {
+    unlocked,
+    current: Math.min(current, target),
+    target,
+    unlockedAt: unlocked ? dateIfUnlocked() : null,
+  }
+}
+
+// Succès simple "au moins `target` livres passent `filter`" (1 par défaut).
+function countAchievement({ filter, dateOf, target = 1, ...badge }) {
+  return {
+    ...badge,
+    evaluate(books) {
+      const qualifying = books.filter(filter)
+      return progress(qualifying.length, target, () => nthDate(qualifying, dateOf, target))
+    },
+  }
+}
+
+// Succès simple "au moins `target` valeurs distinctes" : `valuesOf` donne les
+// valeurs d'un livre (un tableau, éventuellement vide).
+function distinctAchievement({ valuesOf, dateOf, target, ...badge }) {
+  return {
+    ...badge,
+    evaluate(books) {
+      const distinct = new Set(books.flatMap(valuesOf))
+      return progress(distinct.size, target, () =>
+        nthDistinctDate(books, valuesOf, dateOf, target),
+      )
+    },
+  }
+}
+
+// Succès simple dont la condition est un événement daté (ou aucun).
+function flagResult(unlockedAt) {
+  return { unlocked: Boolean(unlockedAt), current: unlockedAt ? 1 : 0, target: 1, unlockedAt }
+}
+
+const isRead = (b) => b.status === 'read'
+const isReadOfType = (type) => (b) => b.status === 'read' && b.type === type
+
 // --- Familles à paliers (bronze/argent/or/platine) ---------------------
 // `metric(books)` compte la progression courante ; `dateForCount` date
 // l'obtention d'un seuil précis. evaluateAchievements() en dérive un seul
 // badge "évolutif" par famille. Une famille par pilier (voir plus bas).
 const TIERED_ACHIEVEMENTS = [
-  {
+  countFamily({
     id: 'libri-lecti',
     category: 'Lecture',
     icon: 'books',
@@ -222,15 +246,10 @@ const TIERED_ACHIEVEMENTS = [
     translation: 'Livres lus',
     description: 'Termine la lecture de livres.',
     thresholds: [10, 50, 100, 250],
-    metric: (books) => books.filter((b) => b.status === 'read').length,
-    dateForCount: (books, n) =>
-      nthDate(
-        books.filter((b) => b.status === 'read'),
-        (b) => b.date_finished ?? b.created_at,
-        n,
-      ),
-  },
-  {
+    filter: isRead,
+    dateOf: finishedOrAdded,
+  }),
+  countFamily({
     id: 'judicia',
     category: 'Jugement',
     icon: 'star',
@@ -238,15 +257,10 @@ const TIERED_ACHIEVEMENTS = [
     translation: 'Notes données',
     description: 'Attribue une note à des livres.',
     thresholds: [5, 20, 50, 100],
-    metric: (books) => books.filter((b) => b.rating > 0).length,
-    dateForCount: (books, n) =>
-      nthDate(
-        books.filter((b) => b.rating > 0),
-        (b) => b.date_finished ?? b.created_at,
-        n,
-      ),
-  },
-  {
+    filter: (b) => b.rating > 0,
+    dateOf: finishedOrAdded,
+  }),
+  countFamily({
     id: 'bibliotheca',
     category: 'Bibliothèque',
     icon: 'shelf',
@@ -254,9 +268,9 @@ const TIERED_ACHIEVEMENTS = [
     translation: 'Livres possédés',
     description: 'Ajoute des livres à ta bibliothèque, quel que soit leur statut.',
     thresholds: [25, 100, 250, 500],
-    metric: (books) => books.length,
-    dateForCount: (books, n) => nthDate(books, (b) => b.created_at, n),
-  },
+    filter: () => true,
+    dateOf: added,
+  }),
   {
     id: 'genera-lecta',
     category: 'Genres',
@@ -280,16 +294,13 @@ const TIERED_ACHIEVEMENTS = [
     metric: (books) => {
       const set = new Set()
       for (const b of books) {
-        if (b.status !== 'read') continue
+        if (!isRead(b)) continue
         for (const author of b.author ?? []) set.add(author)
       }
       return set.size
     },
     dateForCount: (books, n) =>
-      nthDistinctAuthorDate(
-        books.filter((b) => b.status === 'read'),
-        n,
-      ),
+      nthDistinctDate(books.filter(isRead), (b) => b.author ?? [], finishedOrAdded, n),
   },
 ]
 
@@ -297,24 +308,16 @@ const TIERED_ACHIEVEMENTS = [
 // Rangés par pilier (4 par catégorie), Miscellaneous en dernier.
 const SIMPLE_ACHIEVEMENTS = [
   // Lecture
-  {
+  countAchievement({
     id: 'liber-primus',
     category: 'Lecture',
     icon: 'books',
     motto: 'Liber Primus',
     translation: 'Premier livre',
     description: 'Ajoute ton premier livre à ta bibliothèque.',
-    evaluate(books) {
-      const target = 1
-      if (books.length === 0) return { unlocked: false, current: 0, target }
-      return {
-        unlocked: true,
-        current: 1,
-        target,
-        unlockedAt: earliestDate(books, (b) => b.created_at),
-      }
-    },
-  },
+    filter: () => true,
+    dateOf: added,
+  }),
   {
     id: 'velocitas',
     category: 'Lecture',
@@ -322,10 +325,7 @@ const SIMPLE_ACHIEVEMENTS = [
     motto: 'Velocitas',
     translation: 'Lecture éclair',
     description: 'Termine un livre en 3 jours ou moins.',
-    evaluate(books) {
-      const unlockedAt = speedReadDate(books)
-      return { unlocked: Boolean(unlockedAt), current: unlockedAt ? 1 : 0, target: 1, unlockedAt }
-    },
+    evaluate: (books) => flagResult(speedReadDate(books)),
   },
   {
     id: 'duodecim-menses',
@@ -338,111 +338,62 @@ const SIMPLE_ACHIEVEMENTS = [
       const months = new Set(
         books.filter((b) => b.date_finished).map((b) => monthKey(b.date_finished)),
       )
-      const current = months.size
-      const target = 12
-      return {
-        unlocked: current >= target,
-        current: Math.min(current, target),
-        target,
-        unlockedAt: current >= target ? twelveMonthsDate(books) : null,
-      }
+      return progress(months.size, 12, () => twelveMonthsDate(books))
     },
   },
-  {
+  countAchievement({
     id: 'magnum-opus',
     category: 'Lecture',
     icon: 'books',
     motto: 'Magnum Opus',
     translation: 'Livre de 500+ pages',
-    description: 'Termine la lecture d\'un livre de 500 pages ou plus.',
-    evaluate(books) {
-      const qualifying = books.filter((b) => b.status === 'read' && b.page_count >= 500)
-      const target = 1
-      return {
-        unlocked: qualifying.length > 0,
-        current: Math.min(qualifying.length, target),
-        target,
-        unlockedAt: earliestDate(qualifying, (b) => b.date_finished ?? b.created_at),
-      }
-    },
-  },
+    description: "Termine la lecture d'un livre de 500 pages ou plus.",
+    filter: (b) => isRead(b) && b.page_count >= 500,
+    dateOf: finishedOrAdded,
+  }),
 
   // Jugement
-  {
+  countAchievement({
     id: 'judicium-primum',
     category: 'Jugement',
     icon: 'star',
     motto: 'Judicium Primum',
     translation: 'Première note',
     description: 'Attribue ta toute première note.',
-    evaluate(books) {
-      const qualifying = books.filter((b) => b.rating > 0)
-      const target = 1
-      return {
-        unlocked: qualifying.length > 0,
-        current: Math.min(qualifying.length, target),
-        target,
-        unlockedAt: earliestDate(qualifying, (b) => b.date_finished ?? b.created_at),
-      }
-    },
-  },
-  {
+    filter: (b) => b.rating > 0,
+    dateOf: finishedOrAdded,
+  }),
+  countAchievement({
     id: 'censor-severus',
     category: 'Jugement',
     icon: 'star',
     motto: 'Censor Severus',
     translation: 'Critique sévère',
     description: 'Attribue une note de 2 étoiles ou moins à un livre.',
-    evaluate(books) {
-      const qualifying = books.filter((b) => b.rating > 0 && b.rating <= 2)
-      const target = 1
-      return {
-        unlocked: qualifying.length > 0,
-        current: Math.min(qualifying.length, target),
-        target,
-        unlockedAt: earliestDate(qualifying, (b) => b.date_finished ?? b.created_at),
-      }
-    },
-  },
-  {
+    filter: (b) => b.rating > 0 && b.rating <= 2,
+    dateOf: finishedOrAdded,
+  }),
+  countAchievement({
     id: 'thesaurus-absconditus',
     category: 'Jugement',
     icon: 'star',
     motto: 'Thesaurus Absconditus',
     translation: 'Coups de cœur',
     description: 'Note 10 livres à 5 étoiles.',
-    evaluate(books) {
-      const fiveStars = books.filter((b) => b.rating === 5)
-      const target = 10
-      return {
-        unlocked: fiveStars.length >= target,
-        current: Math.min(fiveStars.length, target),
-        target,
-        unlockedAt:
-          fiveStars.length >= target
-            ? nthDate(fiveStars, (b) => b.date_finished ?? b.created_at, target)
-            : null,
-      }
-    },
-  },
-  {
+    filter: (b) => b.rating === 5,
+    dateOf: finishedOrAdded,
+    target: 10,
+  }),
+  countAchievement({
     id: 'nota-bene',
     category: 'Jugement',
     icon: 'star',
     motto: 'Nota Bene',
     translation: 'Citation favorite',
     description: 'Enregistre une citation favorite sur un livre.',
-    evaluate(books) {
-      const qualifying = books.filter((b) => b.favorite_quote)
-      const target = 1
-      return {
-        unlocked: qualifying.length > 0,
-        current: Math.min(qualifying.length, target),
-        target,
-        unlockedAt: earliestDate(qualifying, (b) => b.created_at),
-      }
-    },
-  },
+    filter: (b) => b.favorite_quote,
+    dateOf: added,
+  }),
 
   // Bibliothèque
   {
@@ -452,51 +403,29 @@ const SIMPLE_ACHIEVEMENTS = [
     motto: 'Series Sine Lacuna',
     translation: 'Série sans lacune',
     description: `Possède ${MIN_SERIES_RUN} tomes consécutifs d'une même série, sans trou.`,
-    evaluate(books) {
-      const unlockedAt = firstGaplessSeries(books)
-      return { unlocked: Boolean(unlockedAt), current: unlockedAt ? 1 : 0, target: 1, unlockedAt }
-    },
+    evaluate: (books) => flagResult(firstGaplessSeries(books)),
   },
-  {
+  countAchievement({
     id: 'aurea-editio',
     category: 'Bibliothèque',
     icon: 'shelf',
     motto: 'Aurea Editio',
     translation: 'Édition spéciale',
     description: 'Possède au moins une édition spéciale (collector, illustrée...).',
-    evaluate(books) {
-      const qualifying = books.filter((b) => hasSpecialEdition(b.edition))
-      const target = 1
-      return {
-        unlocked: qualifying.length > 0,
-        current: Math.min(qualifying.length, target),
-        target,
-        unlockedAt: earliestDate(qualifying, (b) => b.created_at),
-      }
-    },
-  },
-  {
+    filter: (b) => hasSpecialEdition(b.edition),
+    dateOf: added,
+  }),
+  distinctAchievement({
     id: 'mundi-explorator',
     category: 'Bibliothèque',
     icon: 'shelf',
     motto: 'Mundi Explorator',
     translation: '5 éditeurs différents',
     description: 'Possède des livres chez au moins 5 éditeurs différents.',
-    evaluate(books) {
-      const publishers = new Set(books.filter((b) => b.publisher).map((b) => b.publisher))
-      const current = publishers.size
-      const target = 5
-      return {
-        unlocked: current >= target,
-        current: Math.min(current, target),
-        target,
-        unlockedAt:
-          current >= target
-            ? nthDistinctGroupDate(books, (b) => b.publisher, (b) => b.created_at, target)
-            : null,
-      }
-    },
-  },
+    valuesOf: singleKey((b) => b.publisher),
+    dateOf: added,
+    target: 5,
+  }),
   {
     id: 'scriptor-unus',
     category: 'Bibliothèque',
@@ -504,76 +433,43 @@ const SIMPLE_ACHIEVEMENTS = [
     motto: 'Scriptor Unus',
     translation: 'Auteur fidèle',
     description: "Possède 5 livres d'un même auteur.",
-    evaluate(books) {
-      const unlockedAt = authorWithFiveBooksDate(books)
-      return { unlocked: Boolean(unlockedAt), current: unlockedAt ? 1 : 0, target: 1, unlockedAt }
-    },
+    evaluate: (books) => flagResult(authorWithFiveBooksDate(books)),
   },
 
   // Genres
-  {
+  countAchievement({
     id: 'manga-lecta',
     category: 'Genres',
     icon: 'compass',
     motto: 'Manga Lecta',
     translation: 'Mangas lus',
     description: 'Termine la lecture de 10 mangas.',
-    evaluate(books) {
-      const target = 10
-      const qualifying = books.filter((b) => b.status === 'read' && b.type === 'manga')
-      return {
-        unlocked: qualifying.length >= target,
-        current: Math.min(qualifying.length, target),
-        target,
-        unlockedAt:
-          qualifying.length >= target
-            ? nthDate(qualifying, (b) => b.date_finished ?? b.created_at, target)
-            : null,
-      }
-    },
-  },
-  {
+    filter: isReadOfType('manga'),
+    dateOf: finishedOrAdded,
+    target: 10,
+  }),
+  countAchievement({
     id: 'fabulae-lectae',
     category: 'Genres',
     icon: 'compass',
     motto: 'Fabulae Lectae',
     translation: 'Comics lus',
     description: 'Termine la lecture de 10 comics.',
-    evaluate(books) {
-      const target = 10
-      const qualifying = books.filter((b) => b.status === 'read' && b.type === 'comics')
-      return {
-        unlocked: qualifying.length >= target,
-        current: Math.min(qualifying.length, target),
-        target,
-        unlockedAt:
-          qualifying.length >= target
-            ? nthDate(qualifying, (b) => b.date_finished ?? b.created_at, target)
-            : null,
-      }
-    },
-  },
-  {
+    filter: isReadOfType('comics'),
+    dateOf: finishedOrAdded,
+    target: 10,
+  }),
+  countAchievement({
     id: 'chartae-lectae',
     category: 'Genres',
     icon: 'compass',
     motto: 'Chartae Lectae',
     translation: 'BD lues',
     description: 'Termine la lecture de 10 BD.',
-    evaluate(books) {
-      const target = 10
-      const qualifying = books.filter((b) => b.status === 'read' && b.type === 'bd')
-      return {
-        unlocked: qualifying.length >= target,
-        current: Math.min(qualifying.length, target),
-        target,
-        unlockedAt:
-          qualifying.length >= target
-            ? nthDate(qualifying, (b) => b.date_finished ?? b.created_at, target)
-            : null,
-      }
-    },
-  },
+    filter: isReadOfType('bd'),
+    dateOf: finishedOrAdded,
+    target: 10,
+  }),
   {
     id: 'omnia-genera',
     category: 'Genres',
@@ -583,98 +479,55 @@ const SIMPLE_ACHIEVEMENTS = [
     description: 'Lis au moins un livre, une BD, un comics et un manga.',
     evaluate(books) {
       const types = Object.keys(BOOK_TYPES)
-      const readTypes = new Set(
-        books.filter((b) => b.status === 'read').map((b) => b.type ?? 'book'),
-      )
+      const readTypes = new Set(books.filter(isRead).map((b) => b.type ?? 'book'))
       const current = types.filter((t) => readTypes.has(t)).length
-      const target = types.length
-      return {
-        unlocked: current >= target,
-        current,
-        target,
-        unlockedAt: current >= target ? allTypesReadDate(books) : null,
-      }
+      return progress(current, types.length, () => allTypesReadDate(books))
     },
   },
 
   // Curiosité
-  {
+  countAchievement({
     id: 'polyglotta',
     category: 'Curiosité',
     icon: 'links',
     motto: 'Polyglotta',
     translation: 'Œuvre traduite',
-    description: "Ajoute un livre dont le traducteur est renseigné.",
-    evaluate(books) {
-      const qualifying = books.filter((b) => b.translator?.length > 0)
-      const target = 1
-      return {
-        unlocked: qualifying.length > 0,
-        current: Math.min(qualifying.length, target),
-        target,
-        unlockedAt: earliestDate(qualifying, (b) => b.created_at),
-      }
-    },
-  },
-  {
+    description: 'Ajoute un livre dont le traducteur est renseigné.',
+    filter: (b) => b.translator?.length > 0,
+    dateOf: added,
+  }),
+  countAchievement({
     id: 'illustrata',
     category: 'Curiosité',
     icon: 'links',
     motto: 'Illustrata',
     translation: 'Œuvre illustrée',
     description: "Ajoute un livre dont l'illustrateur est renseigné.",
-    evaluate(books) {
-      const qualifying = books.filter((b) => b.illustrator?.length > 0)
-      const target = 1
-      return {
-        unlocked: qualifying.length > 0,
-        current: Math.min(qualifying.length, target),
-        target,
-        unlockedAt: earliestDate(qualifying, (b) => b.created_at),
-      }
-    },
-  },
-  {
+    filter: (b) => b.illustrator?.length > 0,
+    dateOf: added,
+  }),
+  distinctAchievement({
     id: 'peregrinator-mundi',
     category: 'Curiosité',
     icon: 'links',
     motto: 'Peregrinator Mundi',
     translation: '3 univers explorés',
-    description: 'Possède des livres d\'au moins 3 univers différents.',
-    evaluate(books) {
-      const universes = new Set(books.filter((b) => b.universe).map((b) => b.universe))
-      const current = universes.size
-      const target = 3
-      return {
-        unlocked: current >= target,
-        current: Math.min(current, target),
-        target,
-        unlockedAt:
-          current >= target
-            ? nthDistinctGroupDate(books, (b) => b.universe, (b) => b.created_at, target)
-            : null,
-      }
-    },
-  },
-  {
+    description: "Possède des livres d'au moins 3 univers différents.",
+    valuesOf: singleKey((b) => b.universe),
+    dateOf: added,
+    target: 3,
+  }),
+  distinctAchievement({
     id: 'index-variorum',
     category: 'Curiosité',
     icon: 'links',
     motto: 'Index Variorum',
     translation: '15 tags différents',
     description: 'Utilise au moins 15 tags différents dans ta collection.',
-    evaluate(books) {
-      const tags = new Set(books.flatMap((b) => b.tags ?? []))
-      const current = tags.size
-      const target = 15
-      return {
-        unlocked: current >= target,
-        current: Math.min(current, target),
-        target,
-        unlockedAt: current >= target ? nthDistinctTagDate(books, target) : null,
-      }
-    },
-  },
+    valuesOf: (b) => b.tags ?? [],
+    dateOf: added,
+    target: 15,
+  }),
 
   // Miscellaneous
   {
@@ -685,8 +538,7 @@ const SIMPLE_ACHIEVEMENTS = [
     translation: 'Foyer commun',
     description: 'Partage ta bibliothèque avec ton foyer.',
     evaluate(books, { partner } = {}) {
-      const target = 1
-      return { unlocked: Boolean(partner), current: partner ? 1 : 0, target, unlockedAt: null }
+      return { unlocked: Boolean(partner), current: partner ? 1 : 0, target: 1, unlockedAt: null }
     },
   },
 ]
@@ -742,5 +594,3 @@ export function evaluateAchievements(books, ctx = {}) {
 
   return badges
 }
-
-export const TIER_METAL_LABELS = TIER_LABELS

@@ -8,11 +8,13 @@ import {
 } from '../lib/libibImport'
 import { mapMyLibraryRowToBook, parseMyLibraryXlsx } from '../lib/myLibraryImport'
 import { useAuth } from '../context/AuthContext'
+import { useLibraryData } from '../hooks/useLibraryData'
 import { describeError } from '../lib/errors'
-import { primaryButtonClass } from '../lib/ui'
+import { primaryButtonClass, backLinkClass } from '../lib/ui'
 
 export default function ImportPanel() {
   const { user } = useAuth()
+  const { refresh: refreshLibrary } = useLibraryData()
   const [step, setStep] = useState('idle') // idle | ready | importing | done
   const [error, setError] = useState(null)
   const [fileName, setFileName] = useState('')
@@ -39,18 +41,16 @@ export default function ImportPanel() {
         mappedRows = rows.map((row) => ({ mapped: mapLibibRowToBook(row), raw: row }))
       } else {
         const buffer = await file.arrayBuffer()
-        const rows = parseMyLibraryXlsx(buffer)
+        const rows = await parseMyLibraryXlsx(buffer)
         mappedRows = rows.map((entry) => ({
           mapped: mapMyLibraryRowToBook(entry),
           raw: null,
         }))
       }
 
-      const existingBooks = await listBooks()
+      const existingBooks = await listBooks({ userId: user.id })
       const existingByIsbn = new Map(
-        existingBooks
-          .filter((b) => b.isbn && b.user_id === user.id)
-          .map((b) => [b.isbn, b]),
+        existingBooks.filter((b) => b.isbn).map((b) => [b.isbn, b]),
       )
 
       const nextToImport = []
@@ -106,6 +106,7 @@ export default function ImportPanel() {
           toEnrich.map(({ id, patch }) => ({ id, patch })),
         )
       }
+      refreshLibrary().catch(() => {})
       setImportedCount(toImport.length)
       setEnrichedCount(toEnrich.length)
       setStep('done')
@@ -204,7 +205,7 @@ export default function ImportPanel() {
           <button
             type="button"
             onClick={() => setStep('idle')}
-            className="block text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+            className={`block ${backLinkClass}`}
           >
             Choisir un autre fichier
           </button>

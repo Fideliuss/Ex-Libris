@@ -3,6 +3,7 @@ import { evaluateAchievements } from '../lib/achievements'
 import { formatUnlockedDate } from '../lib/achievementVisuals'
 import ExLibrisPlate from './ExLibrisPlate'
 import PromotionModal from './PromotionModal'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 
 // Un nombre stable par id (0..1), pour dériver rotation/décalage du clou
 // sans que ça change de rendu en rendu — deux hashs différents (l'un
@@ -48,6 +49,27 @@ function groupByIcon(items) {
   })
 }
 
+// Les trois modals d'une plaque : promotion (palier fraîchement atteint),
+// détails (succès déjà révélé) ou mystère (hors de portée, rien n'est
+// révélé). `promo` et `detail` sont des fonctions pour ne construire que la
+// modal réellement ouverte.
+function modalOpener(setModal, { promotable, revealed, promo, detail, progressText }) {
+  return () => {
+    if (promotable) {
+      setModal({ animate: true, ...promo() })
+    } else if (revealed) {
+      setModal({ headline: 'Détails du succès', actionLabel: 'Fermer', ...detail() })
+    } else {
+      setModal({
+        headline: 'Succès verrouillé',
+        mystery: true,
+        progressText,
+        actionLabel: 'Fermer',
+      })
+    }
+  }
+}
+
 // Calcule le view-model de chaque succès (paliers "réclamés" compris, lus
 // depuis la table achievement_claims) et gère la modal déclenchée au clic —
 // promotion pour un palier fraîchement atteint, détails pour un succès déjà
@@ -62,6 +84,9 @@ function groupByIcon(items) {
 // de toute façon).
 export default function AchievementsGallery({ books, partner, ownerName, isMine, claims, onClaim }) {
   const [modal, setModal] = useState(null)
+  // Une seule disposition rendue à la fois (au lieu des deux, l'une masquée
+  // en CSS) : divise par deux le nombre de plaques dans le DOM.
+  const isDesktop = useMediaQuery('(min-width: 640px)')
 
   const rawBadges = useMemo(() => evaluateAchievements(books, { partner }), [books, partner])
   const ownerLine = ownerName ? `Ex-Libris ${ownerName}` : null
@@ -81,8 +106,23 @@ export default function AchievementsGallery({ books, partner, ownerName, isMine,
         const nextTierUp = displayRank + 1
         const nextTierHint =
           everRevealed && badge.thresholds[nextTierUp] != null
-            ? `Prochain palier : ${badge.tierLabels[nextTierUp]} — ${badge.current}/${badge.thresholds[nextTierUp]}.`
+            ? `Prochain palier : ${badge.tierLabels[nextTierUp]} (${badge.current}/${badge.thresholds[nextTierUp]}).`
             : null
+        const progressText =
+          badge.nextThreshold != null
+            ? `${Math.min(badge.current, badge.nextThreshold)}/${badge.nextThreshold}`
+            : null
+        // Champs communs de la plaque dans la modal, pour un rang donné.
+        const plate = (rank) => ({
+          motto: badge.motto,
+          ownerLine,
+          bigNumber: badge.thresholds[rank],
+          subLabel: badge.translationBase,
+          tierText: badge.tierLabels[rank],
+          icon: badge.icon,
+          tierRank: rank,
+          dateText: formatUnlockedDate(badge.unlockedAtForRank(rank)),
+        })
 
         return {
           id: badge.id,
@@ -94,10 +134,7 @@ export default function AchievementsGallery({ books, partner, ownerName, isMine,
           dateText: everRevealed
             ? formatUnlockedDate(badge.unlockedAtForRank(displayRank))
             : null,
-          progressText:
-            !everRevealed && badge.nextThreshold != null
-              ? `${Math.min(badge.current, badge.nextThreshold)}/${badge.nextThreshold}`
-              : null,
+          progressText: !everRevealed ? progressText : null,
           icon: badge.icon,
           tierRank: Math.max(displayRank, 0),
           locked: !everRevealed,
@@ -107,59 +144,44 @@ export default function AchievementsGallery({ books, partner, ownerName, isMine,
           rotation: 0,
           pinOffset: pinOffsetFor(badge.id),
           description: badge.description,
-          onClick: () => {
-            if (promotable) {
-              setModal({
-                animate: true,
-                onConfirm: () => onClaim(badge.id, nextRank),
-                motto: badge.motto,
-                ownerLine,
-                headline: everRevealed ? 'Promotion !' : 'Nouveau succès',
-                bigNumber: badge.thresholds[nextRank],
-                subLabel: badge.translationBase,
-                tierText: badge.tierLabels[nextRank],
-                icon: badge.icon,
-                tierRank: nextRank,
-                dateText: formatUnlockedDate(badge.unlockedAtForRank(nextRank)),
-              })
-            } else if (everRevealed) {
-              setModal({
-                headline: 'Détails du succès',
-                motto: badge.motto,
-                ownerLine,
-                bigNumber: badge.thresholds[displayRank],
-                subLabel: badge.translationBase,
-                tierText: badge.tierLabels[displayRank],
-                icon: badge.icon,
-                tierRank: displayRank,
-                dateText: formatUnlockedDate(badge.unlockedAtForRank(displayRank)),
-                description: badge.description,
-                nextTierHint,
-                actionLabel: 'Fermer',
-              })
-            } else {
-              setModal({
-                headline: 'Succès verrouillé',
-                mystery: true,
-                progressText:
-                  badge.nextThreshold != null
-                    ? `${Math.min(badge.current, badge.nextThreshold)}/${badge.nextThreshold}`
-                    : null,
-                actionLabel: 'Fermer',
-              })
-            }
-          },
+          onClick: modalOpener(setModal, {
+            promotable,
+            revealed: everRevealed,
+            promo: () => ({
+              ...plate(nextRank),
+              onConfirm: () => onClaim(badge.id, nextRank),
+              headline: everRevealed ? 'Promotion !' : 'Nouveau succès',
+            }),
+            detail: () => ({
+              ...plate(displayRank),
+              description: badge.description,
+              nextTierHint,
+            }),
+            progressText,
+          }),
         }
       }
 
       const claimed = claims.has(badge.id)
-      // Même garde-fou que pour les succès à paliers ci-dessus — en
-      // variable locale cette fois (pas seulement un champ du view-model),
-      // pour qu'onClick s'en serve aussi : la première version ne gardait
-      // que le champ, l'onClick gardait encore la condition brute
-      // `badge.unlocked && !claimed`, donc cliquable même si !isMine (bug
-      // réel rencontré en prod sur un succès unique en lecture seule).
+      // Même garde-fou que pour les succès à paliers ci-dessus, en variable
+      // locale (pas seulement un champ du view-model) pour qu'onClick s'en
+      // serve aussi : la première version ne gardait que le champ, l'onClick
+      // gardait encore la condition brute `badge.unlocked && !claimed`, donc
+      // cliquable même si !isMine (bug réel rencontré en prod sur un succès
+      // unique en lecture seule).
       const promotable = badge.unlocked && !claimed && isMine
+      const progressText =
+        !badge.unlocked && badge.target > 1 ? `${badge.current}/${badge.target}` : null
+      const plate = () => ({
+        motto: badge.motto,
+        ownerLine,
+        bigNumber: null,
+        subLabel: badge.translation,
+        seal: true,
+        icon: badge.icon,
+        tierRank: 0,
+        dateText: formatUnlockedDate(badge.unlockedAt),
+      })
       return {
         id: badge.id,
         motto: badge.motto,
@@ -168,18 +190,12 @@ export default function AchievementsGallery({ books, partner, ownerName, isMine,
         tierText: null,
         subLabel: badge.translation,
         dateText: claimed ? formatUnlockedDate(badge.unlockedAt) : null,
-        progressText:
-          !badge.unlocked && badge.target > 1 ? `${badge.current}/${badge.target}` : null,
+        progressText,
         icon: badge.icon,
         tierRank: 0,
         seal: true,
         // Comme pour les succès à paliers (locked: !everRevealed) : l'état
         // visuel "verrouillé" suit la révélation, pas le déblocage brut.
-        // Bug corrigé ici (locked: !badge.unlocked avant) — masqué jusque
-        // là par l'overlay "Promotion disponible" qui recouvrait le fond
-        // coloré tant que promotable était vrai partout ; en lecture seule
-        // (promotable toujours faux) le fond rouge + texte de mystère
-        // contradictoires devenaient visibles.
         locked: !claimed,
         promotable,
         everRevealed: claimed,
@@ -187,47 +203,17 @@ export default function AchievementsGallery({ books, partner, ownerName, isMine,
         rotation: rotationFor(badge.id),
         pinOffset: pinOffsetFor(badge.id),
         description: badge.description,
-        onClick: () => {
-          if (promotable) {
-            setModal({
-              animate: true,
-              onConfirm: () => onClaim(badge.id, 0),
-              motto: badge.motto,
-              ownerLine,
-              headline: 'Nouveau succès',
-              bigNumber: null,
-              subLabel: badge.translation,
-              seal: true,
-              icon: badge.icon,
-              tierRank: 0,
-              dateText: formatUnlockedDate(badge.unlockedAt),
-            })
-          } else if (claimed) {
-            setModal({
-              headline: 'Détails du succès',
-              motto: badge.motto,
-              ownerLine,
-              bigNumber: null,
-              subLabel: badge.translation,
-              seal: true,
-              icon: badge.icon,
-              tierRank: 0,
-              dateText: formatUnlockedDate(badge.unlockedAt),
-              description: badge.description,
-              actionLabel: 'Fermer',
-            })
-          } else {
-            setModal({
-              headline: 'Succès verrouillé',
-              mystery: true,
-              progressText:
-                !badge.unlocked && badge.target > 1
-                  ? `${badge.current}/${badge.target}`
-                  : null,
-              actionLabel: 'Fermer',
-            })
-          }
-        },
+        onClick: modalOpener(setModal, {
+          promotable,
+          revealed: claimed,
+          promo: () => ({
+            ...plate(),
+            onConfirm: () => onClaim(badge.id, 0),
+            headline: 'Nouveau succès',
+          }),
+          detail: () => ({ ...plate(), description: badge.description }),
+          progressText,
+        }),
       }
     })
   }, [rawBadges, claims, isMine, ownerLine, onClaim])
@@ -272,12 +258,11 @@ export default function AchievementsGallery({ books, partner, ownerName, isMine,
                   }}
                 />
               )}
-              <div className="hidden sm:block">
+              {isDesktop ? (
                 <CategoryGroupDesktop big={group.big} minors={group.minors} />
-              </div>
-              <div className="sm:hidden">
+              ) : (
                 <CategoryGroupMobile big={group.big} minors={group.minors} />
-              </div>
+              )}
             </div>
           ))}
         </div>

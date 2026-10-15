@@ -9,16 +9,17 @@ import {
   BINDING_TYPES,
 } from '../lib/editionTypes'
 import { useAuth } from '../context/AuthContext'
-import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
+import { useLibraryData } from '../hooks/useLibraryData'
 import {
   STATUS_BADGE_CLASS,
   STATUS_BORDER_CLASS,
   STATUS_LABELS,
+  STATUS_ORDER,
 } from '../lib/statusLabels'
 import { describeError } from '../lib/errors'
 import { BOOK_TYPES, SERIES_DRIVEN_TYPES } from '../lib/bookTypes'
-import { primaryButtonClass } from '../lib/ui'
-import { todayDateOnly } from '../lib/dates'
+import { primaryButtonClass, backLinkClass } from '../lib/ui'
+import { formatDate, todayDateOnly } from '../lib/dates'
 import WishlistRibbon from '../components/WishlistRibbon'
 import { navigateWithViewTransition, useGoBack } from '../lib/navigation'
 import ReadingBookmark from '../components/ReadingBookmark'
@@ -28,10 +29,6 @@ import LoadingScreen from '../components/LoadingScreen'
 import BookCoverPlaceholder from '../components/BookCoverPlaceholder'
 import QuickRatingModal from '../components/QuickRatingModal'
 import QuickPurchaseModal from '../components/QuickPurchaseModal'
-
-// Ordre de progression d'un livre, du moins au plus avancé : sert à détecter
-// un changement de statut qui recule (voir handleStatusChange).
-const STATUS_ORDER = Object.keys(STATUS_LABELS)
 
 // Au-delà de ce nombre de tomes manquants d'affilée, on compresse le trou en
 // une seule chip "···" plutôt que d'en afficher une par tome manquant :
@@ -160,7 +157,7 @@ export default function BookDetail() {
   const navigate = useNavigate()
   const goBack = useGoBack('/')
   const { user } = useAuth()
-  const { members } = useHouseholdBooks()
+  const { members, upsertBook } = useLibraryData()
   const [book, setBook] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -208,6 +205,7 @@ export default function BookDetail() {
       const leavingWishlist = book.status === 'wishlist' && newStatus !== 'wishlist'
       const updated = await updateBook(id, patch)
       setBook(updated)
+      upsertBook(updated)
       if (newStatus === 'read' && wasUnrated) {
         setShowRatingPrompt(true)
       } else if (leavingWishlist && !book.purchase_date) {
@@ -225,6 +223,7 @@ export default function BookDetail() {
     try {
       const updated = await updateBook(id, { rating })
       setBook(updated)
+      upsertBook(updated)
     } catch (err) {
       setStatusError(describeError(err))
     }
@@ -235,6 +234,7 @@ export default function BookDetail() {
     try {
       const updated = await updateBook(id, patch)
       setBook(updated)
+      upsertBook(updated)
     } catch (err) {
       setStatusError(describeError(err))
     }
@@ -384,7 +384,7 @@ export default function BookDetail() {
           <button
             type="button"
             onClick={goBack}
-            className="text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+            className={backLinkClass}
           >
             ← Retour à la collection
           </button>
@@ -778,10 +778,4 @@ function DetailField({ label, value, mono, placeholder }) {
       </p>
     </div>
   )
-}
-
-function formatDate(value) {
-  if (!value) return null
-  const [y, m, d] = value.split('-')
-  return `${d}/${m}/${y}`
 }

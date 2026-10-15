@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { useAuth } from './AuthContext'
-import { getMyProfile, markChangelogSeen, markTutorialSeen } from '../lib/friendCode'
+import { useProfile } from '../hooks/useProfile'
+import { markChangelogSeen, markTutorialSeen } from '../lib/profile'
 import { LATEST_CHANGELOG_ID } from '../lib/whatsNew'
 import OnboardingModal from '../components/OnboardingModal'
 
@@ -8,30 +9,22 @@ const TutorialContext = createContext(undefined)
 
 export function TutorialProvider({ children }) {
   const { user } = useAuth()
+  const { profile } = useProfile()
   const [open, setOpen] = useState(false)
   const [step, setStep] = useState(0)
-  const [firstName, setFirstName] = useState(null)
+  // Le tutoriel ne s'ouvre automatiquement qu'une fois par compte et par
+  // session : un rechargement du profil ne doit pas le rouvrir.
+  const autoOpenedFor = useRef(null)
+  const firstName = profile?.first_name || null
 
   useEffect(() => {
-    if (!user) return
-    let active = true
-    getMyProfile(user.id)
-      .then((profile) => {
-        if (!active || !profile) return
-        setFirstName(profile.first_name || null)
-        if (!profile.has_seen_tutorial) {
-          setStep(0)
-          setOpen(true)
-        }
-      })
-      .catch(() => {
-        // Le tutoriel reste optionnel : une erreur ici ne doit pas bloquer
-        // le reste de l'app.
-      })
-    return () => {
-      active = false
+    if (!profile || autoOpenedFor.current === profile.user_id) return
+    autoOpenedFor.current = profile.user_id
+    if (!profile.has_seen_tutorial) {
+      setStep(0)
+      setOpen(true)
     }
-  }, [user])
+  }, [profile])
 
   function close() {
     setOpen(false)
@@ -48,8 +41,10 @@ export function TutorialProvider({ children }) {
     setOpen(true)
   }, [])
 
+  const value = useMemo(() => ({ replay }), [replay])
+
   return (
-    <TutorialContext.Provider value={{ replay }}>
+    <TutorialContext.Provider value={value}>
       {children}
       {open && (
         <OnboardingModal

@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { inputClass, labelClass, primaryButtonClass } from '../lib/ui'
+import Modal from './Modal'
+import { inputClass, labelClass, primaryButtonClass, backLinkClass } from '../lib/ui'
 import { todayDateOnly } from '../lib/dates'
 
 export default function QuickPurchaseModal({ bookTitle, bookAuthor, onConfirm, onSkip }) {
@@ -15,18 +16,12 @@ export default function QuickPurchaseModal({ bookTitle, bookAuthor, onConfirm, o
   }
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="Achat du livre"
-      onClick={onSkip}
-      className="fixed inset-0 z-50 bg-ink/86 flex items-center justify-center p-6"
+    <Modal
+      label="Achat du livre"
+      onClose={onSkip}
+      className="w-full max-w-sm bg-card border-t-4 border-dashed border-toread rounded-sm shadow-xl p-7"
     >
-      <form
-        onClick={(e) => e.stopPropagation()}
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm bg-card border-t-4 border-dashed border-toread rounded-sm shadow-xl p-7"
-      >
+      <form onSubmit={handleSubmit}>
         <p className="font-serif text-lg font-semibold mb-1 text-center">
           Ce titre a rejoint ta PAL ?
         </p>
@@ -67,14 +62,10 @@ export default function QuickPurchaseModal({ bookTitle, bookAuthor, onConfirm, o
         <button type="submit" className={`w-full rounded-sm px-4 py-2.5 text-sm ${primaryButtonClass}`}>
           Enregistrer
         </button>
-        <button
-          type="button"
-          onClick={onSkip}
-          className="w-full text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm mt-3"
-        >
+        <button type="button" onClick={onSkip} className={`w-full ${backLinkClass} mt-3`}>
           Plus tard
         </button>
       </form>
-    </div>
+    </Modal>
   )
 }

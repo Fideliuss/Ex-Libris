@@ -1,36 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
-import { getMyProfile } from '../lib/friendCode'
+import { useProfile } from '../hooks/useProfile'
 import { listClaims, migrateLocalStorageClaims, upsertClaim } from '../lib/achievementClaims'
 import { useGoBack } from '../lib/navigation'
 import HouseholdSwitchBadge from '../components/HouseholdSwitchBadge'
 import AchievementsGallery from '../components/AchievementsGallery'
 import LoadingScreen from '../components/LoadingScreen'
+import { backLinkClass } from '../lib/ui'
 
 export default function Achievements() {
   const { user } = useAuth()
   const { members, ownerId, setOwnerId, isMine, books, loading, error } = useHouseholdBooks()
   const goBack = useGoBack('/')
-  const [myFirstName, setMyFirstName] = useState(null)
+  const { profile } = useProfile()
+  const myFirstName = profile?.first_name ?? null
   const [claims, setClaims] = useState(new Map())
   const [claimsLoading, setClaimsLoading] = useState(true)
-
-  // Pour la ligne "Ex-Libris {prénom}" gravée sur les plaques de succès :
-  // le prénom du membre du foyer affiché est déjà sur selectedMember, mais
-  // le sien propre n'est nulle part ailleurs dans l'app à ce niveau.
-  useEffect(() => {
-    if (!user) return
-    let active = true
-    getMyProfile(user.id)
-      .then((profile) => {
-        if (active) setMyFirstName(profile?.first_name ?? null)
-      })
-      .catch(() => {})
-    return () => {
-      active = false
-    }
-  }, [user])
 
   useEffect(() => {
     if (!ownerId) return
@@ -69,10 +55,13 @@ export default function Achievements() {
   // censés être égaux ici (onClaim n'est branché que si isMine), mais un
   // bug similaire à celui qu'on vient de corriger dans AchievementsGallery
   // aurait sinon pu de nouveau attribuer la réclamation au mauvais compte.
-  function handleClaim(badgeId, rank) {
-    setClaims((prev) => new Map(prev).set(badgeId, rank))
-    upsertClaim(ownerId, badgeId, rank).catch(() => {})
-  }
+  const handleClaim = useCallback(
+    (badgeId, rank) => {
+      setClaims((prev) => new Map(prev).set(badgeId, rank))
+      upsertClaim(ownerId, badgeId, rank).catch(() => {})
+    },
+    [ownerId],
+  )
 
   const selectedMember = members.find((m) => m.userId === ownerId)
   const selectedLabel = selectedMember?.displayName ?? selectedMember?.email
@@ -87,7 +76,7 @@ export default function Achievements() {
         <button
           type="button"
           onClick={goBack}
-          className="text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+          className={backLinkClass}
         >
           ← Retour à la collection
         </button>

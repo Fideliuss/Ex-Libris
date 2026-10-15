@@ -1,61 +1,22 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useHouseholdView } from '../context/HouseholdViewContext'
-import { listBooks } from '../lib/books'
-import { getMyHousehold } from '../lib/household'
-import { describeError } from '../lib/errors'
+import { useLibraryData } from './useLibraryData'
 
-// Charge tous les livres visibles (les miens + ceux des membres du foyer,
-// autorisés par la RLS), puis expose une bascule sur l'un d'eux pour
-// filtrer côté client sans refaire de requête à chaque changement.
+// Expose les livres du membre du foyer sélectionné, filtrés côté client à
+// partir du cache partagé (LibraryDataProvider) : pas de requête par page ni
+// par changement de membre.
 export function useHouseholdBooks() {
   const { user } = useAuth()
-  const [members, setMembers] = useState([])
   // null = pas de choix explicite, on regarde ses propres livres par
   // défaut. La sélection elle-même vit dans HouseholdViewContext (partagée
-  // entre Collection/Stats/Succès) plutôt qu'un useState local ici, pour
-  // tenir d'une page à l'autre au lieu de repartir de zéro à chaque montage.
+  // entre Collection/Stats/Succès) pour tenir d'une page à l'autre.
   const { selectedId, setSelectedId } = useHouseholdView()
-  const [allBooks, setAllBooks] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const { allBooks, members, loading, error, refresh, ensureFresh } = useLibraryData()
 
   useEffect(() => {
-    if (!user) return
-    let active = true
-    getMyHousehold(user.id)
-      .then((h) => {
-        if (active) setMembers(h.members)
-      })
-      .catch(() => {
-        // Le partage reste optionnel : une erreur ici ne doit pas bloquer
-        // l'affichage de la collection.
-      })
-    return () => {
-      active = false
-    }
-  }, [user])
-
-  useEffect(() => {
-    let active = true
-    listBooks()
-      .then((data) => {
-        if (active) setAllBooks(data)
-      })
-      .catch((err) => {
-        if (active) setError(describeError(err))
-      })
-      .finally(() => {
-        if (active) setLoading(false)
-      })
-    return () => {
-      active = false
-    }
-  }, [])
-
-  async function refresh() {
-    setAllBooks(await listBooks())
-  }
+    ensureFresh()
+  }, [ensureFresh])
 
   const ownerId = selectedId ?? user?.id ?? null
   const isMine = ownerId === user?.id
