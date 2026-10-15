@@ -249,7 +249,7 @@ const CLOSE_TRANSITION_MS = 200
 export default function OnboardingModal({ step, onStepChange, onSkip, onFinish, firstName }) {
   const [closing, setClosing] = useState(false)
 
-  // `step` est piloté par le parent (TutorialContext) : on déduit le sens du
+  // `step` est piloté par le parent (TutorialProvider) : on déduit le sens du
   // glissement en comparant à l'étape précédente. Mise à jour pendant le
   // rendu plutôt que dans un effet (pattern React recommandé pour dériver un
   // état à partir d'un changement de prop), pas de lecture de ref au rendu.

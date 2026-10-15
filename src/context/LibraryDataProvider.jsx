@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useAuth } from './AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { listBooks } from '../lib/books'
 import { needsRefresh, removeFromList, upsertInList } from '../lib/libraryCache'
 import { getMyHousehold } from '../lib/household'
@@ -71,8 +71,20 @@ export function LibraryDataProvider({ children }) {
   }, [userId])
 
   useEffect(() => {
-    refreshMembers()
-  }, [refreshMembers])
+    if (!userId) return
+    let active = true
+    getMyHousehold(userId)
+      .then((household) => {
+        if (active) setMembersState({ userId, members: household.members })
+      })
+      .catch(() => {
+        // Le partage reste optionnel : une erreur ici ne doit pas bloquer
+        // l'affichage de la collection.
+      })
+    return () => {
+      active = false
+    }
+  }, [userId])
 
   // Stale-while-revalidate : le cache s'affiche tout de suite, un
   // rechargement discret le remplace s'il est périmé.

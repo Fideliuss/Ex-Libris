@@ -1,5 +1,5 @@
 // Entrée "quoi de neuf" affichée une fois à chaque utilisateur existant
-// (voir ChangelogContext). Volontairement distincte de CHANGELOG.md : ce
+// (voir ChangelogProvider). Volontairement distincte de CHANGELOG.md : ce
 // fichier-là est le journal technique (commits, PR, hash) génère/tenu à la
 // main pour les releases, pas un texte pensé pour être lu par un·e
 // utilisateur·rice dans l'app. On ajoute une entrée en tête de liste à

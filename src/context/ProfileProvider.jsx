@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useAuth } from './AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { getMyProfile } from '../lib/profile'
 import { ProfileContext } from '../hooks/useProfile'
 
@@ -10,24 +10,35 @@ export function ProfileProvider({ children }) {
   // profil est considéré comme "pas encore chargé" plutôt que montré à tort.
   const [result, setResult] = useState({ userId: null, profile: undefined })
 
-  const load = useCallback(async () => {
+  useEffect(() => {
     if (!userId) return
-    try {
-      const profile = await getMyProfile(userId)
-      setResult({ userId, profile })
-    } catch {
-      // Le profil reste optionnel : une erreur ici ne doit pas bloquer l'app.
-      setResult((prev) => (prev.userId === userId ? prev : { userId, profile: null }))
+    let active = true
+    getMyProfile(userId)
+      .then((profile) => {
+        if (active) setResult({ userId, profile })
+      })
+      .catch(() => {
+        // Le profil reste optionnel : une erreur ici ne doit pas bloquer l'app.
+        if (active) setResult((prev) => (prev.userId === userId ? prev : { userId, profile: null }))
+      })
+    return () => {
+      active = false
     }
   }, [userId])
 
-  useEffect(() => {
-    load()
-  }, [load])
+  // Rechargement à la demande (après une modification du profil).
+  const refreshProfile = useCallback(async () => {
+    if (!userId) return
+    try {
+      setResult({ userId, profile: await getMyProfile(userId) })
+    } catch {
+      // On garde l'ancienne valeur.
+    }
+  }, [userId])
 
   const profile = result.userId === userId ? result.profile : undefined
 
-  const value = useMemo(() => ({ profile, refreshProfile: load }), [profile, load])
+  const value = useMemo(() => ({ profile, refreshProfile }), [profile, refreshProfile])
 
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>
 }

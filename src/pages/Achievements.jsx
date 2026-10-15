@@ -1,23 +1,28 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import { useProfile } from '../hooks/useProfile'
 import { listClaims, migrateLocalStorageClaims, upsertClaim } from '../lib/achievementClaims'
 import HouseholdPage from '../components/HouseholdPage'
 import AchievementsGallery from '../components/AchievementsGallery'
 
+const NO_CLAIMS = new Map()
+
 export default function Achievements() {
   const { user } = useAuth()
   const { members, ownerId, setOwnerId, isMine, books, loading, error } = useHouseholdBooks()
   const { profile } = useProfile()
   const myFirstName = profile?.first_name ?? null
-  const [claims, setClaims] = useState(new Map())
-  const [claimsLoading, setClaimsLoading] = useState(true)
+  // Les réclamations sont gardées avec le propriétaire dont elles viennent :
+  // en changeant de membre du foyer, celles de l'ancien sont ignorées (état
+  // "chargement") jusqu'à l'arrivée des nouvelles.
+  const [claimsState, setClaimsState] = useState({ ownerId: null, claims: NO_CLAIMS })
+  const claimsLoading = claimsState.ownerId !== ownerId
+  const claims = claimsState.ownerId === ownerId ? claimsState.claims : NO_CLAIMS
 
   useEffect(() => {
     if (!ownerId) return
     let active = true
-    setClaimsLoading(true)
     ;(async () => {
       // Reprend une seule fois par appareil ce qui traînait en localStorage
       // (ancien stockage, avant la table achievement_claims) - uniquement
@@ -29,15 +34,14 @@ export default function Achievements() {
       return listClaims(ownerId)
     })()
       .then((rows) => {
-        if (active) setClaims(new Map(rows.map((r) => [r.badge_id, r.rank])))
+        if (active) {
+          setClaimsState({ ownerId, claims: new Map(rows.map((r) => [r.badge_id, r.rank])) })
+        }
       })
       .catch(() => {
         // Le foyer reste optionnel : une erreur ici ne doit pas bloquer
         // l'affichage des succès eux-mêmes (recalculés depuis les livres).
-        if (active) setClaims(new Map())
-      })
-      .finally(() => {
-        if (active) setClaimsLoading(false)
+        if (active) setClaimsState({ ownerId, claims: NO_CLAIMS })
       })
     return () => {
       active = false
@@ -53,7 +57,10 @@ export default function Achievements() {
   // aurait sinon pu de nouveau attribuer la réclamation au mauvais compte.
   const handleClaim = useCallback(
     (badgeId, rank) => {
-      setClaims((prev) => new Map(prev).set(badgeId, rank))
+      setClaimsState((prev) => ({
+        ownerId,
+        claims: new Map(prev.claims).set(badgeId, rank),
+      }))
       upsertClaim(ownerId, badgeId, rank).catch(() => {})
     },
     [ownerId],

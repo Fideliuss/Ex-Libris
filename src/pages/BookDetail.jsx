@@ -8,7 +8,7 @@ import {
   FORMAT_TYPES,
   BINDING_TYPES,
 } from '../lib/editionTypes'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { useLibraryData } from '../hooks/useLibraryData'
 import {
   STATUS_BADGE_CLASS,

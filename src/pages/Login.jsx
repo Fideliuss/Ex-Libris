@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { primaryButtonClass, cardClass } from '../lib/ui'
 import TextField from '../components/TextField'
 import { validateNewPassword } from '../lib/passwordRules'
@@ -88,7 +88,7 @@ export default function Login() {
       )
     }
     // Si data.session existe, Supabase a déjà confirmé le compte : l'écoute
-    // onAuthStateChange dans AuthContext détecte la session et le <Navigate>
+    // onAuthStateChange dans AuthProvider détecte la session et le <Navigate>
     // plus haut redirige automatiquement.
   }
 

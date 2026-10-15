@@ -1,7 +1,6 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
-
-const AuthContext = createContext(undefined)
+import { AuthContext } from '../hooks/useAuth'
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)
@@ -49,12 +48,4 @@ export function AuthProvider({ children }) {
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext)
-  if (ctx === undefined) {
-    throw new Error('useAuth doit être utilisé à l\'intérieur de <AuthProvider>')
-  }
-  return ctx
 }

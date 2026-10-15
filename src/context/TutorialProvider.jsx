@@ -1,33 +1,31 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
-import { useAuth } from './AuthContext'
+import { useCallback, useMemo, useState } from 'react'
+import { useAuth } from '../hooks/useAuth'
 import { useProfile } from '../hooks/useProfile'
+import { TutorialContext } from '../hooks/useTutorial'
 import { markChangelogSeen, markTutorialSeen } from '../lib/profile'
 import { LATEST_CHANGELOG_ID } from '../lib/whatsNew'
 import OnboardingModal from '../components/OnboardingModal'
 
-const TutorialContext = createContext(undefined)
-
 export function TutorialProvider({ children }) {
   const { user } = useAuth()
   const { profile } = useProfile()
-  const [open, setOpen] = useState(false)
   const [step, setStep] = useState(0)
-  // Le tutoriel ne s'ouvre automatiquement qu'une fois par compte et par
-  // session : un rechargement du profil ne doit pas le rouvrir.
-  const autoOpenedFor = useRef(null)
+  // Rejeu volontaire (bouton "Revoir le tutoriel" du compte).
+  const [replaying, setReplaying] = useState(false)
+  // Le tutoriel s'ouvre tout seul pour un compte qui ne l'a jamais vu, une
+  // fois par compte et par session : fermé, un rechargement du profil ne doit
+  // pas le rouvrir.
+  const [dismissedFor, setDismissedFor] = useState(null)
+
+  const autoOpen =
+    Boolean(profile) && !profile.has_seen_tutorial && dismissedFor !== profile.user_id
+  const open = replaying || autoOpen
   const firstName = profile?.first_name || null
 
-  useEffect(() => {
-    if (!profile || autoOpenedFor.current === profile.user_id) return
-    autoOpenedFor.current = profile.user_id
-    if (!profile.has_seen_tutorial) {
-      setStep(0)
-      setOpen(true)
-    }
-  }, [profile])
-
   function close() {
-    setOpen(false)
+    setReplaying(false)
+    setStep(0)
+    if (profile) setDismissedFor(profile.user_id)
     if (!user) return
     markTutorialSeen(user.id).catch(() => {})
     // Un compte qui vient de finir le tutoriel part avec tout ce qui existe
@@ -38,7 +36,7 @@ export function TutorialProvider({ children }) {
 
   const replay = useCallback(() => {
     setStep(0)
-    setOpen(true)
+    setReplaying(true)
   }, [])
 
   const value = useMemo(() => ({ replay }), [replay])
@@ -57,12 +55,4 @@ export function TutorialProvider({ children }) {
       )}
     </TutorialContext.Provider>
   )
-}
-
-export function useTutorial() {
-  const ctx = useContext(TutorialContext)
-  if (ctx === undefined) {
-    throw new Error("useTutorial doit être utilisé à l'intérieur de <TutorialProvider>")
-  }
-  return ctx
 }

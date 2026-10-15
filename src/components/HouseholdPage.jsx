@@ -1,4 +1,4 @@
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import { useGoBack } from '../lib/navigation'
 import { backLinkClass } from '../lib/ui'
 import HouseholdSwitchBadge from './HouseholdSwitchBadge'

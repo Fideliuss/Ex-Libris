@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
-import { useAuth } from '../context/AuthContext'
-import { useHouseholdView } from '../context/HouseholdViewContext'
+import { useAuth } from '../hooks/useAuth'
+import { useHouseholdView } from '../hooks/useHouseholdView'
 import { useLibraryData } from './useLibraryData'
 
 // Expose les livres du membre du foyer sélectionné, filtrés côté client à
@@ -9,7 +9,7 @@ import { useLibraryData } from './useLibraryData'
 export function useHouseholdBooks() {
   const { user } = useAuth()
   // null = pas de choix explicite, on regarde ses propres livres par
-  // défaut. La sélection elle-même vit dans HouseholdViewContext (partagée
+  // défaut. La sélection elle-même vit dans HouseholdViewProvider (partagée
   // entre Collection/Stats/Succès) pour tenir d'une page à l'autre.
   const { selectedId, setSelectedId } = useHouseholdView()
   const { allBooks, members, loading, error, refresh, ensureFresh } = useLibraryData()

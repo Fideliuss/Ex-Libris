@@ -329,15 +329,14 @@ function MiniBook({ title, author, status }) {
 function Features() {
   const t = useT()
   const [active, setActive] = useState(0)
-  const [pinned, setPinned] = useState(true)
+  // Épinglé sauf si l'utilisateur préfère moins d'animations : dans ce cas la
+  // section reprend sa hauteur normale.
+  const [pinned] = useState(() => !prefersReducedMotion())
   const wrapperRef = useRef(null)
   const count = t.features.length
 
   useEffect(() => {
-    if (prefersReducedMotion()) {
-      setPinned(false)
-      return
-    }
+    if (!pinned) return
     const wrapper = wrapperRef.current
     if (!wrapper) return
 
@@ -359,7 +358,7 @@ function Features() {
       window.removeEventListener('scroll', onScroll)
       if (frame !== null) cancelAnimationFrame(frame)
     }
-  }, [count])
+  }, [count, pinned])
 
   const panel = (
     <>
