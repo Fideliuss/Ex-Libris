@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { bookMatchesFilters } from './collectionFilters'
+import { bookMatchesFilters, computeFacets } from './collectionFilters'
+import { sortedUnique } from './text'
 
 const manga = {
   title: 'One Piece',
@@ -66,5 +67,49 @@ describe('bookMatchesFilters', () => {
     expect(bookMatchesFilters(manga, { search: 'one piece' })).toBe(true)
     expect(bookMatchesFilters(manga, { search: 'oda' })).toBe(true)
     expect(bookMatchesFilters(manga, { search: 'dune' })).toBe(false)
+  })
+})
+
+describe('computeFacets', () => {
+  const books = [
+    { title: 'A', author: ['X', 'Y'], type: 'manga', publisher: 'P1', collection: 'C1', series: 'S1', universe: 'U1', edition: ['Poche'], tags: ['t1', 't2'], status: 'read' },
+    { title: 'B', author: ['Z'], type: 'book', publisher: 'P2', collection: null, series: null, universe: null, edition: [], tags: ['t2'], status: 'to-read' },
+    { title: 'C', author: ['X'], type: 'manga', publisher: 'P2', collection: 'C2', series: 'S1', universe: 'U1', edition: ['Collector'], tags: [], status: 'read' },
+    { title: 'D', author: [], type: 'comics', publisher: '', collection: 'C1', series: 'S2', universe: null, edition: null, tags: null, status: 'wishlist' },
+  ]
+
+  // Référence : l'ancienne implémentation, un filtrage complet par champ.
+  function reference(filters) {
+    const pool = (key) => books.filter((b) => bookMatchesFilters(b, filters, key))
+    const collect = (key, pick) => sortedUnique(pool(key).flatMap(pick))
+    const statusCounts = {}
+    for (const b of pool('status')) statusCounts[b.status] = (statusCounts[b.status] ?? 0) + 1
+    return {
+      tags: collect('tags', (b) => b.tags ?? []),
+      publisher: collect('publisher', (b) => (b.publisher ? [b.publisher] : [])),
+      author: collect('author', (b) => b.author ?? []),
+      collection: collect('collection', (b) => (b.collection ? [b.collection] : [])),
+      edition: collect('edition', (b) => b.edition ?? []),
+      series: collect('series', (b) => (b.series ? [b.series] : [])),
+      universe: collect('universe', (b) => (b.universe ? [b.universe] : [])),
+      statusCounts,
+    }
+  }
+
+  const scenarios = [
+    {},
+    { type: 'manga' },
+    { publisher: 'P2' },
+    { type: 'manga', publisher: 'P2' },
+    { author: 'X', status: 'read' },
+    { selectedTags: ['t2'] },
+    { selectedTags: ['t1'], series: 'S1', universe: 'U1' },
+    { search: 'b' },
+    { search: 'zzz' },
+    { status: 'wishlist', type: 'comics', collection: 'C1' },
+  ]
+
+  it.each(scenarios)('est identique à un filtrage par champ (%j)', (filters) => {
+    expect(computeFacets(books, filters)).toEqual(reference(filters))
   })
 })

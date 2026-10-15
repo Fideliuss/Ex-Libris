@@ -475,6 +475,8 @@ export default function Stats() {
                               <img
                                 src={book.cover_url}
                                 alt=""
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-full object-contain"
                               />
                             ) : (
@@ -642,6 +644,8 @@ export default function Stats() {
                               <img
                                 src={book.cover_url}
                                 alt=""
+                                loading="lazy"
+                                decoding="async"
                                 className="w-full h-full object-cover"
                               />
                             </Link>

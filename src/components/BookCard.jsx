@@ -1,9 +1,10 @@
+import { memo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { STATUS_BORDER_CLASS } from '../lib/statusLabels'
 import BookCardVisual from './BookCardVisual'
 import { navigateWithViewTransition } from '../lib/navigation'
 
-export default function BookCard({
+function BookCard({
   book,
   selectable,
   selected,
@@ -84,3 +85,7 @@ export default function BookCard({
     </Link>
   )
 }
+
+// Mémoïsé : dans une grille de centaines de cartes, un changement d'état de la
+// page (sélection, scroll...) ne doit re-rendre que les cartes concernées.
+export default memo(BookCard)

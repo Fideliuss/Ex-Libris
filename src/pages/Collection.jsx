@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { bulkDeleteBooks, bulkSetField, bulkUpdateBooks } from '../lib/books'
 import { isBookIncomplete } from '../lib/bookCompleteness'
-import { bookMatchesFilters } from '../lib/collectionFilters'
+import { bookMatchesFilters, computeFacets } from '../lib/collectionFilters'
+import { compareFr, sortedUnique } from '../lib/text'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import { describeError } from '../lib/errors'
 import BookCard from '../components/BookCard'
@@ -31,9 +32,14 @@ const STATUS_ORDER = Object.keys(STATUS_LABELS)
 // pour que la série s'affiche dans l'ordre de lecture plutôt qu'au hasard.
 function titleCompare(a, b) {
   return (
-    a.title.localeCompare(b.title, 'fr') ||
+    compareFr(a.title, b.title) ||
     (a.series_index ?? 0) - (b.series_index ?? 0)
   )
+}
+
+// Livre sans date de fin : tout en bas (epoch), comme avant.
+function finishedTime(book) {
+  return book.date_finished ? Date.parse(book.date_finished) : 0
 }
 
 const SORT_OPTIONS = {
@@ -44,19 +50,18 @@ const SORT_OPTIONS = {
   author: {
     label: 'Auteur',
     compare: (a, b) =>
-      authorSortKey(a.author).localeCompare(authorSortKey(b.author), 'fr') ||
+      compareFr(authorSortKey(a.author), authorSortKey(b.author)) ||
       titleCompare(a, b),
   },
   recent: {
     label: 'Date d’ajout',
     compare: (a, b) =>
-      new Date(b.created_at) - new Date(a.created_at) || titleCompare(a, b),
+      Date.parse(b.created_at) - Date.parse(a.created_at) || titleCompare(a, b),
   },
   finished: {
     label: 'Date de fin de lecture',
     compare: (a, b) =>
-      new Date(b.date_finished ?? 0) - new Date(a.date_finished ?? 0) ||
-      titleCompare(a, b),
+      finishedTime(b) - finishedTime(a) || titleCompare(a, b),
   },
   rating: {
     label: 'Note',
@@ -74,7 +79,7 @@ const SORT_OPTIONS = {
   tome: {
     label: 'Tome',
     compare: (a, b) =>
-      (a.series ?? '').localeCompare(b.series ?? '', 'fr') ||
+      compareFr(a.series ?? '', b.series ?? '') ||
       (a.series_index ?? 0) - (b.series_index ?? 0) ||
       titleCompare(a, b),
   },
@@ -203,7 +208,10 @@ export default function Collection() {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const search = searchParams.get('q') ?? ''
-  const selectedTags = searchParams.getAll('tag')
+  // Mémoïsé sur searchParams : getAll() renvoie un nouveau tableau à chaque
+  // appel, ce qui invaliderait `filters` (et tous les calculs en aval) à
+  // chaque render, même sans changement d'URL.
+  const selectedTags = useMemo(() => searchParams.getAll('tag'), [searchParams])
   const publisher = searchParams.get('publisher') ?? ''
   const author = searchParams.get('author') ?? ''
   const collection = searchParams.get('collection') ?? ''
@@ -337,84 +345,27 @@ export default function Collection() {
     [search, selectedTags, publisher, author, collection, edition, series, universe, type, status],
   )
 
-  const tags = useMemo(() => {
-    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'tags'))
-    const set = new Set()
-    for (const book of pool) {
-      for (const t of book.tags ?? []) set.add(t)
-    }
-    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books, filters])
+  // Options de tous les filtres calculées en une seule passe sur les livres
+  // (voir computeFacets) plutôt qu'un refiltrage complet par champ.
+  const facets = useMemo(() => computeFacets(books, filters), [books, filters])
+  const {
+    tags,
+    publisher: publishers,
+    author: authors,
+    collection: collections,
+    edition: editions,
+    series: seriesList,
+    universe: universeList,
+    statusCounts,
+  } = facets
 
   const selectedBooksTags = useMemo(() => {
-    const set = new Set()
+    const all = []
     for (const book of books) {
-      if (!selectedIds.has(book.id)) continue
-      for (const t of book.tags ?? []) set.add(t)
+      if (selectedIds.has(book.id)) all.push(...(book.tags ?? []))
     }
-    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+    return sortedUnique(all)
   }, [books, selectedIds])
-
-  const publishers = useMemo(() => {
-    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'publisher'))
-    const set = new Set()
-    for (const book of pool) {
-      if (book.publisher) set.add(book.publisher)
-    }
-    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books, filters])
-
-  const authors = useMemo(() => {
-    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'author'))
-    const set = new Set()
-    for (const book of pool) {
-      for (const a of book.author ?? []) set.add(a)
-    }
-    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books, filters])
-
-  const collections = useMemo(() => {
-    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'collection'))
-    const set = new Set()
-    for (const book of pool) {
-      if (book.collection) set.add(book.collection)
-    }
-    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books, filters])
-
-  const editions = useMemo(() => {
-    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'edition'))
-    const set = new Set()
-    for (const book of pool) {
-      for (const e of book.edition ?? []) set.add(e)
-    }
-    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books, filters])
-
-  const seriesList = useMemo(() => {
-    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'series'))
-    const set = new Set()
-    for (const book of pool) {
-      if (book.series) set.add(book.series)
-    }
-    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books, filters])
-
-  const universeList = useMemo(() => {
-    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'universe'))
-    const set = new Set()
-    for (const book of pool) {
-      if (book.universe) set.add(book.universe)
-    }
-    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books, filters])
-
-  const statusCounts = useMemo(() => {
-    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'status'))
-    const counts = {}
-    for (const book of pool) counts[book.status] = (counts[book.status] ?? 0) + 1
-    return counts
-  }, [books, filters])
 
   // La wishlist a son propre onglet (voir plus bas) : la Collection
   // elle-même ne montre que ce qui est vraiment possédé, pas ce qu'on
@@ -614,19 +565,21 @@ export default function Collection() {
     exitSelectionMode()
   }
 
-  function handleStartSelection(id) {
+  // Références stables : BookCard est mémoïsé, des callbacks recréés à chaque
+  // render annuleraient ce gain (cocher une carte re-rendrait toute la grille).
+  const handleStartSelection = useCallback((id) => {
     setSelectionMode(true)
     setSelectedIds(new Set([id]))
-  }
+  }, [setSelectionMode, setSelectedIds])
 
-  function toggleSelect(id) {
+  const toggleSelect = useCallback((id) => {
     setSelectedIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
       return next
     })
-  }
+  }, [])
 
   function toggleSelectAll() {
     setSelectedIds((prev) =>
