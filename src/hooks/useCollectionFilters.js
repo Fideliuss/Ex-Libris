@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { safeLocal } from '../lib/safeStorage'
 
@@ -73,13 +73,10 @@ export function useCollectionFilters(userId) {
   const collectionTab = searchParams.get('tab') ?? 'collection'
 
   // Un setter par filtre simple : setFilter.publisher(value)...
-  const setFilter = useMemo(() => {
-    const setters = {}
-    for (const name of FILTER_NAMES) {
-      setters[name] = (value) => setParam(PARAM_BY_FILTER[name], value)
-    }
-    return setters
-  }, [setSearchParams])
+  const setFilter = {}
+  for (const name of FILTER_NAMES) {
+    setFilter[name] = (value) => setParam(PARAM_BY_FILTER[name], value)
+  }
 
   function setSort(value) {
     setParam('sort', value)
@@ -96,15 +93,12 @@ export function useCollectionFilters(userId) {
     setParam('tab', next === 'collection' ? null : next)
   }
 
-  const setSelectedTags = useCallback(
-    (nextTags) => {
-      update((params) => {
-        params.delete('tag')
-        for (const t of nextTags) params.append('tag', t)
-      })
-    },
-    [setSearchParams],
-  )
+  function setSelectedTags(nextTags) {
+    update((params) => {
+      params.delete('tag')
+      for (const t of nextTags) params.append('tag', t)
+    })
+  }
 
   function resetFilters() {
     update((params) => {
