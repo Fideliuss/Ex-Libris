@@ -21,7 +21,7 @@ import StarRating from '../components/StarRating'
 import CoverLightbox from '../components/CoverLightbox'
 import { STATUS_LABELS } from '../lib/statusLabels'
 import { Field, FormSection, LivePreviewCard, WishlistCheckbox } from '../components/BookFormParts'
-import { nullIfEmpty } from '../lib/bookPayload'
+import { nullIfEmpty, pickEditable } from '../lib/bookPayload'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 
@@ -294,7 +294,7 @@ export default function BookForm() {
     }
 
     const payload = {
-      ...book,
+      ...pickEditable(book),
       cover_url: coverUrl,
       date_started: book.date_started || null,
       date_finished: book.date_finished || null,

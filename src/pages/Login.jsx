@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { primaryButtonClass, cardClass } from '../lib/ui'
 import TextField from '../components/TextField'
 import { validateNewPassword } from '../lib/passwordRules'
+import { describeSignInError, describeSignUpError, isClockSkewError } from '../lib/authErrors'
 import { isPlainLeftClick, navigateWithViewTransition } from '../lib/navigation'
 
 export default function Login() {
@@ -373,45 +374,4 @@ export default function Login() {
       </div>
     </div>
   )
-}
-
-// Ecart d'horloge système côté client : le JWT semble "émis dans le futur"
-// par rapport à l'heure locale. Un simple rafraîchissement suffit en général
-// (nouvelle requête, nouvel horodatage), sans attendre que l'utilisateur
-// corrige l'horloge de sa machine.
-function isClockSkewError(error) {
-  const message = error.message ?? ''
-  return /issued.*(at|in).*future|jwt.*future/i.test(message)
-}
-
-function describeSignInError(error) {
-  const code = error.code ?? ''
-  const message = error.message ?? ''
-
-  if (code === 'email_not_confirmed' || /email.*not.*confirm/i.test(message)) {
-    return "Ce compte n'est pas confirmé. Dans Supabase, va sur Authentication → Users, ouvre le compte et confirme l'email (ou recrée-le avec « Auto Confirm User » coché)."
-  }
-  if (code === 'invalid_credentials' || /invalid login credentials/i.test(message)) {
-    return 'Email ou mot de passe incorrect.'
-  }
-  if (isClockSkewError(error)) {
-    return "Erreur temporaire de connexion. Rafraîchis la page et réessaie."
-  }
-  return `Connexion impossible : ${message || 'erreur inconnue'}.`
-}
-
-function describeSignUpError(error) {
-  const code = error.code ?? ''
-  const message = error.message ?? ''
-
-  if (
-    code === 'user_already_exists' ||
-    /already registered|already exists/i.test(message)
-  ) {
-    return 'Un compte existe déjà avec cet email.'
-  }
-  if (code === 'weak_password' || /password/i.test(message)) {
-    return 'Mot de passe trop faible : essaie au moins 6 caractères.'
-  }
-  return `Impossible de créer le compte : ${message || 'erreur inconnue'}.`
 }

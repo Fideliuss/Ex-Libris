@@ -1,11 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { bulkCreateBooks, bulkUpdateBooks, listBooks } from '../lib/books'
-import {
-  computeSeriesRepair,
-  mapLibibRowToBook,
-  parseLibibCsv,
-} from '../lib/libibImport'
+import { mapLibibRowToBook, parseLibibCsv } from '../lib/libibImport'
+import { planImport } from '../lib/importPlan'
 import { mapMyLibraryRowToBook, parseMyLibraryXlsx } from '../lib/myLibraryImport'
 import { useAuth } from '../context/AuthContext'
 import { useLibraryData } from '../hooks/useLibraryData'
@@ -49,42 +46,8 @@ export default function ImportPanel() {
       }
 
       const existingBooks = await listBooks({ userId: user.id })
-      const existingByIsbn = new Map(
-        existingBooks.filter((b) => b.isbn).map((b) => [b.isbn, b]),
-      )
-
-      const nextToImport = []
-      const nextToEnrich = []
-      const seenInFile = new Set()
-      let skipped = 0
-      let untouchedDuplicates = 0
-
-      for (const { mapped, raw } of mappedRows) {
-        if (!mapped.title) {
-          skipped += 1
-          continue
-        }
-
-        const key = mapped.isbn || null
-        const existing = key ? existingByIsbn.get(key) : null
-
-        if (existing) {
-          const patch = raw ? computeSeriesRepair(existing, raw) : null
-          if (patch) {
-            nextToEnrich.push({ id: existing.id, patch, title: existing.title })
-          } else {
-            untouchedDuplicates += 1
-          }
-          continue
-        }
-
-        if (key && seenInFile.has(key)) {
-          untouchedDuplicates += 1
-          continue
-        }
-        if (key) seenInFile.add(key)
-        nextToImport.push(mapped)
-      }
+      const { toImport: nextToImport, toEnrich: nextToEnrich, untouchedDuplicates, skipped } =
+        planImport(mappedRows, existingBooks)
 
       setToImport(nextToImport)
       setToEnrich(nextToEnrich)

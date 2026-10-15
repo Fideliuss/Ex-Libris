@@ -1,9 +1,23 @@
+// Délai max par source : sans lui, une source qui ne répond pas bloque toute
+// la cascade (Google, Open Library, BNF) et le bouton "Chercher" reste figé.
+const LOOKUP_TIMEOUT_MS = 8000
+
+async function fetchWithTimeout(url) {
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), LOOKUP_TIMEOUT_MS)
+  try {
+    return await fetch(url, { signal: controller.signal })
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 function cleanIsbn(isbn) {
   return isbn.replace(/[^0-9Xx]/g, '')
 }
 
 async function lookupGoogleBooks(isbn) {
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`,
   )
   if (!res.ok) throw new Error('Google Books indisponible')
@@ -21,7 +35,7 @@ async function lookupGoogleBooks(isbn) {
 }
 
 async function lookupOpenLibrary(isbn) {
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`,
   )
   if (!res.ok) throw new Error('Open Library indisponible')
@@ -98,7 +112,7 @@ function parseBnfRecord(record) {
 
 async function lookupBnf(isbn) {
   const query = encodeURIComponent(`bib.isbn all "${isbn}"`)
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `https://catalogue.bnf.fr/api/SRU?version=1.2&operation=searchRetrieve&query=${query}&recordSchema=unimarcXchange&maximumRecords=1`,
   )
   if (!res.ok) throw new Error('BNF indisponible')
