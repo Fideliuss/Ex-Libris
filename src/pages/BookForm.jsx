@@ -6,7 +6,9 @@ import { useLibraryData } from '../hooks/useLibraryData'
 import { bookSuggestions } from '../lib/bookSuggestions'
 import { lookupIsbn } from '../lib/isbnLookup'
 import { getMissingFields } from '../lib/bookCompleteness'
-import { compressImage, deleteCover, uploadCover } from '../lib/storage'
+import { deleteCover, uploadCover } from '../lib/storage'
+import { useCoverUpload } from '../hooks/useCoverUpload'
+import CoverField from '../components/CoverField'
 import TagInput from '../components/TagInput'
 import { inputClass, primaryButtonClass, secondaryButtonClass, dangerOutlineButtonClass, backLinkClass, cardClass } from '../lib/ui'
 import { describeError } from '../lib/errors'
@@ -24,12 +26,6 @@ import { Field, FormSection, LivePreviewCard, WishlistCheckbox } from '../compon
 import { nullIfEmpty, pickEditable } from '../lib/bookPayload'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
-
-// Exclut explicitement HEIC/HEIF (photos par défaut sur iPhone) : le canvas
-// de compressImage ne sait pas les décoder sur Chrome/Firefox. C'est un
-// indice pour le sélecteur de fichier du système, pas une garantie — le
-// glisser-déposer l'ignore et compressImage reste la vraie barrière.
-const COVER_ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,image/bmp'
 
 const emptyBook = {
   title: '',
@@ -79,45 +75,15 @@ export default function BookForm() {
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [lookupLoading, setLookupLoading] = useState(false)
   const [lookupMessage, setLookupMessage] = useState(null)
-  const [coverUploading, setCoverUploading] = useState(false)
-  const [coverError, setCoverError] = useState(null)
   const [scannerOpen, setScannerOpen] = useState(false)
   const [showPurchasePrompt, setShowPurchasePrompt] = useState(false)
   const [coverExpanded, setCoverExpanded] = useState(false)
-  const [coverDragActive, setCoverDragActive] = useState(false)
-  const coverFileInputRef = useRef(null)
   // Valeur en base au chargement de la fiche, indépendante des éditions en
   // cours dans book.cover_url — sert à savoir, à la sauvegarde, si la cover
   // a changé et si l'ancien fichier (remplacé ou retiré) doit être nettoyé
   // du storage.
   const originalCoverUrlRef = useRef(null)
-  // L'upload réel vers le storage n'a lieu qu'à la sauvegarde (handleSubmit),
-  // pas au choix du fichier : sinon quitter la page sans enregistrer laisse
-  // un fichier orphelin en storage (bug réel rencontré). En attendant, on
-  // affiche un aperçu 100% local (URL.createObjectURL, aucun réseau) et on
-  // garde le blob compressé de côté pour l'upload différé.
-  const pendingCoverBlobRef = useRef(null)
-  const pendingCoverPreviewUrlRef = useRef(null)
-
-  function clearPendingCover() {
-    if (pendingCoverPreviewUrlRef.current) {
-      URL.revokeObjectURL(pendingCoverPreviewUrlRef.current)
-      pendingCoverPreviewUrlRef.current = null
-    }
-    pendingCoverBlobRef.current = null
-  }
-
-  // Révoque l'aperçu local en attente si la page est quittée sans avoir
-  // soumis le formulaire (fermeture d'onglet ou navigation SPA) : pas
-  // d'impact storage (rien n'a été uploadé), juste l'hygiène mémoire du
-  // blob local.
-  useEffect(() => {
-    return () => {
-      if (pendingCoverPreviewUrlRef.current) {
-        URL.revokeObjectURL(pendingCoverPreviewUrlRef.current)
-      }
-    }
-  }, [])
+  const cover = useCoverUpload((url) => set('cover_url', url))
 
   useEffect(() => {
     if (!isEdit) return
@@ -185,7 +151,7 @@ export default function BookForm() {
           text: 'Aucun résultat trouvé pour cet ISBN. Remplis les champs manuellement.',
         })
       } else {
-        if (result.cover_url) clearPendingCover()
+        if (result.cover_url) cover.clearPendingCover()
         setBook((b) => ({
           ...b,
           title: result.title || b.title,
@@ -213,64 +179,6 @@ export default function BookForm() {
     handleLookup(code)
   }
 
-  // Extrait de handleCoverUpload (le <input type="file">) pour être
-  // réutilisable depuis le glisser-déposer, qui ne fournit pas le même
-  // événement (dataTransfer.files, pas target.files).
-  async function uploadCoverFile(file) {
-    if (!file.type.startsWith('image/')) {
-      setCoverError('Le fichier doit être une image.')
-      return
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setCoverError('Image trop lourde (5 Mo maximum).')
-      return
-    }
-
-    setCoverUploading(true)
-    setCoverError(null)
-
-    let compressed
-    try {
-      compressed = await compressImage(file)
-    } catch {
-      setCoverError(
-        "Format d'image non pris en charge par le navigateur (HEIC ?). Essaie une photo JPEG ou PNG.",
-      )
-      setCoverUploading(false)
-      return
-    }
-
-    clearPendingCover()
-    const previewUrl = URL.createObjectURL(compressed)
-    pendingCoverBlobRef.current = compressed
-    pendingCoverPreviewUrlRef.current = previewUrl
-    set('cover_url', previewUrl)
-    setCoverUploading(false)
-  }
-
-  function handleRemoveCover() {
-    clearPendingCover()
-    set('cover_url', '')
-  }
-
-  function handleCoverUrlInput(value) {
-    clearPendingCover()
-    set('cover_url', value)
-  }
-
-  function handleCoverUpload(e) {
-    const file = e.target.files?.[0]
-    e.target.value = ''
-    if (file) uploadCoverFile(file)
-  }
-
-  function handleCoverDrop(e) {
-    e.preventDefault()
-    setCoverDragActive(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file) uploadCoverFile(file)
-  }
-
   async function handleSubmit(e) {
     e.preventDefault()
     setSaving(true)
@@ -282,9 +190,10 @@ export default function BookForm() {
     // payload.
     let coverUrl = book.cover_url
     let uploadedNewCover = false
-    if (pendingCoverBlobRef.current) {
+    const pendingBlob = cover.getPendingBlob()
+    if (pendingBlob) {
       try {
-        coverUrl = await uploadCover(pendingCoverBlobRef.current)
+        coverUrl = await uploadCover(pendingBlob)
         uploadedNewCover = true
       } catch {
         setError("Échec de l'envoi de la couverture. Réessaie.")
@@ -317,7 +226,7 @@ export default function BookForm() {
         if (previousCoverUrl && previousCoverUrl !== payload.cover_url) {
           deleteCover(previousCoverUrl)
         }
-        clearPendingCover()
+        cover.clearPendingCover()
         // On revient en arrière (plutôt que naviguer vers la fiche) pour ne
         // pas empiler une entrée d'historique en plus de celle déjà créée
         // par le clic sur "Modifier" — sinon "Retour" depuis la fiche
@@ -325,7 +234,7 @@ export default function BookForm() {
         goBack()
       } else {
         upsertBook(await createBook(payload))
-        clearPendingCover()
+        cover.clearPendingCover()
         navigate('/')
       }
     } catch (err) {
@@ -574,148 +483,11 @@ export default function BookForm() {
               />
             </Field>
 
-            {/* Pas de <Field> ici (qui enveloppe tout dans un <label>) :
-                cette section contient déjà plusieurs contrôles labelables
-                (vignette, URL, deux boutons d'import) — un <label>
-                englobant les associe implicitement au premier d'entre eux
-                dans l'ordre du DOM, donc cliquer n'importe où dans le champ
-                activait le mauvais contrôle (bug réel rencontré avec
-                l'input caché de la vignette, devenu le premier). */}
-            <div className="block">
-              <span className="block text-sm font-medium mb-1">Couverture</span>
-              <div className="flex gap-4 items-start">
-                {/* Glisser-déposer géré ici, sur le conteneur : les
-                    événements drag remontent depuis le bouton enfant, donc
-                    un seul jeu de handlers suffit pour les deux états
-                    (avec/sans couverture). */}
-                <div
-                  onDragOver={(e) => {
-                    e.preventDefault()
-                    setCoverDragActive(true)
-                  }}
-                  onDragLeave={(e) => {
-                    // dragleave se déclenche aussi en passant d'un enfant à
-                    // un autre (l'icône, le texte) à l'intérieur de la
-                    // zone, pas seulement en la quittant vraiment : sans ce
-                    // garde-fou, l'état actif clignote pendant le survol et
-                    // peut faire rater le dépôt. relatedTarget est
-                    // l'élément vers lequel le pointeur se déplace — s'il
-                    // est encore dans la zone, on n'en est pas vraiment
-                    // sorti.
-                    if (!e.currentTarget.contains(e.relatedTarget)) {
-                      setCoverDragActive(false)
-                    }
-                  }}
-                  onDrop={handleCoverDrop}
-                  className={`w-24 aspect-[2/3] shrink-0 rounded-sm border overflow-hidden flex items-center justify-center transition-colors ${
-                    coverDragActive
-                      ? 'border-library border-2 bg-library/5'
-                      : book.cover_url
-                        ? 'border-ink/10 bg-paper'
-                        : 'border-dashed border-ink/25 bg-paper'
-                  }`}
-                >
-                  {book.cover_url ? (
-                    <button
-                      type="button"
-                      onClick={() => setCoverExpanded(true)}
-                      aria-label="Agrandir la couverture"
-                      className="w-full h-full block focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-                    >
-                      <img
-                        src={book.cover_url}
-                        alt=""
-                        className="w-full h-full object-contain cursor-zoom-in"
-                      />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => coverFileInputRef.current?.click()}
-                      className="w-full h-full flex flex-col items-center justify-center gap-1.5 px-1.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-library"
-                    >
-                      {!coverDragActive && (
-                        <svg
-                          viewBox="0 0 20 20"
-                          className="w-5 h-5 text-ink/40"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden="true"
-                        >
-                          <path d="M10 3v9m0-9-3 3m3-3 3 3" />
-                          <path d="M4 13.5v1.5A1.5 1.5 0 0 0 5.5 16.5h9a1.5 1.5 0 0 0 1.5-1.5v-1.5" />
-                        </svg>
-                      )}
-                      <span className="text-ink/60 text-[11px] text-center leading-tight">
-                        {coverUploading
-                          ? 'Import…'
-                          : coverDragActive
-                            ? 'Dépose ici'
-                            : 'Cliquer ou glisser une image'}
-                      </span>
-                    </button>
-                  )}
-                  <input
-                    ref={coverFileInputRef}
-                    type="file"
-                    accept={COVER_ACCEPT}
-                    className="sr-only"
-                    onChange={handleCoverUpload}
-                    disabled={coverUploading}
-                  />
-                </div>
-
-                <div className="flex-1 space-y-2">
-                  <input
-                    type="url"
-                    value={book.cover_url ?? ''}
-                    onChange={(e) => handleCoverUrlInput(e.target.value)}
-                    placeholder="https://..."
-                    className={inputClass}
-                  />
-                  <div className="flex flex-wrap items-center gap-3">
-                    <label className="cursor-pointer rounded-sm border border-ink/20 px-3 py-1.5 text-sm text-ink/70 hover:border-library hover:text-library focus-within:outline-none focus-within:ring-2 focus-within:ring-library">
-                      {coverUploading ? 'Import…' : 'Importer une image'}
-                      <input
-                        type="file"
-                        accept={COVER_ACCEPT}
-                        className="sr-only"
-                        onChange={handleCoverUpload}
-                        disabled={coverUploading}
-                      />
-                    </label>
-                    <label className="cursor-pointer rounded-sm border border-ink/20 px-3 py-1.5 text-sm text-ink/70 hover:border-library hover:text-library focus-within:outline-none focus-within:ring-2 focus-within:ring-library">
-                      {coverUploading ? 'Import…' : 'Prendre une photo'}
-                      <input
-                        type="file"
-                        accept={COVER_ACCEPT}
-                        capture="environment"
-                        className="sr-only"
-                        onChange={handleCoverUpload}
-                        disabled={coverUploading}
-                      />
-                    </label>
-                    {book.cover_url && (
-                      <button
-                        type="button"
-                        onClick={handleRemoveCover}
-                        className="text-sm text-ink/70 hover:text-stamp underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
-                      >
-                        Retirer
-                      </button>
-                    )}
-                  </div>
-                  {coverError && (
-                    <p role="alert" className="text-sm text-stamp">
-                      {coverError}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
+            <CoverField
+              coverUrl={book.cover_url}
+              cover={cover}
+              onExpand={() => setCoverExpanded(true)}
+            />
 
             <Field label="Nombre de pages">
               <input
