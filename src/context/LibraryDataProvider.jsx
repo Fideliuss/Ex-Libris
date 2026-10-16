@@ -30,10 +30,20 @@ export function LibraryDataProvider({ children }) {
   const [membersState, setMembersState] = useState({ userId: null, members: [] })
   const fetchedAt = useRef(0)
   const stale = useRef(false)
+  // Nombre de modifications locales (upsertBook/removeBook) depuis le début de
+  // la session : sert à repérer un rechargement parti AVANT une modification
+  // et revenu APRÈS, dont la réponse périmée écraserait cette modification.
+  const localEdits = useRef(0)
 
   const refresh = useCallback(async () => {
     if (!userId) return
+    const editsAtStart = localEdits.current
     const books = await listBooks()
+    if (localEdits.current !== editsAtStart) {
+      // Réponse périmée : on la jette et on laisse la prochaine page recharger.
+      stale.current = true
+      return
+    }
     fetchedAt.current = Date.now()
     stale.current = false
     setBooksState({ userId, books, error: null, loaded: true })
@@ -100,10 +110,12 @@ export function LibraryDataProvider({ children }) {
   }, [])
 
   const upsertBook = useCallback((book) => {
+    localEdits.current += 1
     setBooksState((prev) => ({ ...prev, books: upsertInList(prev.books, book) }))
   }, [])
 
   const removeBook = useCallback((id) => {
+    localEdits.current += 1
     setBooksState((prev) => ({ ...prev, books: removeFromList(prev.books, id) }))
   }, [])
 
