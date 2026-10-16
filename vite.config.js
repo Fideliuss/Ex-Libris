@@ -1,15 +1,45 @@
+import { readFileSync } from 'node:fs'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8'))
+
+const commit = (process.env.COMMIT_REF ?? '').slice(0, 7)
+
+// Émet version.json à la racine du build : l'application le lit pour annoncer
+// la version d'une mise à jour en attente (il n'est pas dans le précache).
+function versionFile() {
+  return {
+    name: 'version-file',
+    apply: 'build',
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: 'version.json',
+        source: JSON.stringify({ version: pkg.version, commit }),
+      })
+    },
+  }
+}
+
 // https://vite.dev/config/
 export default defineConfig({
+  // Version et commit affichés dans la page Compte, pour savoir quelle build
+  // est en ligne. COMMIT_REF est fourni par Netlify ; absent en local.
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+    __APP_COMMIT__: JSON.stringify(commit),
+  },
   plugins: [
     react(),
     tailwindcss(),
+    versionFile(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // 'prompt' : la nouvelle build attend que l'utilisateur accepte de
+      // recharger (voir UpdatePrompt) au lieu de s'activer en silence.
+      registerType: 'prompt',
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'Ex Libris',
