@@ -13,7 +13,14 @@ import ThemeToggle from '../components/ThemeToggle'
 import DeleteAccountSection from '../components/DeleteAccountSection'
 import PersonalInfoSection from '../components/PersonalInfoSection'
 import ChangelogModal from '../components/ChangelogModal'
+import { APP_VERSION_LABEL } from '../lib/appVersion'
 import { secondaryButtonClass, backLinkClass, cardClass } from '../lib/ui'
+
+// Le formulaire d'issue est prérempli avec la version en ligne : sans elle, un
+// bug rapporté ne dit pas sur quelle build il a été vu.
+const BUG_REPORT_URL = `https://github.com/Fideliuss/Ex-Libris/issues/new?body=${encodeURIComponent(
+  `Version : ${APP_VERSION_LABEL}\n\n`,
+)}`
 
 const ImportPanel = lazy(() => import('../components/ImportPanel'))
 const ExportPanel = lazy(() => import('../components/ExportPanel'))
@@ -81,7 +88,7 @@ function SecuritySection() {
       <div>
         <h3 className="text-sm font-medium mb-2">Un bug ?</h3>
         <a
-          href="https://github.com/Fideliuss/Ex-Libris/issues/new"
+          href={BUG_REPORT_URL}
           target="_blank"
           rel="noopener noreferrer"
           className={`inline-block rounded-sm px-4 py-2 text-sm ${secondaryButtonClass}`}
@@ -182,6 +189,10 @@ export default function Account() {
             {activeTab.content}
           </div>
         </div>
+
+        <p className="mt-6 text-center font-mono text-xs text-ink/70">
+          Ex Libris {APP_VERSION_LABEL}
+        </p>
       </div>
     </div>
   )

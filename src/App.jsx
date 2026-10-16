@@ -9,6 +9,7 @@ import { HouseholdViewProvider } from './context/HouseholdViewProvider'
 import ProtectedRoute from './components/ProtectedRoute'
 import LoadingScreen from './components/LoadingScreen'
 import ErrorBoundary from './components/ErrorBoundary'
+import UpdatePrompt from './components/UpdatePrompt'
 import { useTrackSessionNavigation } from './lib/navigation'
 
 // Découpage par route : chaque page part dans son propre chunk, chargé au
@@ -54,6 +55,7 @@ function App() {
                     </Routes>
                   </Suspense>
                 </ErrorBoundary>
+                <UpdatePrompt />
               </ChangelogProvider>
             </TutorialProvider>
           </HouseholdViewProvider>

@@ -9,6 +9,17 @@ l'app. Pour le pop-up "Quoi de neuf" vu par l'utilisateur, voir
 `src/lib/whatsNew.js`, à tenir à jour en parallèle (voir CONTRIBUTING.md,
 section « Livrer vers main »).
 
+## 1.13.0 (2026-10-16)
+
+### Features
+
+* the running version (and build) is now shown at the bottom of the Account page and prefilled in the bug report link ([#157](https://github.com/Fideliuss/Ex-Libris/pull/157))
+* when a new version of the app has been downloaded, a dialog shows the current and the new version with a "Recharger" button, instead of updating silently; the app looks for updates every hour and when it comes back to the foreground ([#157](https://github.com/Fideliuss/Ex-Libris/pull/157))
+
+### Bug Fixes
+
+* a background reload of the library that answered after a book edit could put the old values back until the next reload ([#158](https://github.com/Fideliuss/Ex-Libris/pull/158))
+
 ## 1.12.2 (2026-10-16)
 
 ### Bug Fixes

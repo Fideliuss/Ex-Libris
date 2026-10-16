@@ -110,6 +110,8 @@ Ce fichier sert à construire une base vierge (nouveau projet, tests locaux). Su
 
 Netlify construit le site à chaque fusion sur `main` (`netlify.toml`) et redirige toutes les routes vers `index.html`. Les variables `VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` sont à définir dans les réglages du site.
 
+La version et le commit de la build en ligne s'affichent en bas de la page Compte. Quand une nouvelle build est téléchargée, l'application propose de recharger (`UpdatePrompt`) ; elle lit pour cela le fichier `version.json` émis à chaque build.
+
 ## Contribuer
 
 La façon de travailler (branches, revues, livraison vers `main`, versions) est décrite dans [CONTRIBUTING.md](CONTRIBUTING.md). L'historique des versions est dans [CHANGELOG.md](CHANGELOG.md).
