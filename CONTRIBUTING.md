@@ -7,7 +7,7 @@ Ce document décrit comment le projet se développe et se livre. Pour installer 
 - `develop` est la branche de travail. Chaque changement part d'une branche dédiée créée depuis `develop` (`feature/...`, `fix/...`, `refactor/...`, `chore/...`) et revient dans `develop` par pull request.
 - `main` est la production. Netlify ne surveille que cette branche, sans déploiement de branches ni de prévisualisations.
 - `main` et `develop` sont protégées par des [rulesets GitHub](https://github.com/Fideliuss/Ex-Libris/rules) : pas de push direct, fusion uniquement par pull request avec la CI au vert. Les rulesets sont préférés à l'ancienne protection de branche, qui ne bloque pas vraiment les push directs quand aucune revue n'est exigée.
-- Une branche part toujours d'un `develop` à jour. Les branches ne s'empilent pas : la suivante est créée après la fusion de la précédente.
+- Une branche part toujours d'un `develop` à jour. Les branches ne s'empilent pas : la suivante est créée après la fusion de la précédente. Les pull requests vers `develop` se fusionnent en **squash** (un commit par pull request) ; celle de `develop` vers `main` se fusionne avec un **commit de fusion** (une fusion par version). GitHub l'impose.
 
 ## Commits
 
