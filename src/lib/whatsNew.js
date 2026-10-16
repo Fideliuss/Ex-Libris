@@ -9,6 +9,16 @@
 // prend du recul sur tout ce qui vient d'être livré d'un coup.
 export const WHATS_NEW = [
   {
+    id: '2026-10-version-and-updates',
+    title: 'Version et mises à jour',
+    items: [
+      'Le numéro de version de l’application s’affiche en bas de la page Mon compte, et il est repris quand tu signales un problème.',
+      'Quand une nouvelle version est prête, l’appli te l’annonce avec la version actuelle et la nouvelle : tu choisis quand recharger.',
+      'Les pages se chargent plus vite : ta bibliothèque n’est plus rechargée à chaque changement de page.',
+      'Réimporter un fichier Libib ou My Library ne recrée plus les livres sans ISBN, et une recherche ISBN qui ne répond pas ne bloque plus le bouton.',
+    ],
+  },
+  {
     id: '2026-10-smarter-filters',
     title: 'Des filtres plus malins',
     items: [
