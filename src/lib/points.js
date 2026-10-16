@@ -10,3 +10,9 @@ export const TYPE_POINTS = {
 export function bookPoints(book) {
   return TYPE_POINTS[book.type ?? 'book'] ?? 1
 }
+
+// Enlève les zéros inutiles après la virgule (9.50 -> 9.5, 12.00 -> 12), le
+// score cumulant des points fractionnaires (1, 1/2, 1/3 selon le type).
+export function formatScore(value) {
+  return value.toFixed(2).replace(/\.?0+$/, '')
+}

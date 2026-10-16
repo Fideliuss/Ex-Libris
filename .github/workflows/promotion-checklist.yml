@@ -4,7 +4,7 @@ name: promotion-checklist
 # dans ce repo) : verifie que le bump de version et l'entree CHANGELOG
 # sont bien dans le meme diff que la promotion elle-meme, plutot que de
 # compter sur la memoire pour ne pas les oublier ou les livrer a part
-# (voir README.md, section GitFlow).
+# (voir CONTRIBUTING.md, section « Livrer vers main »).
 
 on:
   pull_request:
@@ -24,6 +24,6 @@ jobs:
           echo "$CHANGED" | grep -qx "CHANGELOG.md" || MISSING="$MISSING CHANGELOG.md"
           echo "$CHANGED" | grep -qx "package.json" || MISSING="$MISSING package.json"
           if [ -n "$MISSING" ]; then
-            echo "::error::Fichier(s) absent(s) de cette promotion :$MISSING (voir README.md, section GitFlow)"
+            echo "::error::Fichier(s) absent(s) de cette promotion :$MISSING (voir CONTRIBUTING.md, section « Livrer vers main »)"
             exit 1
           fi

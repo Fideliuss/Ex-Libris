@@ -1,183 +1,16 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { navigateWithViewTransition } from '../lib/navigation'
+import { isPlainLeftClick, navigateWithViewTransition } from '../lib/navigation'
+import { prefersReducedMotion } from '../lib/motion'
+import { safeLocal } from '../lib/safeStorage'
+import Pin from '../components/Pin'
+import { STRINGS } from '../lib/landingStrings'
 import BookCoverPlaceholder from '../components/BookCoverPlaceholder'
 import { STATUS_LABELS } from '../lib/statusLabels'
 import { primaryButtonClass } from '../lib/ui'
 import { TIER_METAL, SEAL_WAX } from '../lib/achievementVisuals'
 
 const LANG_STORAGE_KEY = 'landing-lang'
-
-const STRINGS = {
-  fr: {
-    nav: { features: 'Fonctionnalités', pricing: 'Tarifs', login: 'Se connecter' },
-    hero: {
-      eyebrow: 'Ta bibliothèque personnelle',
-      titleLine1: 'La bibliothèque qui porte',
-      titleLine2: 'ton nom.',
-      subtitle:
-        'Scanne, classe, suis tes objectifs de lecture et partage le tout avec ton foyer.',
-      cta: 'Se connecter',
-    },
-    featuresTitle: 'Tu es plutôt...',
-    features: [
-      {
-        title: 'Le collectionneur pressé',
-        text: 'Tu rentres avec dix nouveaux livres ? Scanne le code-barres et la fiche se remplit toute seule — auteur, éditeur, résumé, en quelques secondes.',
-      },
-      {
-        title: 'Le lecteur organisé',
-        text: 'Livres, BD, comics, mangas : chacun garde sa place. Statuts, tags, séries, éditeurs — ta collection reste rangée même quand elle explose.',
-      },
-      {
-        title: 'Qui vise un objectif',
-        text: "Un objectif de lecture par an, un système de points, un calendrier. Tu sais où tu en es sans avoir à compter toi-même.",
-      },
-      {
-        title: 'Qui partage en foyer',
-        text: 'Chacun garde ses livres, mais vous voyez tout le foyer côte à côte, sans jamais les mélanger.',
-      },
-    ],
-    howTitle: 'Comment ça marche',
-    steps: [
-      {
-        title: 'Scanne ou cherche',
-        text: 'Ajoute un livre en scannant son ISBN ou en le cherchant à la main.',
-      },
-      {
-        title: 'Suis ta progression',
-        text: 'Statut de lecture, notes, objectif annuel : ta collection évolue avec toi.',
-      },
-      {
-        title: 'Partage',
-        text: 'Invite ton foyer pour voir sa collection à côté de la tienne.',
-      },
-    ],
-    pricingTitle: 'Tarifs',
-    pricingNote: "Aperçu, l'application n'est pas encore ouverte au public.",
-    billingToggle: { monthly: 'Mensuel', annual: 'Annuel', save: "Jusqu'à -28%" },
-    pricing: [
-      {
-        name: 'Basic',
-        priceMonthly: 'Gratuit',
-        priceAnnual: 'Gratuit',
-        tagline: 'Pour découvrir ta bibliothèque perso.',
-        items: ['Collection limitée (1000 livres)', 'Scan ISBN', 'Statuts de lecture de base'],
-      },
-      {
-        name: 'Premium',
-        priceMonthly: '1,99€/mois',
-        priceAnnual: '19,99€/an',
-        tagline: 'Pour les lecteurs assidus.',
-        items: ['Collection illimitée', 'Statistiques, objectifs & succès Ex Libris', 'Historique de lecture complet'],
-      },
-      {
-        name: 'Duo',
-        priceMonthly: '2,99€/mois',
-        priceAnnual: '25,99€/an',
-        tagline: 'Pour partager à deux.',
-        items: ['Tout Premium', 'Partage à deux (foyer de 2)', 'Vue croisée des bibliothèques'],
-        highlighted: true,
-        badge: 'Recommandé',
-      },
-      {
-        name: 'Family',
-        priceMonthly: '3,49€/mois',
-        priceAnnual: '33,99€/an',
-        tagline: 'Pour toute la famille.',
-        items: ['Tout Duo', "Foyer jusqu'à 6 comptes", 'Gestion des permissions'],
-      },
-    ],
-    finalCtaTitle: 'Prêt·e à ranger ta bibliothèque ?',
-    footer: 'Ex Libris',
-    legalNotice: 'Mentions légales',
-    privacyPolicy: 'Confidentialité',
-  },
-  en: {
-    nav: { features: 'Features', pricing: 'Pricing', login: 'Log in' },
-    hero: {
-      eyebrow: 'Your personal library',
-      titleLine1: 'The library that bears',
-      titleLine2: 'your name.',
-      subtitle:
-        'Scan, sort, track your reading goals and share it all with your household.',
-      cta: 'Log in',
-    },
-    featuresTitle: "You're the type who...",
-    features: [
-      {
-        title: 'The rushed collector',
-        text: 'Coming home with ten new books? Scan the barcode and the entry fills itself in — author, publisher, summary, in seconds.',
-      },
-      {
-        title: 'The organized reader',
-        text: 'Books, comics, manga: everything keeps its place. Status, tags, series, publishers — your collection stays tidy even as it grows.',
-      },
-      {
-        title: 'Chasing a goal',
-        text: 'A yearly reading goal, a points system, a calendar. You always know where you stand, without counting it yourself.',
-      },
-      {
-        title: 'Sharing with your household',
-        text: 'Everyone keeps their own books, but you see the whole household side by side, never mixed up.',
-      },
-    ],
-    howTitle: 'How it works',
-    steps: [
-      {
-        title: 'Scan or search',
-        text: 'Add a book by scanning its ISBN or searching for it manually.',
-      },
-      {
-        title: 'Track your progress',
-        text: 'Reading status, ratings, yearly goal: your collection evolves with you.',
-      },
-      {
-        title: 'Share',
-        text: 'Invite your household to see their collection next to yours.',
-      },
-    ],
-    pricingTitle: 'Pricing',
-    pricingNote: "Preview, the app isn't open to the public yet.",
-    billingToggle: { monthly: 'Monthly', annual: 'Annual', save: 'Up to -28%' },
-    pricing: [
-      {
-        name: 'Basic',
-        priceMonthly: 'Free',
-        priceAnnual: 'Free',
-        tagline: 'To discover your personal library.',
-        items: ['Limited collection (1,000 books)', 'ISBN scan', 'Basic reading statuses'],
-      },
-      {
-        name: 'Premium',
-        priceMonthly: '€1.99/mo',
-        priceAnnual: '€19.99/yr',
-        tagline: 'For dedicated readers.',
-        items: ['Unlimited collection', 'Stats, goals & Ex Libris achievements', 'Full reading history'],
-      },
-      {
-        name: 'Duo',
-        priceMonthly: '€2.99/mo',
-        priceAnnual: '€25.99/yr',
-        tagline: 'To share with one other person.',
-        items: ['Everything in Premium', 'Sharing for two (a household of 2)', "A shared view of both libraries"],
-        highlighted: true,
-        badge: 'Recommended',
-      },
-      {
-        name: 'Family',
-        priceMonthly: '€3.49/mo',
-        priceAnnual: '€33.99/yr',
-        tagline: 'For the whole family.',
-        items: ['Everything in Duo', 'A household of up to 6', 'Permission management'],
-      },
-    ],
-    finalCtaTitle: 'Ready to organize your library?',
-    footer: 'Ex Libris',
-    legalNotice: 'Legal notice',
-    privacyPolicy: 'Privacy',
-  },
-}
 
 const LanguageContext = createContext({ lang: 'fr', setLang: () => {} })
 
@@ -188,7 +21,7 @@ function useT() {
 
 function detectLang() {
   if (typeof window === 'undefined') return 'fr'
-  const saved = window.localStorage.getItem(LANG_STORAGE_KEY)
+  const saved = safeLocal.get(LANG_STORAGE_KEY)
   if (saved === 'fr' || saved === 'en') return saved
   return navigator.language?.toLowerCase().startsWith('fr') ? 'fr' : 'en'
 }
@@ -197,7 +30,7 @@ export default function Landing() {
   const [lang, setLang] = useState(detectLang)
 
   useEffect(() => {
-    window.localStorage.setItem(LANG_STORAGE_KEY, lang)
+    safeLocal.set(LANG_STORAGE_KEY, lang)
   }, [lang])
 
   return (
@@ -388,7 +221,7 @@ function useFixedShelf(rangeRef, rootRef, colRefs, speeds) {
   useEffect(() => {
     const root = rootRef.current
     if (!root) return
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const reducedMotion = prefersReducedMotion()
 
     let frame = null
     function update() {
@@ -496,15 +329,14 @@ function MiniBook({ title, author, status }) {
 function Features() {
   const t = useT()
   const [active, setActive] = useState(0)
-  const [pinned, setPinned] = useState(true)
+  // Épinglé sauf si l'utilisateur préfère moins d'animations : dans ce cas la
+  // section reprend sa hauteur normale.
+  const [pinned] = useState(() => !prefersReducedMotion())
   const wrapperRef = useRef(null)
   const count = t.features.length
 
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setPinned(false)
-      return
-    }
+    if (!pinned) return
     const wrapper = wrapperRef.current
     if (!wrapper) return
 
@@ -526,7 +358,7 @@ function Features() {
       window.removeEventListener('scroll', onScroll)
       if (frame !== null) cancelAnimationFrame(frame)
     }
-  }, [count])
+  }, [count, pinned])
 
   const panel = (
     <>
@@ -706,23 +538,6 @@ function BillingToggle({ billing, onChange, labels }) {
 // en pied), mais dimensionnée pour une carte de tarif plutôt qu'une
 // vignette de collection : le nom du palier tient lieu de titre, sa
 // tagline de note d'accroche.
-// Punaise de coin, identique à celle du mur à trophées des succès
-// (Pin dans ExLibrisPlate.jsx, non exportée) : dupliquée ici plutôt
-// qu'importée, cette page n'a pas d'autre raison de dépendre du module
-// succès.
-function Pin({ className }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={`absolute w-2.5 h-2.5 rounded-full ${className}`}
-      style={{
-        background: 'radial-gradient(circle at 35% 35%, #f0dcae, #8e7145 75%)',
-        boxShadow: '0 2px 3px rgba(0,0,0,0.5)',
-      }}
-    />
-  )
-}
-
 // Même matière que les plaques du mur à trophées (TIER_METAL : bronze,
 // argent, or, platine — un dégradé par palier, du même module que les
 // succès) mais sans leur mécanique de verrouillage/révélation : ça n'a
@@ -739,10 +554,10 @@ function PricingCard({ tier, price, tierIndex }) {
           'inset 1px 1px 2px rgba(255,255,255,0.35), inset -2px -2px 4px rgba(15,10,5,0.25), 0 10px 16px rgba(0,0,0,0.25)',
       }}
     >
-      <Pin className="-top-[5px] -left-[5px]" />
-      <Pin className="-top-[5px] -right-[5px]" />
-      <Pin className="-bottom-[5px] -left-[5px]" />
-      <Pin className="-bottom-[5px] -right-[5px]" />
+      <Pin size="w-2.5" className="-top-[5px] -left-[5px]" />
+      <Pin size="w-2.5" className="-top-[5px] -right-[5px]" />
+      <Pin size="w-2.5" className="-bottom-[5px] -left-[5px]" />
+      <Pin size="w-2.5" className="-bottom-[5px] -right-[5px]" />
 
       {/* Sticker (étiquette plate, bord clair, légère rotation) plutôt
           qu'un cachet de cire ou un tampon en diagonale. En bas à droite,
@@ -860,8 +675,7 @@ function LoginCta({ className, children }) {
   const navigate = useNavigate()
 
   function handleClick(e) {
-    if (e.defaultPrevented || e.button !== 0) return
-    if (e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) return
+    if (!isPlainLeftClick(e)) return
     e.preventDefault()
     navigateWithViewTransition(navigate, '/login', {
       direction: 'top',

@@ -1,8 +1,11 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import { inputClass, primaryButtonClass } from '../lib/ui'
-import { navigateWithViewTransition } from '../lib/navigation'
+import { useAuth } from '../hooks/useAuth'
+import { primaryButtonClass, cardClass } from '../lib/ui'
+import TextField from '../components/TextField'
+import { validateNewPassword } from '../lib/passwordRules'
+import { describeSignInError, describeSignUpError, isClockSkewError } from '../lib/authErrors'
+import { isPlainLeftClick, navigateWithViewTransition } from '../lib/navigation'
 
 export default function Login() {
   const { session, signIn, signUp, signInWithGoogle, resetPasswordForEmail } =
@@ -11,8 +14,7 @@ export default function Login() {
   const navigate = useNavigate()
 
   function handleBackToLanding(e) {
-    if (e.defaultPrevented || e.button !== 0) return
-    if (e.metaKey || e.altKey || e.ctrlKey || e.shiftKey) return
+    if (!isPlainLeftClick(e)) return
     e.preventDefault()
     navigateWithViewTransition(navigate, '/', {
       direction: 'back',
@@ -66,12 +68,9 @@ export default function Login() {
     e.preventDefault()
     setError(null)
     setInfo(null)
-    if (password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères.')
-      return
-    }
-    if (password !== password2) {
-      setError('Les mots de passe ne correspondent pas.')
+    const passwordError = validateNewPassword(password, password2)
+    if (passwordError) {
+      setError(passwordError)
       return
     }
     if (!acceptedPolicy) {
@@ -89,7 +88,7 @@ export default function Login() {
       )
     }
     // Si data.session existe, Supabase a déjà confirmé le compte : l'écoute
-    // onAuthStateChange dans AuthContext détecte la session et le <Navigate>
+    // onAuthStateChange dans AuthProvider détecte la session et le <Navigate>
     // plus haut redirige automatiquement.
   }
 
@@ -129,7 +128,7 @@ export default function Login() {
       >
         <span aria-hidden="true">←</span> Retour à l'accueil
       </Link>
-      <div className="max-w-sm w-full bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-8">
+      <div className={`max-w-sm w-full ${cardClass} p-8`}>
         <p className="font-mono text-xs tracking-widest text-library uppercase mb-2 text-center">
           {mode === 'signin' && 'Connexion'}
           {mode === 'signup' && 'Créer un compte'}
@@ -141,37 +140,24 @@ export default function Login() {
 
         {mode === 'signin' && (
           <form onSubmit={handleSignIn} className="space-y-4" noValidate>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-1">
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium mb-1"
-              >
-                Mot de passe
-              </label>
-              <input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={inputClass}
-              />
-            </div>
+            <TextField
+              id="email"
+              label="Email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={setEmail}
+            />
+            <TextField
+              id="password"
+              label="Mot de passe"
+              type="password"
+              autoComplete="current-password"
+              required
+              value={password}
+              onChange={setPassword}
+            />
 
             {error && (
               <p role="alert" className="text-sm text-stamp">
@@ -243,92 +229,54 @@ export default function Login() {
         {mode === 'signup' && (
           <form onSubmit={handleSignUp} className="space-y-4" noValidate>
             <div className="flex gap-3">
-              <div className="flex-1">
-                <label
-                  htmlFor="signup-first-name"
-                  className="block text-sm font-medium mb-1"
-                >
-                  Prénom
-                </label>
-                <input
-                  id="signup-first-name"
-                  type="text"
-                  autoComplete="given-name"
-                  required
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  className={inputClass}
-                />
-              </div>
-              <div className="flex-1">
-                <label
-                  htmlFor="signup-last-name"
-                  className="block text-sm font-medium mb-1"
-                >
-                  Nom
-                </label>
-                <input
-                  id="signup-last-name"
-                  type="text"
-                  autoComplete="family-name"
-                  required
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  className={inputClass}
-                />
-              </div>
-            </div>
-            <div>
-              <label
-                htmlFor="signup-email"
-                className="block text-sm font-medium mb-1"
-              >
-                Email
-              </label>
-              <input
-                id="signup-email"
-                type="email"
-                autoComplete="email"
+              <TextField
+                id="signup-first-name"
+                label="Prénom"
+                type="text"
+                autoComplete="given-name"
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={inputClass}
+                value={firstName}
+                onChange={setFirstName}
+                className="flex-1"
+              />
+              <TextField
+                id="signup-last-name"
+                label="Nom"
+                type="text"
+                autoComplete="family-name"
+                required
+                value={lastName}
+                onChange={setLastName}
+                className="flex-1"
               />
             </div>
-            <div>
-              <label
-                htmlFor="signup-password"
-                className="block text-sm font-medium mb-1"
-              >
-                Mot de passe
-              </label>
-              <input
-                id="signup-password"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className={inputClass}
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="signup-password2"
-                className="block text-sm font-medium mb-1"
-              >
-                Confirmer le mot de passe
-              </label>
-              <input
-                id="signup-password2"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={password2}
-                onChange={(e) => setPassword2(e.target.value)}
-                className={inputClass}
-              />
-            </div>
+            <TextField
+              id="signup-email"
+              label="Email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={setEmail}
+            />
+            <TextField
+              id="signup-password"
+              label="Mot de passe"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={password}
+              onChange={setPassword}
+            />
+            <TextField
+              id="signup-password2"
+              label="Confirmer le mot de passe"
+              type="password"
+              autoComplete="new-password"
+              required
+              value={password2}
+              onChange={setPassword2}
+            />
 
             <label className="flex items-start gap-2 text-sm text-ink/70">
               <input
@@ -385,23 +333,15 @@ export default function Login() {
               Indique ton email, tu recevras un lien pour réinitialiser ton
               mot de passe.
             </p>
-            <div>
-              <label
-                htmlFor="forgot-email"
-                className="block text-sm font-medium mb-1"
-              >
-                Email
-              </label>
-              <input
-                id="forgot-email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={inputClass}
-              />
-            </div>
+            <TextField
+              id="forgot-email"
+              label="Email"
+              type="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={setEmail}
+            />
 
             {error && (
               <p role="alert" className="text-sm text-stamp">
@@ -434,45 +374,4 @@ export default function Login() {
       </div>
     </div>
   )
-}
-
-// Ecart d'horloge système côté client : le JWT semble "émis dans le futur"
-// par rapport à l'heure locale. Un simple rafraîchissement suffit en général
-// (nouvelle requête, nouvel horodatage), sans attendre que l'utilisateur
-// corrige l'horloge de sa machine.
-function isClockSkewError(error) {
-  const message = error.message ?? ''
-  return /issued.*(at|in).*future|jwt.*future/i.test(message)
-}
-
-function describeSignInError(error) {
-  const code = error.code ?? ''
-  const message = error.message ?? ''
-
-  if (code === 'email_not_confirmed' || /email.*not.*confirm/i.test(message)) {
-    return "Ce compte n'est pas confirmé. Dans Supabase, va sur Authentication → Users, ouvre le compte et confirme l'email (ou recrée-le avec « Auto Confirm User » coché)."
-  }
-  if (code === 'invalid_credentials' || /invalid login credentials/i.test(message)) {
-    return 'Email ou mot de passe incorrect.'
-  }
-  if (isClockSkewError(error)) {
-    return "Erreur temporaire de connexion. Rafraîchis la page et réessaie."
-  }
-  return `Connexion impossible : ${message || 'erreur inconnue'}.`
-}
-
-function describeSignUpError(error) {
-  const code = error.code ?? ''
-  const message = error.message ?? ''
-
-  if (
-    code === 'user_already_exists' ||
-    /already registered|already exists/i.test(message)
-  ) {
-    return 'Un compte existe déjà avec cet email.'
-  }
-  if (code === 'weak_password' || /password/i.test(message)) {
-    return 'Mot de passe trop faible : essaie au moins 6 caractères.'
-  }
-  return `Impossible de créer le compte : ${message || 'erreur inconnue'}.`
 }

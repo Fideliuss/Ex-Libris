@@ -41,6 +41,22 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // Chunks lourds et rarement utilisés (SheetJS ~360 ko, scanner
+        // de code-barres ~370 ko) : pas dans le précache d'installation,
+        // que tout le monde télécharge. Ils sont mis en cache à leur premier
+        // usage (voir runtimeCaching), donc disponibles hors ligne ensuite.
+        globIgnores: ['**/xlsx-*.js', '**/BarcodeScanner-*.js'],
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) =>
+              /\/assets\/(xlsx|BarcodeScanner)-[^/]+\.js$/.test(url.pathname),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'heavy-chunks',
+              expiration: { maxEntries: 8 },
+            },
+          },
+        ],
       },
     }),
   ],

@@ -1,4 +1,4 @@
-import { read, utils } from 'xlsx'
+import { clean, splitList } from './importUtils'
 
 // Les deux seules feuilles avec des données dans un export "My Library" —
 // les autres (listes de souhaits, Films, Jeux Vidéo, Musique) sont hors
@@ -10,11 +10,6 @@ const SHEETS = [
 
 // "Angélique (tome 12)" -> série "Angélique", tome 12.
 const SERIES_PATTERN = /^(.*?)\s*\(tome\s*(\d+)\)$/i
-
-function clean(value) {
-  if (value == null) return ''
-  return String(value).trim()
-}
 
 function parseFrenchDate(str) {
   const match = clean(str).match(/^(\d{2})\/(\d{2})\/(\d{4})$/)
@@ -43,7 +38,10 @@ function extractSeries(raw) {
   return { series: match[1].trim(), seriesIndex: Number(match[2]) }
 }
 
-export function parseMyLibraryXlsx(arrayBuffer) {
+// SheetJS pèse plus de 300 ko : chargé à la demande, seulement quand un
+// fichier Excel est réellement choisi (pas pour un import Libib CSV).
+export async function parseMyLibraryXlsx(arrayBuffer) {
+  const { read, utils } = await import('xlsx')
   const workbook = read(arrayBuffer, { type: 'array' })
   const rows = []
   for (const { name, type } of SHEETS) {
@@ -58,20 +56,14 @@ export function parseMyLibraryXlsx(arrayBuffer) {
 
 export function mapMyLibraryRowToBook({ row, type }) {
   const { series, seriesIndex } = extractSeries(row['Série'])
-  const tags = clean(row['Genres'])
-    .split(',')
-    .map((t) => t.trim())
-    .filter(Boolean)
+  const tags = splitList(row['Genres'])
   const status = clean(row['Lu']).toLowerCase() === 'oui' ? 'read' : 'to-read'
   const { started, finished } = parsePeriod(row['Périodes de lecture'])
   const pageCount = clean(row['Pages'])
 
   return {
     title: clean(row['Titre']),
-    author: clean(row['Auteurs'])
-      .split(',')
-      .map((a) => a.trim())
-      .filter(Boolean),
+    author: splitList(row['Auteurs']),
     publisher: clean(row['Editeur']),
     isbn: clean(row['ISBN']),
     description: clean(row['Résumé']),

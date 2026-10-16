@@ -44,6 +44,8 @@ export default function BookCardVisual({ book }) {
           <img
             src={book.cover_url}
             alt=""
+            loading="lazy"
+            decoding="async"
             className="w-full h-full object-contain"
           />
         ) : (

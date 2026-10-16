@@ -1,4 +1,5 @@
 import { ACHIEVEMENT_ICONS, TIER_METAL, LOCKED_METAL, SEAL_WAX } from '../lib/achievementVisuals'
+import Pin from './Pin'
 
 // Rendu pur d'une plaque ex-libris : toute la logique (paliers, ce qui a
 // été "réclamé", dates) est calculée en amont par AchievementsGallery, qui
@@ -174,19 +175,5 @@ export default function ExLibrisPlate({ vm }) {
         </svg>
       )}
     </button>
-  )
-}
-
-function Pin({ className, style }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={`absolute w-2 h-2 rounded-full ${className}`}
-      style={{
-        background: 'radial-gradient(circle at 35% 35%, #f0dcae, #8e7145 75%)',
-        boxShadow: '0 2px 3px rgba(0,0,0,0.5)',
-        ...style,
-      }}
-    />
   )
 }

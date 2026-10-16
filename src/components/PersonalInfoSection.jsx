@@ -1,27 +1,27 @@
-import { useEffect, useState } from 'react'
-import { getMyProfile, updateMyProfile } from '../lib/friendCode'
+import { useEffect, useRef, useState } from 'react'
+import { useProfile } from '../hooks/useProfile'
+import { updateMyProfile } from '../lib/profile'
 import { describeError } from '../lib/errors'
 import { inputClass, labelClass, secondaryButtonClass } from '../lib/ui'
 import LoadingScreen from './LoadingScreen'
 
 export default function PersonalInfoSection({ user }) {
-  const [profile, setProfile] = useState(undefined) // undefined = chargement
+  const { profile, refreshProfile } = useProfile()
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState(null)
+  // Les champs ne sont préremplis qu'une fois : un rechargement du profil
+  // après l'enregistrement ne doit pas écraser ce que l'utilisateur tape.
+  const filled = useRef(false)
 
   useEffect(() => {
-    getMyProfile(user.id)
-      .then((p) => {
-        setProfile(p)
-        setFirstName(p?.first_name ?? '')
-        setLastName(p?.last_name ?? '')
-      })
-      .catch((err) => setError(describeError(err)))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user.id])
+    if (profile === undefined || filled.current) return
+    filled.current = true
+    setFirstName(profile?.first_name ?? '')
+    setLastName(profile?.last_name ?? '')
+  }, [profile])
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -34,6 +34,7 @@ export default function PersonalInfoSection({ user }) {
     setError(null)
     try {
       await updateMyProfile(user.id, { firstName, lastName })
+      await refreshProfile()
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch (err) {
@@ -56,10 +57,7 @@ export default function PersonalInfoSection({ user }) {
       )}
 
       <div>
-        <label
-          htmlFor="firstName"
-          className={`block ${labelClass} mb-1`}
-        >
+        <label htmlFor="firstName" className={`block ${labelClass} mb-1`}>
           Prénom
         </label>
         <input
@@ -72,10 +70,7 @@ export default function PersonalInfoSection({ user }) {
       </div>
 
       <div>
-        <label
-          htmlFor="lastName"
-          className={`block ${labelClass} mb-1`}
-        >
+        <label htmlFor="lastName" className={`block ${labelClass} mb-1`}>
           Nom
         </label>
         <input
@@ -88,10 +83,7 @@ export default function PersonalInfoSection({ user }) {
       </div>
 
       <div>
-        <label
-          htmlFor="email"
-          className={`block ${labelClass} mb-1`}
-        >
+        <label htmlFor="email" className={`block ${labelClass} mb-1`}>
           Email
         </label>
         <input

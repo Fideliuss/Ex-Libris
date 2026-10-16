@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import { inputClass, primaryButtonClass } from '../lib/ui'
+import { useAuth } from '../hooks/useAuth'
+import { primaryButtonClass, cardClass } from '../lib/ui'
+import TextField from '../components/TextField'
+import { validateNewPassword } from '../lib/passwordRules'
 import LoadingScreen from '../components/LoadingScreen'
 
 export default function ResetPassword() {
@@ -17,12 +19,9 @@ export default function ResetPassword() {
     e.preventDefault()
     setError(null)
 
-    if (password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caractères.')
-      return
-    }
-    if (password !== confirm) {
-      setError('Les mots de passe ne correspondent pas.')
+    const passwordError = validateNewPassword(password, confirm)
+    if (passwordError) {
+      setError(passwordError)
       return
     }
 
@@ -44,7 +43,7 @@ export default function ResetPassword() {
   if (!session) {
     return (
       <div className="min-h-svh flex items-center justify-center p-6">
-        <div className="max-w-sm w-full bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-8 text-center">
+        <div className={`max-w-sm w-full ${cardClass} p-8 text-center`}>
           <h1 className="font-serif text-2xl font-semibold mb-3">
             Lien invalide ou expiré
           </h1>
@@ -65,7 +64,7 @@ export default function ResetPassword() {
 
   return (
     <div className="min-h-svh flex items-center justify-center p-6">
-      <div className="max-w-sm w-full bg-card border-t-4 border-dashed border-brass rounded-sm shadow-sm p-8">
+      <div className={`max-w-sm w-full ${cardClass} p-8`}>
         <p className="font-mono text-xs tracking-widest text-library uppercase mb-2 text-center">
           Nouveau mot de passe
         </p>
@@ -74,34 +73,24 @@ export default function ResetPassword() {
         </h1>
 
         <form onSubmit={handleSubmit} className="space-y-4" noValidate>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium mb-1">
-              Nouveau mot de passe
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="new-password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label htmlFor="confirm" className="block text-sm font-medium mb-1">
-              Confirmer le mot de passe
-            </label>
-            <input
-              id="confirm"
-              type="password"
-              autoComplete="new-password"
-              required
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              className={inputClass}
-            />
-          </div>
+          <TextField
+            id="password"
+            label="Nouveau mot de passe"
+            type="password"
+            autoComplete="new-password"
+            required
+            value={password}
+            onChange={setPassword}
+          />
+          <TextField
+            id="confirm"
+            label="Confirmer le mot de passe"
+            type="password"
+            autoComplete="new-password"
+            required
+            value={confirm}
+            onChange={setConfirm}
+          />
 
           {error && (
             <p role="alert" className="text-sm text-stamp">

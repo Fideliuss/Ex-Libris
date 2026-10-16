@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { BOOK_TYPES } from '../lib/bookTypes'
 import { STATUS_LABELS } from '../lib/statusLabels'
-import { inputClass, dangerOutlineButtonClass } from '../lib/ui'
+import { inputClass, dangerOutlineButtonClass, backLinkClass } from '../lib/ui'
 import TagMultiSelect from './TagMultiSelect'
 import SuggestInput from './SuggestInput'
 import EditionCheckboxes from './EditionCheckboxes'
@@ -59,6 +59,13 @@ export default function BulkActionBar({
   const [tagsToRemove, setTagsToRemove] = useState([])
 
   const disabled = working || count === 0
+  // Champs texte avec suggestions : la liste proposée dépend du champ.
+  const suggestionsByField = {
+    publisher: publishers,
+    collection: collections,
+    series,
+    universe: universes,
+  }
 
   function handleFieldChange(nextField) {
     setField(nextField)
@@ -126,35 +133,11 @@ export default function BulkActionBar({
                   ))}
                 </select>
               )}
-              {field === 'publisher' && (
+              {suggestionsByField[field] && (
                 <SuggestInput
                   value={value}
                   onChange={setValue}
-                  suggestions={publishers}
-                  className={inputClass}
-                />
-              )}
-              {field === 'collection' && (
-                <SuggestInput
-                  value={value}
-                  onChange={setValue}
-                  suggestions={collections}
-                  className={inputClass}
-                />
-              )}
-              {field === 'series' && (
-                <SuggestInput
-                  value={value}
-                  onChange={setValue}
-                  suggestions={series}
-                  className={inputClass}
-                />
-              )}
-              {field === 'universe' && (
-                <SuggestInput
-                  value={value}
-                  onChange={setValue}
-                  suggestions={universes}
+                  suggestions={suggestionsByField[field]}
                   className={inputClass}
                 />
               )}
@@ -205,7 +188,7 @@ export default function BulkActionBar({
             <button
               type="button"
               onClick={onCancel}
-              className="ml-auto text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+              className={`ml-auto ${backLinkClass}`}
             >
               Fermer
             </button>

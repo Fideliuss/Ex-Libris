@@ -5,7 +5,14 @@ import { dangerButtonClass } from '../lib/ui'
 // (BookForm) et en sélection multiple (BulkActionBar). `wrapped` ajoute
 // l'encart bordé utilisé quand le bouton "Supprimer" qui la déclenche est
 // dans un formulaire plutôt que déjà dans une barre dédiée.
-export default function InlineConfirm({ message, onCancel, onConfirm, disabled, wrapped }) {
+export default function InlineConfirm({
+  message,
+  onCancel,
+  onConfirm,
+  disabled,
+  wrapped,
+  confirmLabel = 'Confirmer',
+}) {
   const content = (
     <div className="flex items-center justify-between gap-3">
       <p className="text-sm text-stamp">{message}</p>
@@ -23,7 +30,7 @@ export default function InlineConfirm({ message, onCancel, onConfirm, disabled, 
           disabled={disabled}
           className={`text-sm px-3 py-1.5 rounded-sm ${dangerButtonClass}`}
         >
-          Confirmer
+          {confirmLabel}
         </button>
       </div>
     </div>

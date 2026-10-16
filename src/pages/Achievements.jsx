@@ -1,41 +1,28 @@
-import { useEffect, useState } from 'react'
-import { useAuth } from '../context/AuthContext'
+import { useCallback, useEffect, useState } from 'react'
+import { useAuth } from '../hooks/useAuth'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
-import { getMyProfile } from '../lib/friendCode'
+import { useProfile } from '../hooks/useProfile'
 import { listClaims, migrateLocalStorageClaims, upsertClaim } from '../lib/achievementClaims'
-import { useGoBack } from '../lib/navigation'
-import HouseholdSwitchBadge from '../components/HouseholdSwitchBadge'
+import HouseholdPage from '../components/HouseholdPage'
 import AchievementsGallery from '../components/AchievementsGallery'
-import LoadingScreen from '../components/LoadingScreen'
+
+const NO_CLAIMS = new Map()
 
 export default function Achievements() {
   const { user } = useAuth()
   const { members, ownerId, setOwnerId, isMine, books, loading, error } = useHouseholdBooks()
-  const goBack = useGoBack('/')
-  const [myFirstName, setMyFirstName] = useState(null)
-  const [claims, setClaims] = useState(new Map())
-  const [claimsLoading, setClaimsLoading] = useState(true)
-
-  // Pour la ligne "Ex-Libris {prénom}" gravée sur les plaques de succès :
-  // le prénom du membre du foyer affiché est déjà sur selectedMember, mais
-  // le sien propre n'est nulle part ailleurs dans l'app à ce niveau.
-  useEffect(() => {
-    if (!user) return
-    let active = true
-    getMyProfile(user.id)
-      .then((profile) => {
-        if (active) setMyFirstName(profile?.first_name ?? null)
-      })
-      .catch(() => {})
-    return () => {
-      active = false
-    }
-  }, [user])
+  const { profile } = useProfile()
+  const myFirstName = profile?.first_name ?? null
+  // Les réclamations sont gardées avec le propriétaire dont elles viennent :
+  // en changeant de membre du foyer, celles de l'ancien sont ignorées (état
+  // "chargement") jusqu'à l'arrivée des nouvelles.
+  const [claimsState, setClaimsState] = useState({ ownerId: null, claims: NO_CLAIMS })
+  const claimsLoading = claimsState.ownerId !== ownerId
+  const claims = claimsState.ownerId === ownerId ? claimsState.claims : NO_CLAIMS
 
   useEffect(() => {
     if (!ownerId) return
     let active = true
-    setClaimsLoading(true)
     ;(async () => {
       // Reprend une seule fois par appareil ce qui traînait en localStorage
       // (ancien stockage, avant la table achievement_claims) - uniquement
@@ -47,15 +34,14 @@ export default function Achievements() {
       return listClaims(ownerId)
     })()
       .then((rows) => {
-        if (active) setClaims(new Map(rows.map((r) => [r.badge_id, r.rank])))
+        if (active) {
+          setClaimsState({ ownerId, claims: new Map(rows.map((r) => [r.badge_id, r.rank])) })
+        }
       })
       .catch(() => {
         // Le foyer reste optionnel : une erreur ici ne doit pas bloquer
         // l'affichage des succès eux-mêmes (recalculés depuis les livres).
-        if (active) setClaims(new Map())
-      })
-      .finally(() => {
-        if (active) setClaimsLoading(false)
+        if (active) setClaimsState({ ownerId, claims: NO_CLAIMS })
       })
     return () => {
       active = false
@@ -69,10 +55,16 @@ export default function Achievements() {
   // censés être égaux ici (onClaim n'est branché que si isMine), mais un
   // bug similaire à celui qu'on vient de corriger dans AchievementsGallery
   // aurait sinon pu de nouveau attribuer la réclamation au mauvais compte.
-  function handleClaim(badgeId, rank) {
-    setClaims((prev) => new Map(prev).set(badgeId, rank))
-    upsertClaim(ownerId, badgeId, rank).catch(() => {})
-  }
+  const handleClaim = useCallback(
+    (badgeId, rank) => {
+      setClaimsState((prev) => ({
+        ownerId,
+        claims: new Map(prev.claims).set(badgeId, rank),
+      }))
+      upsertClaim(ownerId, badgeId, rank).catch(() => {})
+    },
+    [ownerId],
+  )
 
   const selectedMember = members.find((m) => m.userId === ownerId)
   const selectedLabel = selectedMember?.displayName ?? selectedMember?.email
@@ -82,52 +74,29 @@ export default function Achievements() {
     : selectedLabel ?? null
 
   return (
-    <div className="min-h-svh p-6">
-      <div className="max-w-3xl mx-auto">
-        <button
-          type="button"
-          onClick={goBack}
-          className="text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
-        >
-          ← Retour à la collection
-        </button>
-
-        <h1 className="font-serif text-2xl font-semibold mt-4 mb-6">Succès</h1>
-
-        {members.length > 1 && (
-          <div className="mb-6">
-            <HouseholdSwitchBadge
-              members={members}
-              selectedId={ownerId}
-              onSelect={setOwnerId}
-              currentUserId={user.id}
-            />
-          </div>
-        )}
-
-        {loading || claimsLoading ? (
-          <LoadingScreen fullScreen={false} />
-        ) : error ? (
-          <p role="alert" className="text-sm text-stamp text-center py-16">
-            Erreur : {error}
-          </p>
-        ) : books.length === 0 ? (
-          <p className="text-sm text-ink/70 text-center py-16">
-            {isMine
-              ? 'Ajoute des livres à ta collection pour débloquer des succès.'
-              : `${selectedLabel} n'a pas encore de livres.`}
-          </p>
-        ) : (
-          <AchievementsGallery
-            books={books}
-            partner={members.length > 1}
-            ownerName={ownerName}
-            isMine={isMine}
-            claims={claims}
-            onClaim={handleClaim}
-          />
-        )}
-      </div>
-    </div>
+    <HouseholdPage
+      title="Succès"
+      members={members}
+      ownerId={ownerId}
+      onSelectOwner={setOwnerId}
+      loading={loading || claimsLoading}
+      error={error}
+      emptyMessage={
+        books.length === 0
+          ? isMine
+            ? 'Ajoute des livres à ta collection pour débloquer des succès.'
+            : `${selectedLabel} n'a pas encore de livres.`
+          : null
+      }
+    >
+      <AchievementsGallery
+        books={books}
+        partner={members.length > 1}
+        ownerName={ownerName}
+        isMine={isMine}
+        claims={claims}
+        onClaim={handleClaim}
+      />
+    </HouseholdPage>
   )
 }

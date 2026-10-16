@@ -1,9 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import { bulkDeleteBooks, bulkUpdateBooks } from '../lib/books'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useCollectionFilters } from '../hooks/useCollectionFilters'
+import { useSignOut } from '../hooks/useSignOut'
+import { useAuth } from '../hooks/useAuth'
+import { bulkDeleteBooks, bulkSetField, bulkUpdateBooks } from '../lib/books'
 import { isBookIncomplete } from '../lib/bookCompleteness'
-import { bookMatchesFilters } from '../lib/collectionFilters'
+import { bookMatchesFilters, computeFacets } from '../lib/collectionFilters'
+import { compareFr, sortedUnique } from '../lib/text'
+import { nullIfEmpty } from '../lib/bookPayload'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import { describeError } from '../lib/errors'
 import BookCard from '../components/BookCard'
@@ -12,16 +16,19 @@ import BulkActionBar from '../components/BulkActionBar'
 import HouseholdSwitchBadge from '../components/HouseholdSwitchBadge'
 import TabBar from '../components/TabBar'
 import LoadingScreen from '../components/LoadingScreen'
+import EmptyState from '../components/EmptyState'
 import AlphabetIndex from '../components/AlphabetIndex'
 import {
   STATUS_LABELS,
   STATUS_BADGE_CLASS,
   STATUS_BORDER_CLASS,
+  STATUS_ORDER,
 } from '../lib/statusLabels'
 import { authorSortKey } from '../lib/authorSort'
+import { parseDateOnly } from '../lib/dates'
+import { prefersReducedMotion } from '../lib/motion'
+import { safeSession } from '../lib/safeStorage'
 import { primaryButtonClass, secondaryButtonClass, labelClass } from '../lib/ui'
-
-const STATUS_ORDER = Object.keys(STATUS_LABELS)
 
 // Départage à l'alphabétique (titre) toute égalité de tri : deux livres du
 // même auteur, à la même note, etc. sinon leur ordre relatif ne voudrait
@@ -31,9 +38,14 @@ const STATUS_ORDER = Object.keys(STATUS_LABELS)
 // pour que la série s'affiche dans l'ordre de lecture plutôt qu'au hasard.
 function titleCompare(a, b) {
   return (
-    a.title.localeCompare(b.title, 'fr') ||
+    compareFr(a.title, b.title) ||
     (a.series_index ?? 0) - (b.series_index ?? 0)
   )
+}
+
+// Livre sans date de fin : tout en bas (epoch), comme avant.
+function finishedTime(book) {
+  return book.date_finished ? Date.parse(book.date_finished) : 0
 }
 
 const SORT_OPTIONS = {
@@ -44,19 +56,18 @@ const SORT_OPTIONS = {
   author: {
     label: 'Auteur',
     compare: (a, b) =>
-      authorSortKey(a.author).localeCompare(authorSortKey(b.author), 'fr') ||
+      compareFr(authorSortKey(a.author), authorSortKey(b.author)) ||
       titleCompare(a, b),
   },
   recent: {
     label: 'Date d’ajout',
     compare: (a, b) =>
-      new Date(b.created_at) - new Date(a.created_at) || titleCompare(a, b),
+      Date.parse(b.created_at) - Date.parse(a.created_at) || titleCompare(a, b),
   },
   finished: {
     label: 'Date de fin de lecture',
     compare: (a, b) =>
-      new Date(b.date_finished ?? 0) - new Date(a.date_finished ?? 0) ||
-      titleCompare(a, b),
+      finishedTime(b) - finishedTime(a) || titleCompare(a, b),
   },
   rating: {
     label: 'Note',
@@ -74,7 +85,7 @@ const SORT_OPTIONS = {
   tome: {
     label: 'Tome',
     compare: (a, b) =>
-      (a.series ?? '').localeCompare(b.series ?? '', 'fr') ||
+      compareFr(a.series ?? '', b.series ?? '') ||
       (a.series_index ?? 0) - (b.series_index ?? 0) ||
       titleCompare(a, b),
   },
@@ -86,54 +97,7 @@ const SORT_GROUPS = [
   { label: 'Évaluation & série', keys: ['rating', 'status', 'tome'] },
 ]
 
-function sortStorageKey(userId) {
-  return `exlibris:${userId ?? 'anon'}:collectionSort`
-}
-
-function directionStorageKey(userId) {
-  return `exlibris:${userId ?? 'anon'}:collectionSortDir`
-}
-
-function readStored(key) {
-  try {
-    return localStorage.getItem(key)
-  } catch {
-    return null
-  }
-}
-
-function writeStored(key, value) {
-  try {
-    localStorage.setItem(key, value)
-  } catch {
-    // Stockage indisponible (navigation privée, quota plein...) : tant pis,
-    // ce n'est qu'une préférence de confort.
-  }
-}
-
-function readStoredSort(userId) {
-  return readStored(sortStorageKey(userId))
-}
-
-function writeStoredSort(userId, value) {
-  writeStored(sortStorageKey(userId), value)
-}
-
-function readStoredDirection(userId) {
-  return readStored(directionStorageKey(userId))
-}
-
-function writeStoredDirection(userId, value) {
-  writeStored(directionStorageKey(userId), value)
-}
-
-// Les champs date_finished sont des "date" Postgres (pas d'heure) : les
-// parser avec `new Date(string)` les interprète en UTC et peut décaler d'un
-// jour selon le fuseau du navigateur. On construit la date en local.
-function parseDateOnly(str) {
-  const [y, m, d] = str.split('-').map(Number)
-  return new Date(y, m - 1, d)
-}
+const SCROLL_KEY = 'exlibris:collectionScroll'
 
 function monthLabel(date) {
   return new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(
@@ -185,86 +149,33 @@ function groupKeyFor(book, sortKey) {
 }
 
 export default function Collection() {
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
   const { members, ownerId, isMine, books, loading, error, refresh, setOwnerId } =
     useHouseholdBooks()
   const selectedMember = members.find((m) => m.userId === ownerId)
   const selectedLabel = selectedMember?.displayName ?? selectedMember?.email
-  const navigate = useNavigate()
+  const handleSignOut = useSignOut()
 
-  async function handleSignOut() {
-    await signOut()
-    navigate('/', { replace: true })
-  }
-
-  // Filtres/tri/recherche vivent dans l'URL (et non un useState local) pour
-  // survivre à un aller-retour vers la fiche d'un livre : la page se
-  // démonte/remonte à chaque navigation, un useState repartirait à zéro.
-  const [searchParams, setSearchParams] = useSearchParams()
-
-  const search = searchParams.get('q') ?? ''
-  const selectedTags = searchParams.getAll('tag')
-  const publisher = searchParams.get('publisher') ?? ''
-  const author = searchParams.get('author') ?? ''
-  const collection = searchParams.get('collection') ?? ''
-  const edition = searchParams.get('edition') ?? ''
-  const series = searchParams.get('series') ?? ''
-  const universe = searchParams.get('universe') ?? ''
-  const type = searchParams.get('type') ?? ''
-  const status = searchParams.get('status') ?? ''
-  const sort = searchParams.get('sort') ?? readStoredSort(user?.id) ?? 'title'
-  const direction =
-    (searchParams.get('dir') ?? readStoredDirection(user?.id)) === 'desc'
-      ? 'desc'
-      : 'asc'
-  const collectionTab = searchParams.get('tab') ?? 'collection'
-
-  function setParam(key, value) {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev)
-        if (!value) next.delete(key)
-        else next.set(key, value)
-        return next
-      },
-      { replace: true },
-    )
-  }
-
-  const setSearch = (value) => setParam('q', value)
-  const setPublisher = (value) => setParam('publisher', value)
-  const setAuthor = (value) => setParam('author', value)
-  const setCollection = (value) => setParam('collection', value)
-  const setEdition = (value) => setParam('edition', value)
-  const setUniverse = (value) => setParam('universe', value)
-  const setType = (value) => setParam('type', value)
-  const setStatus = (value) => setParam('status', value)
-  function setSort(value) {
-    setParam('sort', value)
-    writeStoredSort(user?.id, value)
-  }
-
-  function toggleDirection() {
-    const next = direction === 'desc' ? 'asc' : 'desc'
-    setParam('dir', next === 'asc' ? null : next)
-    writeStoredDirection(user?.id, next)
-  }
+  const {
+    filters,
+    hasActiveFilters,
+    setFilter,
+    setSelectedTags,
+    setSeries,
+    resetFilters,
+    sort,
+    setSort,
+    direction,
+    toggleDirection,
+    collectionTab,
+    setCollectionTab: setTab,
+  } = useCollectionFilters(user?.id)
+  const { search, selectedTags, publisher, author, collection, edition, series, universe, type, status } =
+    filters
 
   function setCollectionTab(next) {
-    setParam('tab', next === 'collection' ? null : next)
+    setTab(next)
     exitSelectionMode()
-  }
-
-  function setSelectedTags(nextTags) {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev)
-        next.delete('tag')
-        for (const t of nextTags) next.append('tag', t)
-        return next
-      },
-      { replace: true },
-    )
   }
 
   const [selectionMode, setSelectionMode] = useState(false)
@@ -287,11 +198,7 @@ export default function Collection() {
       if (ticking) return
       ticking = true
       requestAnimationFrame(() => {
-        try {
-          sessionStorage.setItem('exlibris:collectionScroll', String(window.scrollY))
-        } catch {
-          // Stockage indisponible (navigation privée...) : tant pis.
-        }
+        safeSession.set(SCROLL_KEY, String(window.scrollY))
         ticking = false
       })
     }
@@ -301,120 +208,37 @@ export default function Collection() {
 
   useEffect(() => {
     if (loading) return
-    let saved
-    try {
-      saved = sessionStorage.getItem('exlibris:collectionScroll')
-      if (saved !== null) sessionStorage.removeItem('exlibris:collectionScroll')
-    } catch {
-      saved = null
-    }
+    const saved = safeSession.get(SCROLL_KEY)
     if (saved === null) return
+    safeSession.remove(SCROLL_KEY)
     requestAnimationFrame(() => window.scrollTo(0, Number(saved)))
   }, [loading])
 
-  // Un filtre actif réduit les options proposées par les AUTRES filtres —
+  // Un filtre actif réduit les options proposées par les AUTRES filtres :
   // sélectionner Type = Manga ne laisse plus apparaître, dans la liste
-  // Auteur, que les auteurs ayant au moins un manga, au lieu de toujours
-  // proposer tous les auteurs de toute la bibliothèque (EXL D.1). Chaque
-  // liste d'options ci-dessous s'appuie donc sur bookMatchesFilters avec
-  // elle-même exclue (sinon cocher une valeur la ferait disparaître de sa
-  // propre liste) — voir collectionFilters.js pour la logique et ses tests.
-  // `filters` est mémoïsé séparément pour que chaque useMemo n'ait besoin
-  // que de `books` et de cette seule référence stable en dépendance.
-  const filters = useMemo(
-    () => ({
-      search,
-      selectedTags,
-      publisher,
-      author,
-      collection,
-      edition,
-      series,
-      universe,
-      type,
-      status,
-    }),
-    [search, selectedTags, publisher, author, collection, edition, series, universe, type, status],
-  )
-
-  const tags = useMemo(() => {
-    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'tags'))
-    const set = new Set()
-    for (const book of pool) {
-      for (const t of book.tags ?? []) set.add(t)
-    }
-    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books, filters])
+  // Auteur, que les auteurs ayant au moins un manga (EXL D.1). Voir
+  // collectionFilters.js pour la logique et ses tests.
+  // Options de tous les filtres calculées en une seule passe sur les livres
+  // (voir computeFacets) plutôt qu'un refiltrage complet par champ.
+  const facets = useMemo(() => computeFacets(books, filters), [books, filters])
+  const {
+    tags,
+    publisher: publishers,
+    author: authors,
+    collection: collections,
+    edition: editions,
+    series: seriesList,
+    universe: universeList,
+    statusCounts,
+  } = facets
 
   const selectedBooksTags = useMemo(() => {
-    const set = new Set()
+    const all = []
     for (const book of books) {
-      if (!selectedIds.has(book.id)) continue
-      for (const t of book.tags ?? []) set.add(t)
+      if (selectedIds.has(book.id)) all.push(...(book.tags ?? []))
     }
-    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
+    return sortedUnique(all)
   }, [books, selectedIds])
-
-  const publishers = useMemo(() => {
-    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'publisher'))
-    const set = new Set()
-    for (const book of pool) {
-      if (book.publisher) set.add(book.publisher)
-    }
-    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books, filters])
-
-  const authors = useMemo(() => {
-    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'author'))
-    const set = new Set()
-    for (const book of pool) {
-      for (const a of book.author ?? []) set.add(a)
-    }
-    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books, filters])
-
-  const collections = useMemo(() => {
-    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'collection'))
-    const set = new Set()
-    for (const book of pool) {
-      if (book.collection) set.add(book.collection)
-    }
-    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books, filters])
-
-  const editions = useMemo(() => {
-    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'edition'))
-    const set = new Set()
-    for (const book of pool) {
-      for (const e of book.edition ?? []) set.add(e)
-    }
-    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books, filters])
-
-  const seriesList = useMemo(() => {
-    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'series'))
-    const set = new Set()
-    for (const book of pool) {
-      if (book.series) set.add(book.series)
-    }
-    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books, filters])
-
-  const universeList = useMemo(() => {
-    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'universe'))
-    const set = new Set()
-    for (const book of pool) {
-      if (book.universe) set.add(book.universe)
-    }
-    return [...set].sort((a, b) => a.localeCompare(b, 'fr'))
-  }, [books, filters])
-
-  const statusCounts = useMemo(() => {
-    const pool = books.filter((b) => bookMatchesFilters(b, filters, 'status'))
-    const counts = {}
-    for (const book of pool) counts[book.status] = (counts[book.status] ?? 0) + 1
-    return counts
-  }, [books, filters])
 
   // La wishlist a son propre onglet (voir plus bas) : la Collection
   // elle-même ne montre que ce qui est vraiment possédé, pas ce qu'on
@@ -529,27 +353,11 @@ export default function Collection() {
   }, [availableLetters])
 
   function scrollToLetter(letter) {
-    const reduceMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
     document.getElementById(`h-${letter}`)?.scrollIntoView({
-      behavior: reduceMotion ? 'auto' : 'smooth',
+      behavior: prefersReducedMotion() ? 'auto' : 'smooth',
       block: 'start',
     })
   }
-
-  const hasActiveFilters = Boolean(
-    search ||
-      selectedTags.length > 0 ||
-      publisher ||
-      author ||
-      collection ||
-      edition ||
-      series ||
-      universe ||
-      type ||
-      status,
-  )
 
   // Une recherche/filtre sans résultat dans Collection ou Wishlist peut très
   // bien avoir une correspondance dans l'autre onglet (ex: un titre encore
@@ -566,67 +374,27 @@ export default function Collection() {
     return otherPool.filter((b) => bookMatchesFilters(b, filters, null)).length
   }, [collectionTab, filteredBooks, wishlistBooks, collectionBooks, filters])
 
-  function resetFilters() {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev)
-        for (const key of [
-          'q',
-          'tag',
-          'publisher',
-          'author',
-          'collection',
-          'edition',
-          'series',
-          'universe',
-          'type',
-          'status',
-        ]) {
-          next.delete(key)
-        }
-        return next
-      },
-      { replace: true },
-    )
-  }
-
-  function handleSeriesChange(next) {
-    // Regarder une série précise ? Le tri par tome est presque toujours ce
-    // qu'on veut, plutôt que l'ordre d'ajout par défaut.
-    setSearchParams(
-      (prev) => {
-        const params = new URLSearchParams(prev)
-        if (next) {
-          params.set('series', next)
-          params.set('sort', 'tome')
-        } else {
-          params.delete('series')
-        }
-        return params
-      },
-      { replace: true },
-    )
-  }
-
   function switchView(memberId) {
     setOwnerId(memberId)
     resetFilters()
     exitSelectionMode()
   }
 
-  function handleStartSelection(id) {
+  // Références stables : BookCard est mémoïsé, des callbacks recréés à chaque
+  // render annuleraient ce gain (cocher une carte re-rendrait toute la grille).
+  const handleStartSelection = useCallback((id) => {
     setSelectionMode(true)
     setSelectedIds(new Set([id]))
-  }
+  }, [setSelectionMode, setSelectedIds])
 
-  function toggleSelect(id) {
+  const toggleSelect = useCallback((id) => {
     setSelectedIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
       return next
     })
-  }
+  }, [])
 
   function toggleSelectAll() {
     setSelectedIds((prev) =>
@@ -665,10 +433,7 @@ export default function Collection() {
   // pour rester cohérents avec la fiche livre (BookForm.jsx) plutôt que de
   // stocker une chaîne ou un tableau vide.
   function normalizeBulkValue(targetField, raw) {
-    if (targetField === 'edition') {
-      const clean = (raw ?? []).filter(Boolean)
-      return clean.length > 0 ? clean : null
-    }
+    if (targetField === 'edition') return nullIfEmpty(raw)
     if (typeof raw === 'string') return raw.trim() || null
     return raw
   }
@@ -676,24 +441,21 @@ export default function Collection() {
   function handleBulkApplyField(targetField, raw) {
     const patchValue = normalizeBulkValue(targetField, raw)
     return runBulkAction(() =>
-      bulkUpdateBooks(
-        [...selectedIds].map((id) => ({ id, patch: { [targetField]: patchValue } })),
-      ),
+      bulkSetField([...selectedIds], { [targetField]: patchValue }),
     )
   }
+
+  const booksById = useMemo(() => new Map(books.map((b) => [b.id, b])), [books])
 
   function handleBulkAddTag(newTag) {
     const clean = newTag.trim()
     if (!clean) return Promise.resolve()
     return runBulkAction(() =>
       bulkUpdateBooks(
-        [...selectedIds].map((id) => {
-          const book = books.find((b) => b.id === id)
-          return {
-            id,
-            patch: { tags: [...new Set([...(book?.tags ?? []), clean])] },
-          }
-        }),
+        [...selectedIds].map((id) => ({
+          id,
+          patch: { tags: [...new Set([...(booksById.get(id)?.tags ?? []), clean])] },
+        })),
       ),
     )
   }
@@ -702,15 +464,12 @@ export default function Collection() {
     if (!tagsToRemove?.length) return Promise.resolve()
     return runBulkAction(() =>
       bulkUpdateBooks(
-        [...selectedIds].map((id) => {
-          const book = books.find((b) => b.id === id)
-          return {
-            id,
-            patch: {
-              tags: (book?.tags ?? []).filter((t) => !tagsToRemove.includes(t)),
-            },
-          }
-        }),
+        [...selectedIds].map((id) => ({
+          id,
+          patch: {
+            tags: (booksById.get(id)?.tags ?? []).filter((t) => !tagsToRemove.includes(t)),
+          },
+        })),
       ),
     )
   }
@@ -827,7 +586,7 @@ export default function Collection() {
                 active={status === key}
                 count={statusCounts[key] ?? 0}
                 label={STATUS_LABELS[key]}
-                onClick={() => setStatus(status === key ? '' : key)}
+                onClick={() => setFilter.status(status === key ? '' : key)}
                 fillClass={STATUS_BADGE_CLASS[key]}
                 borderClass={STATUS_BORDER_CLASS[key]}
               />
@@ -843,30 +602,30 @@ export default function Collection() {
             collectionTab === 'todo') && (
             <CollectionFilters
               search={search}
-              onSearchChange={setSearch}
+              onSearchChange={setFilter.search}
               selectedTags={selectedTags}
               onSelectedTagsChange={setSelectedTags}
               tags={tags}
               publisher={publisher}
-              onPublisherChange={setPublisher}
+              onPublisherChange={setFilter.publisher}
               publishers={publishers}
               author={author}
-              onAuthorChange={setAuthor}
+              onAuthorChange={setFilter.author}
               authors={authors}
               collection={collection}
-              onCollectionChange={setCollection}
+              onCollectionChange={setFilter.collection}
               collections={collections}
               edition={edition}
-              onEditionChange={setEdition}
+              onEditionChange={setFilter.edition}
               editions={editions}
               series={series}
-              onSeriesChange={handleSeriesChange}
+              onSeriesChange={setSeries}
               seriesList={seriesList}
               universe={universe}
-              onUniverseChange={setUniverse}
+              onUniverseChange={setFilter.universe}
               universeList={universeList}
               type={type}
-              onTypeChange={setType}
+              onTypeChange={setFilter.type}
               status={status}
               hasActiveFilters={hasActiveFilters}
               onReset={resetFilters}
@@ -880,12 +639,13 @@ export default function Collection() {
             Erreur : {error}
           </p>
         ) : books.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="font-serif text-xl mb-2">
-              {isMine
+          <EmptyState
+            title={
+              isMine
                 ? 'Ta bibliothèque est vide'
-                : `La bibliothèque de ${selectedLabel} est vide`}
-            </p>
+                : `La bibliothèque de ${selectedLabel} est vide`
+            }
+          >
             {isMine ? (
               <>
                 <p className="text-sm text-ink/70 mb-6">
@@ -904,38 +664,30 @@ export default function Collection() {
                 Rien à afficher pour l'instant.
               </p>
             )}
-          </div>
+          </EmptyState>
         ) : collectionTab === 'todo' && incompleteBooks.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="font-serif text-xl mb-2">Tout est renseigné 🎉</p>
+          <EmptyState title="Tout est renseigné 🎉">
             <p className="text-sm text-ink/70">
               Aucun livre à compléter pour l'instant.
             </p>
-          </div>
+          </EmptyState>
         ) : collectionTab === 'wishlist' && wishlistBooks.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="font-serif text-xl mb-2">Ta wishlist est vide</p>
+          <EmptyState title="Ta wishlist est vide">
             <p className="text-sm text-ink/70">
               Ajoute un livre en statut Wishlist pour le retrouver ici.
             </p>
-          </div>
+          </EmptyState>
         ) : collectionTab === 'collection' && collectionBooks.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="font-serif text-xl mb-2">
-              Pas encore de livre en collection
-            </p>
+          <EmptyState title="Pas encore de livre en collection">
             <p className="text-sm text-ink/70">
               Tout est encore dans la wishlist pour l'instant.
             </p>
-          </div>
+          </EmptyState>
         ) : (collectionTab === 'collection' ||
             collectionTab === 'wishlist' ||
             collectionTab === 'todo') &&
           filteredBooks.length === 0 ? (
-          <div className="text-center py-16">
-            <p className="font-serif text-xl mb-2">
-              Aucun livre ne correspond
-            </p>
+          <EmptyState title="Aucun livre ne correspond">
             <p className="text-sm text-ink/70 mb-6">
               {otherTabMatchCount > 0 ? (
                 <>
@@ -965,7 +717,7 @@ export default function Collection() {
             >
               Réinitialiser les filtres
             </button>
-          </div>
+          </EmptyState>
         ) : (
           <>
             <div className="flex items-center justify-between gap-3 mb-3">

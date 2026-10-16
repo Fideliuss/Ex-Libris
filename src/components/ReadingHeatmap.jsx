@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { toDateKey } from '../lib/dates'
 
 const DAY_LETTERS = ['L', 'M', 'M', 'J', 'V', 'S', 'D']
 const DATE_FMT = new Intl.DateTimeFormat('fr-FR', {
@@ -7,10 +8,6 @@ const DATE_FMT = new Intl.DateTimeFormat('fr-FR', {
   year: 'numeric',
 })
 const MONTH_FMT = new Intl.DateTimeFormat('fr-FR', { month: 'short' })
-
-function toDateKey(d) {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
 
 function startOfWeekMonday(date) {
   const day = (date.getDay() + 6) % 7

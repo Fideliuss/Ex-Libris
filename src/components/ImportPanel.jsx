@@ -1,18 +1,17 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { bulkCreateBooks, bulkUpdateBooks, listBooks } from '../lib/books'
-import {
-  computeSeriesRepair,
-  mapLibibRowToBook,
-  parseLibibCsv,
-} from '../lib/libibImport'
+import { mapLibibRowToBook, parseLibibCsv } from '../lib/libibImport'
+import { planImport } from '../lib/importPlan'
 import { mapMyLibraryRowToBook, parseMyLibraryXlsx } from '../lib/myLibraryImport'
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
+import { useLibraryData } from '../hooks/useLibraryData'
 import { describeError } from '../lib/errors'
-import { primaryButtonClass } from '../lib/ui'
+import { primaryButtonClass, backLinkClass } from '../lib/ui'
 
 export default function ImportPanel() {
   const { user } = useAuth()
+  const { refresh: refreshLibrary } = useLibraryData()
   const [step, setStep] = useState('idle') // idle | ready | importing | done
   const [error, setError] = useState(null)
   const [fileName, setFileName] = useState('')
@@ -39,52 +38,16 @@ export default function ImportPanel() {
         mappedRows = rows.map((row) => ({ mapped: mapLibibRowToBook(row), raw: row }))
       } else {
         const buffer = await file.arrayBuffer()
-        const rows = parseMyLibraryXlsx(buffer)
+        const rows = await parseMyLibraryXlsx(buffer)
         mappedRows = rows.map((entry) => ({
           mapped: mapMyLibraryRowToBook(entry),
           raw: null,
         }))
       }
 
-      const existingBooks = await listBooks()
-      const existingByIsbn = new Map(
-        existingBooks
-          .filter((b) => b.isbn && b.user_id === user.id)
-          .map((b) => [b.isbn, b]),
-      )
-
-      const nextToImport = []
-      const nextToEnrich = []
-      const seenInFile = new Set()
-      let skipped = 0
-      let untouchedDuplicates = 0
-
-      for (const { mapped, raw } of mappedRows) {
-        if (!mapped.title) {
-          skipped += 1
-          continue
-        }
-
-        const key = mapped.isbn || null
-        const existing = key ? existingByIsbn.get(key) : null
-
-        if (existing) {
-          const patch = raw ? computeSeriesRepair(existing, raw) : null
-          if (patch) {
-            nextToEnrich.push({ id: existing.id, patch, title: existing.title })
-          } else {
-            untouchedDuplicates += 1
-          }
-          continue
-        }
-
-        if (key && seenInFile.has(key)) {
-          untouchedDuplicates += 1
-          continue
-        }
-        if (key) seenInFile.add(key)
-        nextToImport.push(mapped)
-      }
+      const existingBooks = await listBooks({ userId: user.id })
+      const { toImport: nextToImport, toEnrich: nextToEnrich, untouchedDuplicates, skipped } =
+        planImport(mappedRows, existingBooks)
 
       setToImport(nextToImport)
       setToEnrich(nextToEnrich)
@@ -106,6 +69,7 @@ export default function ImportPanel() {
           toEnrich.map(({ id, patch }) => ({ id, patch })),
         )
       }
+      refreshLibrary().catch(() => {})
       setImportedCount(toImport.length)
       setEnrichedCount(toEnrich.length)
       setStep('done')
@@ -204,7 +168,7 @@ export default function ImportPanel() {
           <button
             type="button"
             onClick={() => setStep('idle')}
-            className="block text-sm text-ink/70 hover:text-ink underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-library rounded-sm"
+            className={`block ${backLinkClass}`}
           >
             Choisir un autre fichier
           </button>

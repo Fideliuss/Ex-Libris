@@ -64,7 +64,7 @@ describe('mapMyLibraryRowToBook', () => {
 })
 
 describe('parseMyLibraryXlsx', () => {
-  it('reads the Livres and Bandes Dessinées sheets, tagging each row with its type', () => {
+  it('reads the Livres and Bandes Dessinées sheets, tagging each row with its type', async () => {
     const workbook = utils.book_new()
     utils.book_append_sheet(
       workbook,
@@ -80,18 +80,18 @@ describe('parseMyLibraryXlsx', () => {
     utils.book_append_sheet(workbook, utils.json_to_sheet([{ Titre: 'Inception' }]), 'Films')
 
     const buffer = write(workbook, { type: 'array', bookType: 'xlsx' })
-    const rows = parseMyLibraryXlsx(buffer)
+    const rows = await parseMyLibraryXlsx(buffer)
 
     expect(rows).toHaveLength(2)
     expect(rows).toContainEqual({ row: { Titre: 'Fondation' }, type: 'book' })
     expect(rows).toContainEqual({ row: { Titre: 'Watchmen' }, type: 'bd' })
   })
 
-  it('skips a sheet that is entirely absent from the workbook', () => {
+  it('skips a sheet that is entirely absent from the workbook', async () => {
     const workbook = utils.book_new()
     utils.book_append_sheet(workbook, utils.json_to_sheet([{ Titre: 'Fondation' }]), 'Livres')
     const buffer = write(workbook, { type: 'array', bookType: 'xlsx' })
 
-    expect(parseMyLibraryXlsx(buffer)).toEqual([{ row: { Titre: 'Fondation' }, type: 'book' }])
+    expect(await parseMyLibraryXlsx(buffer)).toEqual([{ row: { Titre: 'Fondation' }, type: 'book' }])
   })
 })

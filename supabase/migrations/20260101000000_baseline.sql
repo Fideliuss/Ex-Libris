@@ -29,16 +29,16 @@ alter table profiles enable row level security;
 
 create policy "Users can insert their own profile"
   on profiles for insert
-  with check (auth.uid() = user_id);
+  with check ((select auth.uid()) = user_id);
 
 create policy "Users can update their own profile"
   on profiles for update
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 create policy "Users can view their own profile"
   on profiles for select
-  using (user_id = auth.uid());
+  using (user_id = (select auth.uid()));
 
 -- Résout un code ami en user_id sans exposer toute la table profiles :
 -- security definer contourne la RLS pour cette seule recherche ciblée par
@@ -190,6 +190,29 @@ $$;
 
 revoke execute on function is_household_member(uuid) from public, anon, service_role;
 grant execute on function is_household_member(uuid) to authenticated;
+
+-- Même ensemble que is_household_member(), mais sous forme de sous-requête
+-- qui ne dépend pas de la ligne examinée : Postgres l'évalue une seule fois
+-- par requête (InitPlan) au lieu d'une fois par ligne. Utilisée par les
+-- policies de lecture du foyer sur books, reading_goals et achievement_claims.
+-- `(select auth.uid())` pour la même raison : calculé une fois par requête,
+-- c'est aussi la forme recommandée par Supabase dans toutes les policies.
+create or replace function household_member_ids()
+returns setof uuid
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select other.user_id
+  from profiles me
+  join profiles other on other.household_id = me.household_id
+  where me.user_id = (select auth.uid())
+    and me.household_id is not null;
+$$;
+
+revoke execute on function household_member_ids() from public, anon, service_role;
+grant execute on function household_member_ids() to authenticated;
 
 -- La policy "Users can view their own profile" plus haut ne couvre que
 -- l'utilisateur lui-même : sans celle-ci, deux membres d'un même foyer ne
@@ -515,24 +538,24 @@ create trigger books_set_updated_at
 -- interne, pour rester symétrique avec le même découpage sur profiles.
 create policy "Users can view their own books"
   on books for select
-  using (user_id = auth.uid());
+  using (user_id = (select auth.uid()));
 
 create policy "Household (foyer) members can view all household books"
   on books for select
-  using (is_household_member(user_id));
+  using (user_id in (select household_member_ids()));
 
 create policy "Users can insert their own books"
   on books for insert
-  with check (auth.uid() = user_id);
+  with check ((select auth.uid()) = user_id);
 
 create policy "Users can update their own books"
   on books for update
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 create policy "Users can delete their own books"
   on books for delete
-  using (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id);
 
 -- Objectif de lecture annuel, par utilisateur et par année (l'objectif peut
 -- changer d'une année à l'autre). Même partage en lecture entre le foyer
@@ -554,20 +577,20 @@ create trigger reading_goals_set_updated_at
 
 create policy "Users can view their own reading goals"
   on reading_goals for select
-  using (user_id = auth.uid());
+  using (user_id = (select auth.uid()));
 
 create policy "Household (foyer) members can view all household reading goals"
   on reading_goals for select
-  using (is_household_member(user_id));
+  using (user_id in (select household_member_ids()));
 
 create policy "Users can insert their own reading goals"
   on reading_goals for insert
-  with check (auth.uid() = user_id);
+  with check ((select auth.uid()) = user_id);
 
 create policy "Users can update their own reading goals"
   on reading_goals for update
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 -- État de révélation des succès (Achievements.jsx) : jusqu'ici purement en
 -- localStorage, donc invisible d'un membre du foyer à l'autre et perdu au
@@ -586,11 +609,11 @@ alter table achievement_claims enable row level security;
 
 create policy "Users can view their own achievement claims"
   on achievement_claims for select
-  using (user_id = auth.uid());
+  using (user_id = (select auth.uid()));
 
 create policy "Household (foyer) members can view achievement claims"
   on achievement_claims for select
-  using (is_household_member(user_id));
+  using (user_id in (select household_member_ids()));
 
 -- Seul le propriétaire peut réclamer/promouvoir son propre succès (même
 -- garde-fou que isMine côté client dans AchievementsGallery.jsx, mais
@@ -599,12 +622,12 @@ create policy "Household (foyer) members can view achievement claims"
 -- client qui motive cette migration).
 create policy "Users can insert their own achievement claims"
   on achievement_claims for insert
-  with check (auth.uid() = user_id);
+  with check ((select auth.uid()) = user_id);
 
 create policy "Users can update their own achievement claims"
   on achievement_claims for update
-  using (auth.uid() = user_id)
-  with check (auth.uid() = user_id);
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
 
 -- Stockage des couvertures importées manuellement. allowed_mime_types /
 -- file_size_limit sont une deuxième barrière côté serveur, en plus de la

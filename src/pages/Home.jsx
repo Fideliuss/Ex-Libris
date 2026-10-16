@@ -1,4 +1,4 @@
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 import LoadingScreen from '../components/LoadingScreen'
 import Landing from './Landing'
 import Collection from './Collection'
