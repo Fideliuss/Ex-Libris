@@ -52,13 +52,12 @@ Une promotion `develop` vers `main` déclenche un déploiement. On la prépare d
 5. Ajouter l'entrée de `CHANGELOG.md` (historique technique, une section datée par version), si le lot change quelque chose de visible.
 6. Ajouter l'entrée de `src/lib/whatsNew.js` si le lot mérite une annonce : texte pour l'utilisateur, affiché par la fenêtre « Quoi de neuf ». Distinct du changelog.
 7. Mettre à jour la version dans `package.json` et `package-lock.json`.
-8. Relire cette page si la pratique a changé.
-9. Lancer `npm run build && npm run lint && npm test` en local.
-10. Ouvrir la pull request vers `develop`, intitulée `chore: prepare vX.Y.Z release`. La fusionner en squash une fois la CI verte, puis mettre `develop` à jour.
-11. Ouvrir la pull request `develop` vers `main`, intitulée `chore(main): promote develop to production (vX.Y.Z)`.
-12. Attendre la CI, y compris `promotion-checklist`, qui vérifie que `CHANGELOG.md` et `package.json` sont dans le diff.
-13. Fusionner avec un commit de fusion, jamais en squash, pour garder l'historique des pull requests.
-14. Poser un tag léger `ExLibris-vX.Y.Z` sur le commit de fusion (GitHub le signe : badge « Verified »), puis créer la release avec `gh release create`.
-15. Contrôler le site déployé : pas d'erreur console, nouveauté visible.
+8. Lancer `npm run build && npm run lint && npm test` en local.
+9. Ouvrir la pull request vers `develop`, intitulée `chore: prepare vX.Y.Z release`. La fusionner en squash une fois la CI verte, puis mettre `develop` à jour.
+10. Ouvrir la pull request `develop` vers `main`, intitulée `chore(main): promote develop to production (vX.Y.Z)`.
+11. Attendre la CI, y compris `promotion-checklist`, qui vérifie que `CHANGELOG.md` et `package.json` sont dans le diff.
+12. Fusionner avec un commit de fusion, jamais en squash, pour garder l'historique des pull requests.
+13. Poser un tag léger `ExLibris-vX.Y.Z` sur le commit de fusion (GitHub le signe : badge « Verified »), puis créer la release avec `gh release create`.
+14. Contrôler le site déployé : pas d'erreur console, nouveauté visible.
 
 Les versions publiées sont listées dans les [releases GitHub](https://github.com/Fideliuss/Ex-Libris/releases).
