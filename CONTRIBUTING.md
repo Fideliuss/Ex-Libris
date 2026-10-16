@@ -47,16 +47,18 @@ Une promotion `develop` vers `main` déclenche un déploiement. On la prépare d
 
 1. Lister les commits et pull requests de `develop` absents de `main` : c'est le périmètre de la promotion.
 2. Vérifier que les changements de base du lot sont déjà appliqués au projet réel.
-3. Choisir le numéro de version (semver) : MINOR si le lot contient au moins une vraie fonctionnalité, PATCH s'il ne contient que des corrections.
-4. Ajouter une entrée dans `CHANGELOG.md` (historique technique, une section datée par version), seulement si le lot change quelque chose de visible pour l'utilisateur.
-5. Ajouter une entrée dans `src/lib/whatsNew.js` si le lot mérite une annonce : texte écrit pour l'utilisateur, affiché dans l'application par la fenêtre « Quoi de neuf ». Ce fichier et `CHANGELOG.md` sont distincts et se tiennent à jour ensemble.
-6. Mettre à jour la version dans `package.json` et `package-lock.json`.
-7. Relire cette page si la pratique a changé.
-8. Lancer `npm run build && npm run lint && npm test` en local.
-9. Ouvrir la pull request `develop` vers `main`, intitulée `chore(main): promote develop to production (vX.Y.Z)`. Le changement de version, le changelog et la nouveauté font partie de cette pull request, jamais d'une pull request séparée qui coûterait un déploiement de plus.
-10. Attendre la CI, y compris `promotion-checklist`, qui vérifie que `CHANGELOG.md` et `package.json` sont dans le diff.
-11. Fusionner avec un commit de fusion classique, jamais en squash, pour garder visible l'historique des pull requests individuelles.
-12. Poser un tag léger `ExLibris-vX.Y.Z` sur le commit de fusion (GitHub le signe, ce qui donne le badge « Verified » ; un tag annoté créé en local ne l'a pas), puis créer la release avec `gh release create`.
-13. Contrôler le site déployé : pas d'erreur console, et la nouveauté est visible.
+3. Choisir le numéro de version (semver) : MINOR s'il y a au moins une vraie fonctionnalité, PATCH s'il n'y a que des corrections.
+4. Créer la branche `chore/prepare-vX.Y.Z` depuis un `develop` à jour.
+5. Ajouter l'entrée de `CHANGELOG.md` (historique technique, une section datée par version), si le lot change quelque chose de visible.
+6. Ajouter l'entrée de `src/lib/whatsNew.js` si le lot mérite une annonce : texte pour l'utilisateur, affiché par la fenêtre « Quoi de neuf ». Distinct du changelog.
+7. Mettre à jour la version dans `package.json` et `package-lock.json`.
+8. Relire cette page si la pratique a changé.
+9. Lancer `npm run build && npm run lint && npm test` en local.
+10. Ouvrir la pull request vers `develop`, intitulée `chore: prepare vX.Y.Z release`. La fusionner en squash une fois la CI verte, puis mettre `develop` à jour.
+11. Ouvrir la pull request `develop` vers `main`, intitulée `chore(main): promote develop to production (vX.Y.Z)`.
+12. Attendre la CI, y compris `promotion-checklist`, qui vérifie que `CHANGELOG.md` et `package.json` sont dans le diff.
+13. Fusionner avec un commit de fusion, jamais en squash, pour garder l'historique des pull requests.
+14. Poser un tag léger `ExLibris-vX.Y.Z` sur le commit de fusion (GitHub le signe : badge « Verified »), puis créer la release avec `gh release create`.
+15. Contrôler le site déployé : pas d'erreur console, nouveauté visible.
 
 Les versions publiées sont listées dans les [releases GitHub](https://github.com/Fideliuss/Ex-Libris/releases).
