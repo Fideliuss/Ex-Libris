@@ -691,7 +691,7 @@ alter default privileges in schema public
 -- retirer le privilège UPDATE table-level et le regranter explicitement
 -- colonne par colonne, sur exactement celles que le client met à jour
 -- aujourd'hui (voir updateMyProfile/markTutorialSeen/markChangelogSeen
--- dans src/lib/friendCode.js). Sans ça, n'importe quel compte pourrait
+-- dans src/lib/profile.js). Sans ça, n'importe quel compte pourrait
 -- s'auto-assigner le household_id d'un foyer étranger et hériter de la
 -- visibilité de ses livres, sans jamais passer par une invitation.
 -- Seules les fonctions security definer du modèle foyer (qui tournent
