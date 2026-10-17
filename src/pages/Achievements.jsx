@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useHouseholdBooks } from '../hooks/useHouseholdBooks'
 import { useProfile } from '../hooks/useProfile'
-import { listClaims, migrateLocalStorageClaims, upsertClaim } from '../lib/achievementClaims'
+import { listClaims, upsertClaim } from '../lib/achievementClaims'
 import HouseholdPage from '../components/HouseholdPage'
 import AchievementsGallery from '../components/AchievementsGallery'
 
@@ -23,16 +23,7 @@ export default function Achievements() {
   useEffect(() => {
     if (!ownerId) return
     let active = true
-    ;(async () => {
-      // Reprend une seule fois par appareil ce qui traînait en localStorage
-      // (ancien stockage, avant la table achievement_claims) - uniquement
-      // pertinent sur sa propre vue, et doit être fait AVANT de lire pour
-      // que la migration soit bien prise en compte dès ce premier chargement.
-      if (ownerId === user?.id) {
-        await migrateLocalStorageClaims(ownerId).catch(() => {})
-      }
-      return listClaims(ownerId)
-    })()
+    listClaims(ownerId)
       .then((rows) => {
         if (active) {
           setClaimsState({ ownerId, claims: new Map(rows.map((r) => [r.badge_id, r.rank])) })
@@ -46,7 +37,7 @@ export default function Achievements() {
     return () => {
       active = false
     }
-  }, [ownerId, user?.id])
+  }, [ownerId])
 
   // Optimiste : l'affichage réagit tout de suite, l'écriture réseau suit
   // en tâche de fond. Jamais appelé si !isMine (voir AchievementsGallery),
