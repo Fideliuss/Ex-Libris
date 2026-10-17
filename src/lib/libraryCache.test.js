@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { STALE_AFTER_MS, needsRefresh, removeFromList, upsertInList } from './libraryCache'
+import {
+  OWN_STALE_AFTER_MS,
+  STALE_AFTER_MS,
+  removeFromList,
+  shouldLoadOwner,
+  upsertInList,
+} from './libraryCache'
 
 const a = { id: 'a', title: 'A' }
 const b = { id: 'b', title: 'B' }
@@ -31,20 +37,33 @@ describe('removeFromList', () => {
   })
 })
 
-describe('needsRefresh', () => {
-  it('is false for a fresh, untouched cache', () => {
-    expect(needsRefresh({ invalidated: false, fetchedAt: 1000, now: 1000 + STALE_AFTER_MS })).toBe(false)
+describe('shouldLoadOwner', () => {
+  const loaded = (fetchedAt) => ({ loaded: true, fetchedAt, books: [] })
+  const base = { invalidated: false, now: 1000 }
+
+  it('loads an owner nobody asked for yet', () => {
+    expect(shouldLoadOwner({ ...base, entry: undefined, isMine: true })).toBe(true)
+    expect(shouldLoadOwner({ ...base, entry: undefined, isMine: false })).toBe(true)
   })
 
-  it('is true once the cache is older than the threshold', () => {
-    expect(needsRefresh({ invalidated: false, fetchedAt: 1000, now: 1001 + STALE_AFTER_MS })).toBe(true)
+  it('retries an owner whose last load failed', () => {
+    expect(shouldLoadOwner({ ...base, entry: { loaded: false, error: 'x' }, isMine: true })).toBe(true)
   })
 
-  it('is true as soon as it was invalidated, however recent', () => {
-    expect(needsRefresh({ invalidated: true, fetchedAt: 1000, now: 1000 })).toBe(true)
+  it('keeps another member fresh until the short threshold is passed', () => {
+    const entry = loaded(1000)
+    expect(shouldLoadOwner({ ...base, entry, isMine: false, now: 1000 + STALE_AFTER_MS })).toBe(false)
+    expect(shouldLoadOwner({ ...base, entry, isMine: false, now: 1001 + STALE_AFTER_MS })).toBe(true)
   })
 
-  it('is true when nothing was ever fetched', () => {
-    expect(needsRefresh({ invalidated: false, fetchedAt: 0, now: Date.now() })).toBe(true)
+  it('keeps my own books fresh far longer than another member', () => {
+    const entry = loaded(1000)
+    const now = 1001 + STALE_AFTER_MS
+    expect(shouldLoadOwner({ ...base, entry, isMine: true, now })).toBe(false)
+    expect(shouldLoadOwner({ ...base, entry, isMine: true, now: 1001 + OWN_STALE_AFTER_MS })).toBe(true)
+  })
+
+  it('reloads as soon as it was invalidated, however recent', () => {
+    expect(shouldLoadOwner({ ...base, entry: loaded(1000), isMine: true, invalidated: true })).toBe(true)
   })
 })
