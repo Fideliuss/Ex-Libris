@@ -8,8 +8,10 @@ const STATUS_MAP = {
 }
 
 // Libib laisse parfois l'utilisateur préfixer le titre par le numéro de tome
-// dans le champ "group" (série), ex: "2 - Fairy Dance".
-const SERIES_INDEX_PATTERN = /^(\d+(?:\.\d+)?)\s*-\s*(.+)$/
+// dans le champ "group" (série), ex: "2 - Fairy Dance". Entier seulement : un
+// numéro de tome est un entier (la base le refuse sinon), un préfixe décimal
+// comme "1.5 - " reste donc dans le titre, que l'utilisateur corrigera.
+const SERIES_INDEX_PATTERN = /^(\d+)\s*-\s*(.+)$/
 
 export function parseLibibCsv(fileText) {
   const result = Papa.parse(fileText, { header: true, skipEmptyLines: true })
