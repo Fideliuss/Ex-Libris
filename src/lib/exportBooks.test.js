@@ -1,6 +1,43 @@
 import Papa from 'papaparse'
-import { describe, expect, it } from 'vitest'
-import { booksToCsv } from './exportBooks'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { booksToCsv, exportFileName } from './exportBooks'
+
+describe('exportFileName', () => {
+  const originalTimeZone = process.env.TZ
+
+  afterEach(() => {
+    if (originalTimeZone === undefined) delete process.env.TZ
+    else process.env.TZ = originalTimeZone
+  })
+
+  // Le fuseau est fixé dans chaque test : le résultat ne dépend pas de la
+  // machine, et un nom construit avec toISOString() (UTC) serait détecté.
+  it('is named after the local date', () => {
+    process.env.TZ = 'Europe/Paris'
+    expect(exportFileName(new Date(2026, 5, 15, 12, 0))).toBe('ex-libris-2026-06-15.csv')
+  })
+
+  it('keeps the local day late in the evening west of UTC (already the next day in UTC)', () => {
+    process.env.TZ = 'America/Los_Angeles'
+    expect(exportFileName(new Date(2026, 5, 15, 23, 59))).toBe('ex-libris-2026-06-15.csv')
+  })
+
+  it('keeps the local day just after midnight east of UTC (still the day before in UTC)', () => {
+    process.env.TZ = 'Pacific/Auckland'
+    expect(exportFileName(new Date(2026, 5, 16, 0, 1))).toBe('ex-libris-2026-06-16.csv')
+  })
+
+  it('defaults to today', () => {
+    process.env.TZ = 'Europe/Paris'
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 5, 15, 12, 0))
+    try {
+      expect(exportFileName()).toBe('ex-libris-2026-06-15.csv')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
 
 describe('booksToCsv', () => {
   it('writes the header row in a fixed column order', () => {

@@ -1,4 +1,5 @@
 import Papa from 'papaparse'
+import { toDateKey } from './dates'
 
 const EXPORT_COLUMNS = [
   'title',
@@ -65,6 +66,12 @@ export function booksToCsv(books) {
   // colonnes soi-même pour qu'un export vide reste un fichier lisible.
   if (rows.length === 0) return EXPORT_COLUMNS.join(',')
   return Papa.unparse(rows, { columns: EXPORT_COLUMNS })
+}
+
+// Nom du fichier d'export, daté du jour LOCAL : toISOString() donne la date
+// UTC, qui peut être celle de la veille ou du lendemain selon l'heure.
+export function exportFileName(now = new Date()) {
+  return `ex-libris-${toDateKey(now)}.csv`
 }
 
 export function downloadTextFile(filename, content, mimeType) {

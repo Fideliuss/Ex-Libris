@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { listBooks } from '../lib/books'
-import { booksToCsv, downloadTextFile } from '../lib/exportBooks'
+import { booksToCsv, downloadTextFile, exportFileName } from '../lib/exportBooks'
 import { describeError } from '../lib/errors'
 import { secondaryButtonClass } from '../lib/ui'
 
@@ -16,8 +16,7 @@ export default function ExportPanel() {
     try {
       const myBooks = await listBooks({ userId: user.id })
       const csv = booksToCsv(myBooks)
-      const date = new Date().toISOString().slice(0, 10)
-      downloadTextFile(`ex-libris-${date}.csv`, csv, 'text/csv;charset=utf-8;')
+      downloadTextFile(exportFileName(), csv, 'text/csv;charset=utf-8;')
     } catch (err) {
       setError(describeError(err))
     } finally {
