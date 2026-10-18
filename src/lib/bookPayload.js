@@ -23,6 +23,7 @@ export const EDITABLE_BOOK_COLUMNS = [
   'description',
   'series',
   'series_index',
+  'is_off_series',
   'type',
   'universe',
   'tags',
@@ -36,6 +37,29 @@ export const EDITABLE_BOOK_COLUMNS = [
   'price',
   'purchase_date',
 ]
+
+// Valeur du champ Tome (texte du formulaire) : vide = pas de numéro, sinon un
+// entier. La base refuse un numéro décimal ; on le dit ici, avec un message
+// lisible, plutôt que de laisser remonter l'erreur de contrainte.
+export function parseSeriesIndex(value) {
+  if (value === null || value === undefined) return null
+  const text = String(value).trim()
+  if (text === '') return null
+  const number = Number(text)
+  if (!Number.isInteger(number)) throw new Error('Le numéro de tome doit être un nombre entier.')
+  return number
+}
+
+// Les trois champs de série ensemble : un hors-série appartient à une série,
+// donc sans série le drapeau retombe à faux (la base refuse l'inverse).
+export function seriesFields({ series, series_index, is_off_series }) {
+  const cleanSeries = series?.trim() || null
+  return {
+    series: cleanSeries,
+    series_index: parseSeriesIndex(series_index),
+    is_off_series: Boolean(is_off_series) && cleanSeries !== null,
+  }
+}
 
 export function pickEditable(book) {
   return Object.fromEntries(
