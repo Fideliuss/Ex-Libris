@@ -470,43 +470,38 @@ export default function BookForm() {
                   />
                 </Field>
               </div>
-              <Field label={offSeriesChecked ? 'N° hors-série' : 'Tome'}>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  inputMode="numeric"
-                  value={book.series_index ?? ''}
-                  onChange={(e) => set('series_index', e.target.value)}
-                  className={`${inputClass} font-mono`}
-                />
-              </Field>
+              <div>
+                <Field label={offSeriesChecked ? 'N° hors-série' : 'Tome'}>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    inputMode="numeric"
+                    value={book.series_index ?? ''}
+                    onChange={(e) => set('series_index', e.target.value)}
+                    className={`${inputClass} font-mono`}
+                  />
+                </Field>
+                {/* Notion distincte de "Édition spéciale" (Collector,
+                    Intégrale...) : un hors-série est un livre de la série hors
+                    de sa numérotation, avec un numéro facultatif qui lui est
+                    propre. Grisée tant qu'aucune série n'est saisie. */}
+                <label
+                  className={`mt-2 flex items-center gap-2 text-sm font-medium ${
+                    hasSeries ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={offSeriesChecked}
+                    disabled={!hasSeries}
+                    onChange={(e) => set('is_off_series', e.target.checked)}
+                    className="h-4 w-4 shrink-0 accent-library"
+                  />
+                  Hors-série
+                </label>
+              </div>
             </div>
-
-            {/* Notion distincte de "Édition spéciale" (Collector, Intégrale...) :
-                un hors-série est un livre de la série hors de sa numérotation.
-                Il garde un numéro facultatif qui lui est propre. */}
-            <label
-              className={`flex items-start gap-2 text-sm ${
-                hasSeries ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={offSeriesChecked}
-                disabled={!hasSeries}
-                onChange={(e) => set('is_off_series', e.target.checked)}
-                className="mt-0.5 h-4 w-4 shrink-0 accent-library"
-              />
-              <span>
-                <span className="font-medium">Hors-série</span>
-                <span className="block text-xs text-ink/60">
-                  {hasSeries
-                    ? 'Hors de la numérotation des tomes. Le numéro est facultatif.'
-                    : 'Renseigne d’abord la série.'}
-                </span>
-              </span>
-            </label>
 
             <Field label="Univers">
               <SuggestInput
