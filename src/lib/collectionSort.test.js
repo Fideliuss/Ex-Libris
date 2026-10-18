@@ -135,6 +135,26 @@ describe('SORT_OPTIONS', () => {
     ]
     expect(order(books, SORT_OPTIONS.tome.compare)).toEqual(['none', 'a1', 'a3', 'b1', 'b2'])
   })
+
+  it('tome: puts the off-series books after the regular volumes of their series, by number, unnumbered last', () => {
+    const books = [
+      { id: 'hsNone', title: 'A', series: 'A', series_index: null, is_off_series: true },
+      { id: 'b1', title: 'X', series: 'B', series_index: 1 },
+      { id: 'hs2', title: 'X', series: 'A', series_index: 2, is_off_series: true },
+      { id: 'a2', title: 'X', series: 'A', series_index: 2 },
+      { id: 'hs1', title: 'X', series: 'A', series_index: 1, is_off_series: true },
+      { id: 'a1', title: 'X', series: 'A', series_index: 1 },
+    ]
+    expect(order(books, SORT_OPTIONS.tome.compare)).toEqual(['a1', 'a2', 'hs1', 'hs2', 'hsNone', 'b1'])
+  })
+
+  it('tome: breaks a tie between two unnumbered off-series books by title', () => {
+    const books = [
+      { id: 'z', title: 'Zeta', series: 'A', series_index: null, is_off_series: true },
+      { id: 'a', title: 'Alpha', series: 'A', series_index: null, is_off_series: true },
+    ]
+    expect(order(books, SORT_OPTIONS.tome.compare)).toEqual(['a', 'z'])
+  })
 })
 
 describe('letterGroupKey', () => {

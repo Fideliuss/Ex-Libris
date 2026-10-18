@@ -21,6 +21,11 @@ export function finishedTime(book) {
   return book.date_finished ? Date.parse(book.date_finished) : 0
 }
 
+// Numéro d'un hors-série pour le tri : sans numéro, il passe après ceux qui en ont.
+function offSeriesNumber(book) {
+  return book.series_index ?? Number.MAX_SAFE_INTEGER
+}
+
 export const SORT_OPTIONS = {
   title: {
     label: 'Titre',
@@ -54,12 +59,17 @@ export const SORT_OPTIONS = {
   },
   // Trie d'abord par série (les livres sans série regroupés à part), puis
   // par numéro de tome à l'intérieur de chaque série : trier par tome seul,
-  // toutes séries confondues, mélangerait les séries entre elles.
+  // toutes séries confondues, mélangerait les séries entre elles. Les
+  // hors-séries passent après les tomes de leur série, par numéro, ceux sans
+  // numéro en dernier (même ordre que la rangée de tomes de la fiche).
   tome: {
     label: 'Tome',
     compare: (a, b) =>
       compareFr(a.series ?? '', b.series ?? '') ||
-      (a.series_index ?? 0) - (b.series_index ?? 0) ||
+      Number(Boolean(a.is_off_series)) - Number(Boolean(b.is_off_series)) ||
+      (a.is_off_series
+        ? offSeriesNumber(a) - offSeriesNumber(b)
+        : (a.series_index ?? 0) - (b.series_index ?? 0)) ||
       titleCompare(a, b),
   },
 }
