@@ -29,6 +29,28 @@ describe('booksToCsv', () => {
     expect(dataRow).toBe('Sans auteur' + ','.repeat(21))
   })
 
+  it('quotes values containing commas, double quotes or line breaks', () => {
+    const csv = booksToCsv([
+      { title: 'Un, deux', notes: 'dit "oui"', favorite_quote: 'ligne 1\nligne 2' },
+    ])
+    const dataRow = csv.split('\r\n').slice(1).join('\r\n')
+    expect(dataRow).toContain('"Un, deux"')
+    expect(dataRow).toContain('"dit ""oui"""')
+    expect(dataRow).toContain('"ligne 1\nligne 2"')
+  })
+
+  it('writes one data row per book', () => {
+    const csv = booksToCsv([{ title: 'A' }, { title: 'B' }, { title: 'C' }])
+    expect(csv.split('\r\n')).toHaveLength(4) // en-tête + 3 livres
+  })
+
+  it('writes numbers as plain text, 0 included', () => {
+    const dataRow = booksToCsv([{ title: 'X', rating: 0, page_count: 320, price: 12.5 }]).split('\r\n')[1]
+    expect(dataRow).toContain(',0,')
+    expect(dataRow).toContain('320')
+    expect(dataRow).toContain('12.5')
+  })
+
   it('keeps the column order regardless of the input object key order', () => {
     const csv = booksToCsv([{ author: ['Hugo'], title: 'Les Misérables' }])
     const dataRow = csv.split('\r\n')[1]
