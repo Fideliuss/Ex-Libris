@@ -78,11 +78,11 @@ export function monthLabel(date) {
 // est incohérent avec ça : un livre accentué peut se retrouver coincé entre
 // deux livres non accentués de la même lettre, cassant le groupe en deux
 // au lieu de le fusionner. On regroupe donc en ignorant les accents aussi.
+// Une valeur vide ou blanche (titre absent) va dans le groupe "#" plut\u00f4t que
+// de faire \u00e9chouer l'affichage de toute la collection.
 export function letterGroupKey(str) {
-  return str
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')[0]
-    .toUpperCase()
+  const first = (str ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')[0]
+  return first?.trim() ? first.toUpperCase() : '#'
 }
 
 // Détermine l'en-tête de section pour un livre selon le tri actif (lettre,

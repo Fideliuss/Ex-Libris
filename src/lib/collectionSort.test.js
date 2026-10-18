@@ -152,6 +152,15 @@ describe('letterGroupKey', () => {
   it('gives the same key for a composed and a decomposed accent', () => {
     expect(letterGroupKey('Éluard')).toBe(letterGroupKey('Éluard'))
   })
+
+  it('files an empty or blank value under "#" instead of failing', () => {
+    expect(letterGroupKey('')).toBe('#')
+    expect(letterGroupKey('   ')).toBe('#')
+  })
+
+  it('keeps digits as their own group', () => {
+    expect(letterGroupKey('1984')).toBe('1')
+  })
 })
 
 describe('monthLabel', () => {
@@ -164,6 +173,11 @@ describe('monthLabel', () => {
 describe('groupKeyFor', () => {
   it('title: the first letter of the title', () => {
     expect(groupKeyFor({ title: 'Étude' }, 'title')).toBe('E')
+  })
+
+  it('title: a book without any title goes under "#"', () => {
+    expect(groupKeyFor({ title: '' }, 'title')).toBe('#')
+    expect(groupKeyFor({}, 'title')).toBe('#')
   })
 
   it('author: the first letter of the last name, or "Auteur inconnu"', () => {
