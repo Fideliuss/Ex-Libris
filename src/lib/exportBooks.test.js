@@ -45,7 +45,7 @@ describe('booksToCsv', () => {
     const header = csv.split('\r\n')[0]
     expect(header).toBe(
       'title,author,translator,illustrator,publisher,collection,series,' +
-        'series_index,type,universe,tags,status,isbn,date_started,' +
+        'series_index,hors_serie,type,universe,tags,status,isbn,date_started,' +
         'date_finished,rating,notes,favorite_quote,page_count,price,purchase_date,created_at',
     )
   })
@@ -63,8 +63,18 @@ describe('booksToCsv', () => {
     const dataRow = csv.split('\r\n')[1]
     expect(dataRow).not.toContain('undefined')
     expect(dataRow).not.toContain('null')
-    // 22 columns total: title filled, the other 21 empty (21 commas)
-    expect(dataRow).toBe('Sans auteur' + ','.repeat(21))
+    // 23 colonnes : le titre rempli, 7 colonnes vides (auteur à numéro de tome),
+    // "non" pour hors_serie, puis les 14 dernières colonnes vides.
+    expect(dataRow).toBe('Sans auteur' + ','.repeat(7) + ',non' + ','.repeat(14))
+  })
+
+  it('writes the off-series flag as "oui" or "non", just after the volume number', () => {
+    const header = booksToCsv([{ title: 'X' }]).split('\r\n')[0].split(',')
+    expect(header.indexOf('hors_serie')).toBe(header.indexOf('series_index') + 1)
+    const column = (book) => Papa.parse(booksToCsv([book]), { header: true }).data[0].hors_serie
+    expect(column({ title: 'A', series: 'S', is_off_series: true })).toBe('oui')
+    expect(column({ title: 'A', series: 'S', is_off_series: false })).toBe('non')
+    expect(column({ title: 'A' })).toBe('non')
   })
 
   it('quotes values containing commas, double quotes or line breaks', () => {

@@ -10,6 +10,7 @@ const EXPORT_COLUMNS = [
   'collection',
   'series',
   'series_index',
+  'hors_serie',
   'type',
   'universe',
   'tags',
@@ -56,7 +57,9 @@ export function booksToCsv(books) {
   const rows = books.map((book) =>
     Object.fromEntries(
       EXPORT_COLUMNS.map((column) => {
-        const value = book[column]
+        // "hors_serie" n'est pas une colonne de la base : elle se lit dans
+        // is_off_series, écrite en toutes lettres pour un tableur.
+        const value = column === 'hors_serie' ? (book.is_off_series ? 'oui' : 'non') : book[column]
         const cell = Array.isArray(value) ? value.join(', ') : (value ?? '')
         return [column, TEXT_COLUMNS.has(column) ? protectFromFormula(String(cell)) : cell]
       }),
