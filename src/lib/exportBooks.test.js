@@ -59,6 +59,13 @@ describe('booksToCsv', () => {
   })
 })
 
+describe('booksToCsv with no book', () => {
+  it('still writes the header row, so the file opens with its column names', () => {
+    const header = booksToCsv([{ title: 'X' }]).split('\r\n')[0]
+    expect(booksToCsv([])).toBe(header)
+  })
+})
+
 // Relit le CSV produit, comme le ferait un tableur : une cellule qui commence
 // par = + - @ (ou une tabulation, un retour chariot) y serait lue comme une
 // formule. On vérifie ce que contient réellement chaque cellule.

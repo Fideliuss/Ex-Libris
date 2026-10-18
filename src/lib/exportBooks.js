@@ -61,6 +61,9 @@ export function booksToCsv(books) {
       }),
     ),
   )
+  // Papa Parse ne produit rien sans ligne de données : on écrit les noms de
+  // colonnes soi-même pour qu'un export vide reste un fichier lisible.
+  if (rows.length === 0) return EXPORT_COLUMNS.join(',')
   return Papa.unparse(rows, { columns: EXPORT_COLUMNS })
 }
 
