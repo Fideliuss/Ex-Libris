@@ -484,6 +484,11 @@ create table books (
   description text,
   series text,
   series_index numeric,
+  -- Hors-série : un livre de la série qui n'est pas un tome de sa numérotation
+  -- régulière. Notion distincte de `edition` (Collector, Intégrale...) : un
+  -- livre peut être l'un, l'autre ou les deux. Son series_index, facultatif,
+  -- est alors son propre numéro (HS 1, HS 2), indépendant de celui des tomes.
+  is_off_series boolean not null default false,
   type text not null default 'book'
     check (type in ('book', 'bd', 'comics', 'manga')),
   universe text,
@@ -506,7 +511,13 @@ create table books (
   price numeric(10, 2),
   purchase_date date,
   created_at timestamptz default now(),
-  updated_at timestamptz default now()
+  updated_at timestamptz default now(),
+  -- Un numéro de tome est un entier (les hors-séries ont leur propre case) ;
+  -- un hors-série appartient forcément à une série.
+  constraint books_series_index_whole
+    check (series_index is null or series_index = floor(series_index)),
+  constraint books_off_series_needs_series
+    check (not is_off_series or series is not null)
 );
 
 alter table books enable row level security;
@@ -691,7 +702,7 @@ alter default privileges in schema public
 -- retirer le privilège UPDATE table-level et le regranter explicitement
 -- colonne par colonne, sur exactement celles que le client met à jour
 -- aujourd'hui (voir updateMyProfile/markTutorialSeen/markChangelogSeen
--- dans src/lib/friendCode.js). Sans ça, n'importe quel compte pourrait
+-- dans src/lib/profile.js). Sans ça, n'importe quel compte pourrait
 -- s'auto-assigner le household_id d'un foyer étranger et hériter de la
 -- visibilité de ses livres, sans jamais passer par une invitation.
 -- Seules les fonctions security definer du modèle foyer (qui tournent

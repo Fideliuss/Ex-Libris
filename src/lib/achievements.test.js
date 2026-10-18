@@ -82,4 +82,36 @@ describe('evaluateAchievements', () => {
     expect(badge.unlocked).toBe(true)
     expect(badge.unlockedAt).toBe('2024-01-03T00:00:00+00:00')
   })
+
+  describe('série sans lacune et hors-séries', () => {
+    const book = (n, extra = {}) => ({
+      id: `b${n}-${extra.is_off_series ? 'hs' : 'r'}`,
+      title: `T${n}`,
+      series: 'S',
+      series_index: n,
+      is_off_series: false,
+      created_at: `2024-01-0${n}T00:00:00+00:00`,
+      ...extra,
+    })
+    const gapless = (books) =>
+      evaluateAchievements(books, {}).find((b) => b.id === 'series-sine-lacuna').unlocked
+
+    it('ne compte pas un hors-série comme le tome qui comble la série', () => {
+      expect(gapless([book(1), book(2), book(3, { is_off_series: true })])).toBe(false)
+    })
+
+    it('ne laisse pas un hors-série boucher le trou entre deux tomes', () => {
+      expect(gapless([book(1), book(2), book(4), book(3, { is_off_series: true })])).toBe(false)
+    })
+
+    it('garde la série sans lacune quand un hors-série porte le même numéro qu\'un tome', () => {
+      expect(gapless([book(1), book(2), book(3), book(2, { is_off_series: true })])).toBe(true)
+    })
+
+    it('ignore aussi un hors-série sans numéro', () => {
+      expect(
+        gapless([book(1), book(2), book(3), book(4, { is_off_series: true, series_index: null })]),
+      ).toBe(true)
+    })
+  })
 })

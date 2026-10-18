@@ -23,7 +23,7 @@ import StarRating from '../components/StarRating'
 import CoverLightbox from '../components/CoverLightbox'
 import { STATUS_LABELS } from '../lib/statusLabels'
 import { Field, FormSection, LivePreviewCard, WishlistCheckbox } from '../components/BookFormParts'
-import { nullIfEmpty, pickEditable } from '../lib/bookPayload'
+import { nullIfEmpty, pickEditable, seriesFields } from '../lib/bookPayload'
 
 const BarcodeScanner = lazy(() => import('../components/BarcodeScanner'))
 
@@ -40,6 +40,7 @@ const emptyBook = {
   description: '',
   series: '',
   series_index: '',
+  is_off_series: false,
   type: 'book',
   universe: '',
   tags: [],
@@ -100,6 +101,7 @@ export default function BookForm() {
           price: data.price ?? '',
           purchase_date: data.purchase_date ?? '',
           series_index: data.series_index ?? '',
+          is_off_series: data.is_off_series ?? false,
           edition: data.edition ?? [],
           author: data.author ?? [],
           translator: data.translator ?? [],
@@ -113,6 +115,12 @@ export default function BookForm() {
   function set(field, value) {
     setBook((b) => ({ ...b, [field]: value }))
   }
+
+  // Un hors-série appartient à une série : sans série saisie, la case est
+  // grisée et ne compte pas (seriesFields remet aussi le drapeau à faux à
+  // l'enregistrement, la base refusant un hors-série sans série).
+  const hasSeries = Boolean(book.series?.trim())
+  const offSeriesChecked = Boolean(book.is_off_series) && hasSeries
 
   // Décocher "Je le veux" propose de noter prix/date d'achat tout de suite
   // (même modal que sur la fiche livre quand un statut sort de la wishlist,
@@ -202,6 +210,18 @@ export default function BookForm() {
       }
     }
 
+    let series
+    try {
+      series = seriesFields(book)
+    } catch (err) {
+      // Numéro de tome invalide : rien n'a encore été enregistré, mais la
+      // cover a pu être envoyée, on la retire comme pour un échec de sauvegarde.
+      if (uploadedNewCover) deleteCover(coverUrl)
+      setError(describeError(err))
+      setSaving(false)
+      return
+    }
+
     const payload = {
       ...pickEditable(book),
       cover_url: coverUrl,
@@ -211,8 +231,7 @@ export default function BookForm() {
       rating: book.rating || null,
       price: book.price === '' ? null : Number(book.price),
       purchase_date: book.purchase_date || null,
-      series: book.series?.trim() || null,
-      series_index: book.series_index === '' ? null : Number(book.series_index),
+      ...series,
       universe: book.universe?.trim() || null,
       edition: nullIfEmpty(book.edition),
       author: nullIfEmpty(book.author),
@@ -451,16 +470,37 @@ export default function BookForm() {
                   />
                 </Field>
               </div>
-              <Field label="Tome">
-                <input
-                  type="number"
-                  min="0"
-                  step="0.5"
-                  value={book.series_index ?? ''}
-                  onChange={(e) => set('series_index', e.target.value)}
-                  className={`${inputClass} font-mono`}
-                />
-              </Field>
+              <div>
+                <Field label={offSeriesChecked ? 'N° hors-série' : 'Tome'}>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    inputMode="numeric"
+                    value={book.series_index ?? ''}
+                    onChange={(e) => set('series_index', e.target.value)}
+                    className={`${inputClass} font-mono`}
+                  />
+                </Field>
+                {/* Notion distincte de "Édition spéciale" (Collector,
+                    Intégrale...) : un hors-série est un livre de la série hors
+                    de sa numérotation, avec un numéro facultatif qui lui est
+                    propre. Grisée tant qu'aucune série n'est saisie. */}
+                <label
+                  className={`mt-2 flex items-center gap-2 text-sm font-medium ${
+                    hasSeries ? 'cursor-pointer' : 'cursor-not-allowed opacity-50'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={offSeriesChecked}
+                    disabled={!hasSeries}
+                    onChange={(e) => set('is_off_series', e.target.checked)}
+                    className="h-4 w-4 shrink-0 accent-library"
+                  />
+                  Hors-série
+                </label>
+              </div>
             </div>
 
             <Field label="Univers">

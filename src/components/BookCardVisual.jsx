@@ -1,6 +1,7 @@
 import { STATUS_BADGE_CLASS, STATUS_LABELS } from '../lib/statusLabels'
 import { BOOK_TYPES, SERIES_DRIVEN_TYPES } from '../lib/bookTypes'
 import { hasSpecialEdition } from '../lib/editionTypes'
+import { volumeBadge, volumeLabel } from '../lib/volumeLabel'
 import WishlistRibbon from './WishlistRibbon'
 import ReadingBookmark from './ReadingBookmark'
 import BookCoverPlaceholder from './BookCoverPlaceholder'
@@ -52,7 +53,7 @@ export default function BookCardVisual({ book }) {
           <BookCoverPlaceholder
             title={book.title}
             author={book.author}
-            volume={isSeriesVolume ? book.series_index : null}
+            volume={isSeriesVolume && !book.is_off_series ? book.series_index : null}
           />
         )}
         {book.type !== 'book' && (
@@ -60,11 +61,11 @@ export default function BookCardVisual({ book }) {
             {BOOK_TYPES[book.type]}
           </span>
         )}
-        {!isSeriesVolume && book.series_index != null && (
+        {!isSeriesVolume && volumeBadge(book) != null && (
           <span
             className={`absolute bottom-2 right-2 w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-mono font-semibold ${STATUS_BADGE_CLASS[book.status]}`}
           >
-            {book.series_index}
+            {volumeBadge(book)}
           </span>
         )}
       </div>
@@ -75,9 +76,9 @@ export default function BookCardVisual({ book }) {
             <p className="font-serif text-base leading-snug line-clamp-2">
               {book.series}
             </p>
-            {book.series_index != null && (
+            {volumeLabel(book) && (
               <p className="font-mono text-sm text-brass font-semibold mt-0.5">
-                Tome {book.series_index}
+                {volumeLabel(book)}
               </p>
             )}
           </>
@@ -87,7 +88,10 @@ export default function BookCardVisual({ book }) {
               {book.title}
             </p>
             {book.series && (
-              <p className="text-xs text-brass mt-0.5 truncate">{book.series}</p>
+              <p className="text-xs text-brass mt-0.5 truncate">
+                {book.series}
+                {book.is_off_series && ` · ${volumeLabel(book)}`}
+              </p>
             )}
           </>
         )}

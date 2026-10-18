@@ -9,6 +9,16 @@
 // prend du recul sur tout ce qui vient d'être livré d'un coup.
 export const WHATS_NEW = [
   {
+    id: '2026-10-off-series',
+    title: 'Les hors-séries',
+    items: [
+      'Tu peux maintenant marquer un livre comme hors-série, avec la case sous le champ Tome du formulaire. Il garde un numéro facultatif, repéré par « HS » sur sa carte et dans la rangée des tomes, après les tomes de la série.',
+      'Le numéro de tome n’accepte plus que des nombres entiers : les demi-tomes laissent la place à cette case.',
+      'La bibliothèque se charge plus vite : seuls tes livres sont chargés au départ, ceux d’un autre membre du foyer seulement quand tu bascules sur lui.',
+      'L’export CSV a une colonne « hors_serie » et un nom de fichier à la bonne date, et les titres qui commencent par =, +, - ou @ ne sont plus lus comme des formules par le tableur.',
+    ],
+  },
+  {
     id: '2026-10-version-and-updates',
     title: 'Version et mises à jour',
     items: [

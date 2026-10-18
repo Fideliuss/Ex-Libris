@@ -40,6 +40,18 @@ describe('mapLibibRowToBook', () => {
     expect(book.series_index).toBe(2)
   })
 
+  it('does not read a decimal prefix as a volume number: volumes are whole numbers', () => {
+    const book = mapLibibRowToBook({ title: '1.5 - Hors piste', group: 'Sword Art Online' })
+    expect(book.title).toBe('1.5 - Hors piste')
+    expect(book.series).toBe('Sword Art Online')
+    expect(book.series_index).toBeNull()
+  })
+
+  it('still reads a whole volume number, zero included', () => {
+    expect(mapLibibRowToBook({ title: '0 - Prélude', group: 'S' }).series_index).toBe(0)
+    expect(mapLibibRowToBook({ title: '12 - Suite', group: 'S' }).series_index).toBe(12)
+  })
+
   it('leaves the title untouched when there is no series', () => {
     const book = mapLibibRowToBook({ title: '2 - Fairy Dance', group: '' })
     expect(book.title).toBe('2 - Fairy Dance')

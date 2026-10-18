@@ -2,6 +2,35 @@
   command = "npm run build"
   publish = "dist"
 
+# En-têtes de sécurité, envoyés avec chaque réponse.
+# La CSP est en mode Report-Only : le navigateur signale dans la console ce
+# qu'il bloquerait, sans rien bloquer. Une fois la console propre sur tous les
+# parcours (connexion, scanner, import, couvertures), renommer l'en-tête en
+# Content-Security-Policy pour l'appliquer vraiment.
+# Le hash sha256 de script-src est celui du script inline de index.html (thème
+# posé avant le premier rendu) : à recalculer si ce script change.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(self), microphone=(), geolocation=(), payment=(), usb=()"
+    Content-Security-Policy-Report-Only = """\
+      default-src 'self'; \
+      script-src 'self' 'sha256-+ff53qCw20zPZgVT5BNY7tt5xg2KAd7mKOQhBiolKXg='; \
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; \
+      font-src 'self' https://fonts.gstatic.com; \
+      img-src 'self' data: blob: https:; \
+      connect-src 'self' https://bsxllmqakjkwlwmupifh.supabase.co wss://bsxllmqakjkwlwmupifh.supabase.co https://www.googleapis.com https://openlibrary.org https://catalogue.bnf.fr; \
+      worker-src 'self'; \
+      manifest-src 'self'; \
+      object-src 'none'; \
+      base-uri 'self'; \
+      form-action 'self'; \
+      frame-ancestors 'none'\
+    """
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

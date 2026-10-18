@@ -78,13 +78,16 @@ export async function getBook(id) {
 }
 
 // Les autres tomes de la même série, chez le même propriétaire (pas de
-// mélange avec les tomes du foyer), pour la navigation tome par tome.
+// mélange avec les tomes du foyer), pour la navigation tome par tome. Les
+// tomes d'abord, puis les hors-séries, chacun par numéro (sans numéro en
+// dernier) : c'est l'ordre de la rangée de tomes et du précédent/suivant.
 export async function getSeriesSiblings(series, userId) {
   const { data, error } = await supabase
     .from('books')
-    .select('id, series_index, status')
+    .select('id, series_index, status, is_off_series')
     .eq('series', series)
     .eq('user_id', userId)
+    .order('is_off_series', { ascending: true })
     .order('series_index', { ascending: true, nullsFirst: false })
   if (error) throw error
   return data
