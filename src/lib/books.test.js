@@ -134,13 +134,14 @@ describe('deleteBook', () => {
 })
 
 describe('getSeriesSiblings', () => {
-  it('reads the other volumes of the series of the same owner, in volume order', async () => {
+  it('reads the other volumes of the series of the same owner, regular volumes first then off-series books, each in number order', async () => {
     fake.queue('books', { data: [{ id: 'a', series_index: 1 }], error: null })
     expect(await getSeriesSiblings('Dune', 'u1')).toEqual([{ id: 'a', series_index: 1 }])
     expect(ops(fake.state.calls[0])).toEqual([
-      ['select', 'id, series_index, status'],
+      ['select', 'id, series_index, status, is_off_series'],
       ['eq', 'series', 'Dune'],
       ['eq', 'user_id', 'u1'],
+      ['order', 'is_off_series', { ascending: true }],
       ['order', 'series_index', { ascending: true, nullsFirst: false }],
     ])
   })

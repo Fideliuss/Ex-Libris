@@ -30,14 +30,15 @@ import BookCoverPlaceholder from '../components/BookCoverPlaceholder'
 import QuickRatingModal from '../components/QuickRatingModal'
 import QuickPurchaseModal from '../components/QuickPurchaseModal'
 import { buildTomeSlots } from '../lib/tomeSlots'
+import { chipLabel, volumeLabel } from '../lib/volumeLabel'
 
-function TomeChips({ slots, currentIndex, onSelect }) {
+function TomeChips({ slots, currentId, onSelect }) {
   const scrollRef = useRef(null)
 
   useEffect(() => {
-    const el = scrollRef.current?.querySelector(`[data-tome="${currentIndex}"]`)
+    const el = scrollRef.current?.querySelector(`[data-slot="${currentId}"]`)
     el?.scrollIntoView({ behavior: 'instant', inline: 'center', block: 'nearest' })
-  }, [currentIndex])
+  }, [currentId])
 
   // Molette verticale -> défilement horizontal : sans ça, la rangée n'est
   // scrollable qu'au doigt (mobile) ou en glissant la scrollbar. Sur PC
@@ -62,7 +63,7 @@ function TomeChips({ slots, currentIndex, onSelect }) {
       aria-label="Tomes de la série"
       className="flex items-center gap-1 overflow-x-auto min-w-0 flex-1 py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
-      {slots.map((slot) => {
+      {slots.map((slot, position) => {
         if (slot.type === 'ellipsis') {
           return (
             <span
@@ -86,25 +87,43 @@ function TomeChips({ slots, currentIndex, onSelect }) {
             </span>
           )
         }
-        const active = slot.index === currentIndex
-        return (
+        const active = slot.id === currentId
+        const offSeries = slot.type === 'offSeries'
+        const label = offSeries
+          ? volumeLabel({ is_off_series: true, series_index: slot.index })
+          : `Tome ${slot.index}`
+        const chip = (
           <button
             key={slot.id}
             type="button"
-            data-tome={slot.index}
+            data-slot={slot.id}
             disabled={active}
             onClick={() => onSelect(slot)}
             aria-current={active ? 'true' : undefined}
-            title={`Tome ${slot.index} (${STATUS_LABELS[slot.status] ?? slot.status})`}
-            className={`shrink-0 w-6 h-6 flex items-center justify-center rounded-full border text-[10px] font-mono focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:cursor-default ${
+            title={`${label} (${STATUS_LABELS[slot.status] ?? slot.status})`}
+            className={`shrink-0 h-6 flex items-center justify-center rounded-full border text-[10px] font-mono focus:outline-none focus-visible:ring-2 focus-visible:ring-library disabled:cursor-default ${
+              offSeries ? 'min-w-6 px-1.5' : 'w-6'
+            } ${
               active
                 ? `${STATUS_BADGE_CLASS[slot.status] ?? 'bg-ink/70 text-white'} border-transparent`
                 : `${STATUS_BORDER_CLASS[slot.status] ?? 'border-ink/40'} text-ink/70 hover:bg-ink/5`
             }`}
           >
-            {slot.index}
+            {chipLabel(slot)}
           </button>
         )
+        // Un séparateur avant le premier hors-série, pour le distinguer des tomes.
+        if (offSeries && position > 0 && slots[position - 1].type !== 'offSeries') {
+          return [
+            <span
+              key={`sep-${slot.id}`}
+              aria-hidden="true"
+              className="shrink-0 mx-1 h-4 w-px bg-ink/20"
+            />,
+            chip,
+          ]
+        }
+        return chip
       })}
     </div>
   )
@@ -265,9 +284,12 @@ export default function BookDetail() {
     [navigate],
   )
 
+  // Le sens de la transition suit la position dans la rangée (tomes puis
+  // hors-séries), pas le numéro : un hors-série 1 est après le tome 40.
   function handleChipSelect(slot) {
-    const direction = slot.index < book.series_index ? 'back' : 'forward'
-    goToSibling({ id: slot.id }, direction)
+    const from = tomeSlots.findIndex((s) => s.id === id)
+    const to = tomeSlots.findIndex((s) => s.id === slot.id)
+    goToSibling({ id: slot.id }, to < from ? 'back' : 'forward')
   }
 
   // Flèches du clavier : navigue vers le tome précédent/suivant, sauf si le
@@ -410,7 +432,7 @@ export default function BookDetail() {
                 <BookCoverPlaceholder
                   title={book.title}
                   author={book.author}
-                  volume={isSeriesVolume ? book.series_index : null}
+                  volume={isSeriesVolume && !book.is_off_series ? book.series_index : null}
                 />
               )}
             </div>
@@ -421,9 +443,9 @@ export default function BookDetail() {
                   <h1 className="font-serif text-2xl font-semibold">
                     {book.series}
                   </h1>
-                  {book.series_index != null && (
+                  {volumeLabel(book) && (
                     <p className="font-mono text-base text-brass font-semibold mt-0.5">
-                      Tome {book.series_index}
+                      {volumeLabel(book)}
                     </p>
                   )}
                 </>
@@ -433,7 +455,10 @@ export default function BookDetail() {
                     {book.title}
                   </h1>
                   {book.series && (
-                    <p className="text-sm text-brass mt-0.5">{book.series}</p>
+                    <p className="text-sm text-brass mt-0.5">
+                      {book.series}
+                      {book.is_off_series && ` · ${volumeLabel(book)}`}
+                    </p>
                   )}
                 </>
               )}
@@ -452,7 +477,7 @@ export default function BookDetail() {
                       </button>
                       <TomeChips
                         slots={tomeSlots}
-                        currentIndex={book.series_index}
+                        currentId={id}
                         onSelect={handleChipSelect}
                       />
                       <button

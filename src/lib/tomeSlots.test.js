@@ -68,3 +68,53 @@ describe('buildTomeSlots', () => {
     expect(slots.map((s) => s.index)).toEqual([5, 6])
   })
 })
+
+describe('buildTomeSlots with off-series books', () => {
+  const off = (index, id = `hs${index}`) => ({
+    id,
+    series_index: index,
+    status: 'read',
+    is_off_series: true,
+  })
+
+  it('gives an off-series book its own slot, with its id, number and status', () => {
+    expect(buildTomeSlots([owned(1), off(2)])).toEqual([
+      { type: 'owned', index: 1, id: 'id1', status: 'read' },
+      { type: 'offSeries', index: 2, id: 'hs2', status: 'read', key: 'off-hs2' },
+    ])
+  })
+
+  it('does not let an off-series number fill or create a hole among the regular volumes', () => {
+    const slots = buildTomeSlots([owned(1), owned(3), off(2)])
+    expect(types(slots)).toEqual(['owned', 'gap', 'owned', 'offSeries'])
+    expect(slots[1]).toEqual({ type: 'gap', index: 2 })
+  })
+
+  it('lets an off-series book share the number of a regular volume', () => {
+    const slots = buildTomeSlots([owned(2), off(2)])
+    expect(types(slots)).toEqual(['owned', 'offSeries'])
+    expect(slots.map((s) => s.id)).toEqual(['id2', 'hs2'])
+  })
+
+  it('puts the off-series books after all the regular volumes, by number', () => {
+    const slots = buildTomeSlots([off(2), owned(1), off(1), owned(7)])
+    // Le trou 2 à 6 (5 tomes) est replié en un repère, puis viennent les hors-séries.
+    expect(types(slots)).toEqual(['owned', 'ellipsis', 'owned', 'offSeries', 'offSeries'])
+    expect(slots.slice(-2).map((s) => s.index)).toEqual([1, 2])
+  })
+
+  it('keeps an unnumbered off-series book, after the numbered ones', () => {
+    const slots = buildTomeSlots([off(null, 'plain'), off(1, 'one')])
+    expect(slots.map((s) => s.id)).toEqual(['one', 'plain'])
+    expect(slots[1].index).toBeNull()
+  })
+
+  it('shows only the off-series books of a series that has no regular volume', () => {
+    const slots = buildTomeSlots([off(1), off(null, 'plain')])
+    expect(types(slots)).toEqual(['offSeries', 'offSeries'])
+  })
+
+  it('still ignores a regular book without a volume number', () => {
+    expect(buildTomeSlots([{ id: 'x', series_index: null, status: 'read', is_off_series: false }])).toEqual([])
+  })
+})

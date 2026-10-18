@@ -78,7 +78,9 @@ function allTypesReadDate(books) {
 function firstGaplessSeries(books) {
   const bySeries = new Map()
   for (const b of books) {
-    if (!b.series || b.series_index == null) continue
+    // Un hors-série n'est pas un tome de la numérotation : il ne comble ni ne
+    // crée de trou, même avec un numéro.
+    if (!b.series || b.series_index == null || b.is_off_series) continue
     if (!bySeries.has(b.series)) bySeries.set(b.series, [])
     bySeries.get(b.series).push(b)
   }
