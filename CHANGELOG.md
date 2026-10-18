@@ -9,6 +9,33 @@ l'app. Pour le pop-up "Quoi de neuf" vu par l'utilisateur, voir
 `src/lib/whatsNew.js`, à tenir à jour en parallèle (voir CONTRIBUTING.md,
 section « Livrer vers main »).
 
+## 1.14.0 (2026-10-18)
+
+### Features
+
+* off-series books: a new "Hors-série" checkbox under the volume field of the book form, with an optional number of its own; off-series books appear as "HS" chips after the volumes on the book sheet, as an "HS" badge on the cards, and sort after the volumes in the Tome sort; the volume field now only accepts whole numbers ([#167](https://github.com/Fideliuss/Ex-Libris/pull/167))
+* the CSV export has a new `hors_serie` column ([#167](https://github.com/Fideliuss/Ex-Libris/pull/167))
+
+### Bug Fixes
+
+* the "Série sans lacune" achievement ignores off-series books, which could fill a gap in the numbering ([#167](https://github.com/Fideliuss/Ex-Libris/pull/167))
+* the Libib import only reads whole numbers as a volume number: a decimal prefix such as "1.5 - " stays in the title ([#167](https://github.com/Fideliuss/Ex-Libris/pull/167))
+* a book without a title no longer breaks the title sort, it goes under "#" ([#166](https://github.com/Fideliuss/Ex-Libris/pull/166))
+* CSV export: text cells starting with `=`, `+`, `-` or `@` get a leading quote, so a spreadsheet no longer reads them as a formula ([#166](https://github.com/Fideliuss/Ex-Libris/pull/166))
+* CSV export: an empty library still produces the header row, and the file is named with the local date instead of the UTC date ([#166](https://github.com/Fideliuss/Ex-Libris/pull/166))
+
+### Performance
+
+* the library is loaded one owner at a time: your own books at sign-in (one request instead of two parallel full downloads), another household member's books only the first time you switch to them, and no more full reload after 60 seconds of navigation ([#164](https://github.com/Fideliuss/Ex-Libris/pull/164))
+
+### Internal
+
+* database: `books.is_off_series` column and two constraints (whole volume numbers, an off-series book belongs to a series), applied to the production database on 2026-10-18 before this release ([#167](https://github.com/Fideliuss/Ex-Libris/pull/167))
+* security headers on every response (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`) and a Content-Security-Policy in report-only mode, which reports in the console and blocks nothing; `source-map-js` updated to fix an `npm audit` alert ([#163](https://github.com/Fideliuss/Ex-Libris/pull/163))
+* dependencies updated within their ranges (supabase-js, react 19.3, vite 8.3, vitest 4.1.12...), `xlsx` pinned to 0.20.3 ([#163](https://github.com/Fideliuss/Ex-Libris/pull/163))
+* test coverage measurement (`npm run test:coverage`), `no-undef` lint rule, page logic moved to `src/lib`, unit tests from 109 to 339 and database checks from 40 to 115 ([#165](https://github.com/Fideliuss/Ex-Libris/pull/165), [#167](https://github.com/Fideliuss/Ex-Libris/pull/167))
+* documentation: merge methods and the preparation PR step added to `CONTRIBUTING.md` ([#161](https://github.com/Fideliuss/Ex-Libris/pull/161), [#162](https://github.com/Fideliuss/Ex-Libris/pull/162))
+
 ## 1.13.0 (2026-10-16)
 
 ### Features
