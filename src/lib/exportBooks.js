@@ -25,12 +25,39 @@ const EXPORT_COLUMNS = [
   'created_at',
 ]
 
+// Colonnes de texte libre : les seules où un utilisateur (ou un fichier importé)
+// peut écrire n'importe quoi. Les nombres, dates, ISBN et valeurs fixes (statut,
+// type) ne sont pas touchés : un prix négatif doit rester -3.5.
+const TEXT_COLUMNS = new Set([
+  'title',
+  'author',
+  'translator',
+  'illustrator',
+  'publisher',
+  'collection',
+  'series',
+  'universe',
+  'tags',
+  'notes',
+  'favorite_quote',
+])
+
+// Un tableur lit comme une formule une cellule qui commence par = + - @ (ou
+// une tabulation, un retour chariot) : un titre "=HYPERLINK(...)" serait
+// exécuté à l'ouverture du fichier. Une apostrophe devant la force en texte.
+const FORMULA_START = /^[=+\-@\t\r]/
+
+function protectFromFormula(text) {
+  return FORMULA_START.test(text) ? `'${text}` : text
+}
+
 export function booksToCsv(books) {
   const rows = books.map((book) =>
     Object.fromEntries(
       EXPORT_COLUMNS.map((column) => {
         const value = book[column]
-        return [column, Array.isArray(value) ? value.join(', ') : (value ?? '')]
+        const cell = Array.isArray(value) ? value.join(', ') : (value ?? '')
+        return [column, TEXT_COLUMNS.has(column) ? protectFromFormula(String(cell)) : cell]
       }),
     ),
   )
