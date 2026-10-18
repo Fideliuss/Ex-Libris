@@ -39,7 +39,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{js,jsx}'],
-      exclude: ['src/**/*.test.js'],
+      exclude: ['src/**/*.test.js', 'src/test/**'],
       reporter: ['text-summary', 'html'],
     },
   },
