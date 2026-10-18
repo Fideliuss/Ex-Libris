@@ -32,6 +32,17 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(pkg.version),
     __APP_COMMIT__: JSON.stringify(commit),
   },
+  // `npm run test:coverage` : mesure sur tout src/, y compris les fichiers
+  // qu'aucun test n'importe (sans `include`, ils seraient absents du rapport
+  // et le pourcentage serait faussé).
+  test: {
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{js,jsx}'],
+      exclude: ['src/**/*.test.js'],
+      reporter: ['text-summary', 'html'],
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),
